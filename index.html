@@ -377,6 +377,7 @@
   .adm-back { margin-left: auto; color: #fff; font-size: .88rem; text-decoration: none; opacity: .85; }
   .adm-back:hover { opacity: 1; text-decoration: underline; }
   .adm-layout { display: grid; grid-template-columns: 1fr; }
+  .adm-top[hidden], .adm-layout[hidden], .adm-login[hidden] { display: none; }
   @media (min-width: 860px) { .adm-layout { grid-template-columns: 220px 1fr; } }
   .adm-side { background: #fff; border-bottom: 1px solid #e6e4df; display: flex; gap: 4px; padding: 10px; overflow-x: auto; }
   @media (min-width: 860px) { .adm-side { flex-direction: column; border-bottom: none; border-right: 1px solid #e6e4df; padding: 16px 12px; } }
@@ -885,7 +886,7 @@
         </label>
       </div>
       <div style="margin-top:20px">
-        <button class="btn" id="finalizar" type="submit" disabled>Enviar pedido pelo WhatsApp</button>
+        <button class="btn" id="finalizar" type="submit" disabled>Pagar com Pix</button>
       </div>
       <div class="form-msg" id="form-msg" role="status" aria-live="polite"></div>
     </form>
@@ -1599,6 +1600,7 @@
     fetch("https://viacep.com.br/ws/" + cep + "/json/")
       .then(function (r) { return r.json(); })
       .then(function (data) {
+        if (digits(cepInput.value) !== cep) { return; }
         if (data.erro) {
           cepStatus.textContent = "CEP não encontrado. Preencha o endereço manualmente.";
           setAddressReadonly(false);
@@ -1613,6 +1615,7 @@
         refresh();
       })
       .catch(function () {
+        if (digits(cepInput.value) !== cep) { return; }
         cepStatus.textContent = "Não foi possível buscar o CEP agora. Preencha o endereço manualmente.";
         setAddressReadonly(false);
       });
@@ -1663,6 +1666,7 @@
         body: JSON.stringify({ cep: cep, itens: itens })
       });
       var d = await r.json();
+      if (digits(cepInput.value) !== cep) { return; }
       if (!r.ok || !d.opcoes || !d.opcoes.length) {
         freteBox.textContent = d.mensagem || "Frete indisponível para este CEP no momento.";
       } else {
@@ -1890,9 +1894,94 @@
       cepInput.focus();
       return;
     }
-    if (FRETE_OPCOES.length && !FRETE_SEL) { msg.textContent = "Escolha a forma de entrega."; return; }
-    sendOrder();
+    if (!FRETE_SEL) { msg.textContent = "Escolha a forma de entrega para pagar."; return; }
+    iniciarPix();
   });
+  /* ---------- Pagamento por Pix (Cielo) ---------- */
+  function caixaPix() {
+    var box = document.getElementById("pix-box");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "pix-box";
+      box.style.cssText = "margin-top:20px;padding:20px;border:1px solid #e6e4df;border-radius:14px;background:#fff;text-align:center";
+      msg.parentNode.insertBefore(box, msg.nextSibling);
+    }
+    return box;
+  }
+  async function iniciarPix() {
+    var box = caixaPix();
+    box.textContent = "";
+    msg.textContent = "Gerando o Pix…";
+    btn.disabled = true;
+    try {
+      var r = await fetch("/.netlify/functions/pagamento-pix", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cep: digits(cepInput.value),
+          freteId: FRETE_SEL.id,
+          itens: cart.map(function (i) { return { nome: i.name, cor: i.color, tam: i.size, qtd: i.qty }; })
+        })
+      });
+      var d = await r.json();
+      if (!r.ok) {
+        msg.textContent = d.mensagem || "Não foi possível gerar o Pix agora.";
+        btn.disabled = false;
+        return;
+      }
+      msg.textContent = "";
+      mostrarPix(box, d);
+      acompanharPix(d.paymentId, box);
+    } catch (e) {
+      msg.textContent = "Não foi possível gerar o Pix agora. Tente de novo.";
+      btn.disabled = false;
+    }
+  }
+  function mostrarPix(box, d) {
+    box.textContent = "";
+    box.appendChild(el("h3", "", "Pague com Pix"));
+    var img = document.createElement("img");
+    img.alt = "QR code do Pix";
+    img.style.cssText = "width:220px;max-width:100%";
+    img.src = d.qrImagem.indexOf("data:") === 0 ? d.qrImagem : "data:image/png;base64," + d.qrImagem;
+    box.appendChild(img);
+    var txt = document.createElement("textarea");
+    txt.readOnly = true;
+    txt.value = d.qrCode;
+    txt.style.cssText = "width:100%;font-size:12px;margin:10px 0;min-height:70px";
+    box.appendChild(txt);
+    var copiar = document.createElement("button");
+    copiar.type = "button";
+    copiar.className = "btn";
+    copiar.textContent = "Copiar código Pix";
+    copiar.addEventListener("click", function () {
+      function ok() { copiar.textContent = "Código copiado ✓"; }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(d.qrCode).then(ok, function () { txt.select(); document.execCommand("copy"); ok(); });
+      } else { txt.select(); document.execCommand("copy"); ok(); }
+    });
+    box.appendChild(copiar);
+    box.appendChild(el("p", "", "Valor: " + brl(d.valor) + ". Aguardando o pagamento…"));
+  }
+  function acompanharPix(paymentId, box) {
+    var tentativas = 0;
+    var timer = setInterval(async function () {
+      tentativas++;
+      try {
+        var r = await fetch("/.netlify/functions/pix-status?id=" + encodeURIComponent(paymentId));
+        var s = await r.json();
+        if (s.status === 2) {
+          clearInterval(timer);
+          box.textContent = "";
+          box.appendChild(el("h3", "", "Pagamento confirmado!"));
+          box.appendChild(el("p", "", "Obrigada pela compra!"));
+          cart.length = 0;
+          renderCart();
+        }
+      } catch (e) { /* tenta de novo na próxima volta */ }
+      if (tentativas >= 240) { clearInterval(timer); }
+    }, 5000);
+  }
+
   /* ---------- Coleção e carrossel ---------- */
   function cardHTML(id, p) {
     var dots = p.colors.map(function (c) { return '<span style="background:' + c.c + '" title="' + c.n + '"></span>'; }).join("");
@@ -2708,7 +2797,8 @@
     return out.map(function (s) { return s.trim(); });
   }
   function numBR(s) {
-    var t = String(s || "").replace(/R\$/i, "").replace(/\s/g, "").replace(",", ".");
+    var t = String(s || "").replace(/R\$/i, "").replace(/\s/g, "");
+    if (t.indexOf(",") !== -1) { t = t.replace(/\./g, "").replace(",", "."); }
     return t === "" ? NaN : Number(t);
   }
   function parseCores(s) {
