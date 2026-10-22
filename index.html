@@ -431,6 +431,13 @@
   .adm-pager .btns { display: flex; gap: 8px; }
   .adm-modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
   .adm-modal[hidden] { display: none; }
+  .pm-cor-top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .pm-cor-top .pm-cn { flex: 1; min-width: 180px; }
+  .pm-cor-pick { display: flex; align-items: center; gap: 6px; font-size: .9rem; }
+  .pm-tams { display: flex; gap: 14px; flex-wrap: wrap; }
+  .pm-tam { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+  .pm-tem { font-size: .8rem; color: #6b6b6b; }
+  .pm-q { width: 100%; }
   .adm-dialog { background: #fff; color: #1d1d1d; width: min(640px, 100%); max-height: 92vh; overflow-y: auto; border-radius: 18px; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
   .adm-dhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
   .adm-dhead h3 { font-size: 1.1rem; }
@@ -551,22 +558,22 @@
   <section class="hero">
     <span class="eyebrow">Nova coleção</span>
     <h1>Do seu ritmo <em>ao seu estilo.</em></h1>
-    <p>Peças para acompanhar seu ritmo e valorizar o seu estilo — conforto, movimento e confiança.</p>
+    <p>Roupas fitness femininas, com conforto para treinar e para o dia a dia.</p>
     <a class="btn" href="#colecao">Confira a coleção</a>
   </section>
 
   <div class="pillars">
     <article class="pillar">
       <h3>Conforto</h3>
-      <p>Peças pensadas para acompanhar cada movimento.</p>
+      <p>Peças pensadas para o seu movimento.</p>
     </article>
     <article class="pillar">
       <h3>Transparência</h3>
-      <p>Medidas, tecidos e preços sempre claros.</p>
+      <p>Medidas, tecidos e preços claros, sem surpresas.</p>
     </article>
     <article class="pillar">
       <h3>Atendimento próximo</h3>
-      <p>Ajudamos você a escolher o tamanho ideal.</p>
+      <p>Te ajudamos a escolher o tamanho certo.</p>
     </article>
   </div>
 
@@ -592,7 +599,7 @@
 
   <section class="products" id="colecao">
     <div class="section-head">
-      <h2>Encontre seu próximo look</h2>
+      <h2>Nossos produtos</h2>
       <a href="#colecao">Ver tudo</a>
     </div>
     <div class="product-grid" id="product-grid"></div>
@@ -602,7 +609,7 @@
     <section class="cta contact-card" id="atendimento">
     <span class="eyebrow">Atendimento</span>
     <h2>Vista-se de você.</h2>
-    <p class="contact-lead">Tem alguma dúvida sobre tamanhos, pedidos, entregas ou trocas? Fale com a gente e teremos prazer em ajudar.</p>
+    <p class="contact-lead">Tem dúvida sobre tamanho, pedido, entrega ou troca? Fale com a gente.</p>
     <div class="contact-grid">
       <a class="contact-item primary" href="https://wa.me/5524992429055" target="_blank" rel="noopener">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.3A8.5 8.5 0 1 1 21 11.5z"/></svg>
@@ -672,27 +679,28 @@
     </div>
     <section class="about-store">
       <h3>Sobre a EME Moda &amp; Fit</h3>
-      <p>Moda fitness feminina para acompanhar o seu ritmo. Peças pensadas para conforto, com medidas, tecidos e preços sempre claros.</p>
-      <p>Ajudamos você a escolher o tamanho ideal. Se tiver dúvidas, fale com a gente pelo <a href="#atendimento">atendimento</a>.</p>
+      <p>Moda fitness feminina, com conforto, medidas claras e preços transparentes.</p>
+      <p>Se tiver dúvidas sobre tamanhos ou pedidos, fale com a gente pelo <a href="#atendimento">atendimento</a>.</p>
     </section>
   </section>
 
   <section class="info-group page page-view" id="tamanhos-trocas" hidden>
   <a class="page-back" href="#inicio">&larr; Voltar para a loja</a>
-  <h2 class="page-title" style="font-size:1.8rem;margin:8px 0 20px;">Dúvidas</h2>
+  <h2 class="page-title" style="font-size:1.8rem;margin:8px 0 20px;">Dúvidas e políticas</h2>
+
   <section class="policy faq">
     <h2>Entregas</h2>
     <details class="info-acc">
       <summary>Vocês entregam em Volta Redonda?</summary>
       <div>
-        <p>Sim. Entregamos em Volta Redonda e em cidades próximas por aplicativo de entrega, como a 99 ou a Uber, em 1 dia.</p>
-        <p>O valor e o prazo são informados antes de você finalizar o pedido.</p>
+        <p>Sim. Em Volta Redonda e cidades próximas, a entrega é feita por aplicativo, como 99 ou Uber, em cerca de 1 dia.</p>
+        <p>O valor e o prazo aparecem antes de você finalizar o pedido.</p>
       </div>
     </details>
     <details class="info-acc">
       <summary>Vocês entregam para todo o Brasil?</summary>
       <div>
-        <p>Sim. As entregas para outros estados são feitas pelo Melhor Envio, que calcula o frete e o prazo a partir do seu CEP.</p>
+        <p>Sim. Para outros estados, o frete e o prazo são calculados pelo Melhor Envio, a partir do seu CEP.</p>
       </div>
     </details>
   </section>
@@ -700,48 +708,51 @@
   <section class="policy" id="politica-envio">
     <h2>Política de envio</h2>
 
+    <h3>Quando o pedido sai</h3>
+    <p>Postamos o pedido em até 3 dias úteis depois que o pagamento é confirmado. O prazo de entrega aparece antes de você finalizar a compra.</p>
+
     <h3>Como funciona a entrega</h3>
-    <p>Os pedidos são postados em até 3 dias úteis após a confirmação do pagamento. O prazo de entrega é informado antes de você finalizar a compra.</p>
-    <p>Para Volta Redonda e cidades próximas, a entrega é feita por aplicativo de entrega, em 1 dia. Para os demais estados, a entrega é feita pelo Melhor Envio, que reúne transportadoras parceiras.</p>
+    <p>Para Volta Redonda e cidades próximas, a entrega é por aplicativo, em cerca de 1 dia. Para os outros estados, usamos o Melhor Envio, que trabalha com transportadoras parceiras.</p>
 
-    <h3>Rastreio do pedido</h3>
-    <p>Assim que o pedido for despachado, enviaremos o código de rastreio pelo WhatsApp ou pelo e-mail informado no cadastro, para você acompanhar a entrega.</p>
+    <h3>Rastreio</h3>
+    <p>Quando o pedido for postado, enviamos o código de rastreio pelo WhatsApp ou pelo e-mail que você informou.</p>
 
-    <h3>Tentativas de entrega</h3>
-    <p>Cada transportadora define o número de tentativas de entrega. Os Correios fazem até 3 tentativas no endereço informado.</p>
-    <p>Se ninguém receber o pedido nas tentativas, ele fica disponível para retirada em uma agência, e o aviso de entrega informa o endereço e o prazo para retirada.</p>
+    <h3>Se ninguém estiver em casa</h3>
+    <p>Cada transportadora tem a sua regra. Os Correios tentam entregar até 3 vezes. Se ninguém receber, o pedido fica numa agência para retirada, e o aviso de entrega informa o endereço e o prazo.</p>
 
     <h3>Pedido atrasado ou com problema</h3>
-    <p>Se o prazo informado passar e o pedido ainda não tiver chegado, fale com a gente pelo <a href="#atendimento">atendimento</a>. Vamos acompanhar o envio com a transportadora e informar a situação.</p>
-    <p>Se a embalagem chegar violada, registre a situação com o entregador antes de aceitar o pedido. Se o produto chegar com defeito, avise a gente em até 30 dias após o recebimento.</p>
+    <p>Se o prazo passar e o pedido não chegar, fale com a gente pelo <a href="#atendimento">atendimento</a>. Acompanhamos o envio com a transportadora e avisamos você.</p>
+    <p>Se a embalagem chegar violada, registre o problema com o entregador antes de aceitar o pedido. Se o produto chegar com defeito, avise a gente em até 30 dias depois do recebimento.</p>
 
-    <h3>Devoluções e frete de retorno</h3>
-    <p>As condições para trocas e devoluções estão em <a href="#tamanhos-trocas">Trocas e devoluções</a>. Para pedidos devolvidos, informaremos como fazer a postagem de retorno.</p>
-    <p>Em caso de arrependimento, o frete de devolução fica por conta do cliente. Em caso de defeito de fabricação, o frete de devolução fica por conta da loja.</p>
+    <h3>Devolução e frete de volta</h3>
+    <p>As regras de troca e devolução estão em <a href="#tamanhos-trocas">Trocas e devoluções</a>.</p>
+    <p>Se você desistir da compra, o frete de volta fica por sua conta. Se o problema for defeito de fabricação, o frete de volta fica por conta da loja.</p>
 
     <h3>Canais de atendimento</h3>
     <p>Para dúvidas sobre entrega, fale com a gente pelo WhatsApp (24) 99242-9055 ou pelo e-mail contato.marcelly@outlook.com.</p>
   </section>
 
   <section class="policy" id="reembolso">
-    <h2>Reembolso e cancelamentos</h2>
+    <h2>Cancelamento e reembolso</h2>
 
-    <h3>Cancelamento antes da postagem</h3>
-    <p>Se você cancelar o pedido antes de ele ser postado, devolvemos o valor pago integralmente.</p>
+    <h3>Cancelei antes do envio</h3>
+    <p>Se você cancelar antes de o pedido ser postado, devolvemos todo o valor pago.</p>
 
-    <h3>Desistência da compra (arrependimento)</h3>
-    <p>Você pode desistir da compra em até 7 dias após o recebimento, sem precisar justificar. Para isso, fale com a gente pelo WhatsApp ou pelo e-mail do atendimento. Confirmaremos o recebimento do seu pedido de desistência imediatamente.</p>
-    <p>O valor pago é devolvido de imediato, com correção monetária, pelo mesmo meio de pagamento.</p>
+    <h3>Desisti da compra</h3>
+    <p>Você pode desistir em até 7 dias depois de receber o pedido, sem precisar explicar o motivo. Basta avisar a gente pelo WhatsApp ou pelo e-mail. Confirmamos o recebimento do seu pedido de desistência na hora.</p>
+    <p>O valor pago é devolvido, com correção monetária, pela mesma forma de pagamento.</p>
     <p class="law">Base legal: art. 49 e parágrafo único do Código de Defesa do Consumidor (Lei nº 8.078/1990) e art. 5º do Decreto nº 7.962/2013 (comércio eletrônico).</p>
 
-    <h3>Cancelamento pela loja</h3>
-    <p>Se a loja precisar cancelar o pedido, por exemplo por falta de estoque, avisaremos você e devolveremos o valor pago integralmente.</p>
+    <h3>A loja precisou cancelar</h3>
+    <p>Se faltar estoque ou houver outro problema, a loja cancela o pedido e avisa você. Nesse caso, devolvemos todo o valor pago.</p>
 
-    <h3>Prazo para o valor voltar</h3>
-    <p>Informamos o prazo de devolução no momento do cancelamento. No cartão de crédito, o valor aparece na fatura ou no extrato conforme o prazo da administradora do cartão.</p>
+    <h3>Quando o dinheiro volta</h3>
+    <p>Informamos o prazo no momento do cancelamento. No cartão de crédito, o valor aparece na fatura ou no extrato, conforme o prazo da administradora do cartão.</p>
   </section>
+
   <section class="size-section">
-    <h2>Tamanhos</h2>
+    <h2>Tabela de tamanhos</h2>
+    <p>Medidas aproximadas, para você se orientar.</p>
     <table class="size-table">
       <thead><tr><th>Tamanho</th><th>Veste</th></tr></thead>
       <tbody>
@@ -752,20 +763,19 @@
     </table>
   </section>
 
-  <section class="policy">
+  <section class="policy" id="trocas">
     <h2>Trocas e devoluções</h2>
 
-    <h3>Compras pelo site (direito de arrependimento)</h3>
-    <p>Você pode desistir da compra em até 7 dias a contar do recebimento do produto, sem precisar justificar. Nesse caso, devolvemos o valor pago de imediato, com correção monetária.</p>
+    <h3>Desistir da compra pelo site</h3>
+    <p>Você pode desistir em até 7 dias depois de receber o produto, sem precisar justificar. Nesse caso, devolvemos o valor pago, com correção monetária.</p>
     <p class="law">Base legal: art. 49 do <a href="https://planalto.gov.br/ccivil_03/Leis/L8078compilado.htm" target="_blank" rel="noopener">Código de Defesa do Consumidor (Lei nº 8.078/1990)</a>.</p>
 
-    <h3>Produto com defeito ou vício</h3>
-    <p>Para defeitos aparentes ou de fácil constatação, o prazo para nos acionar é de 30 dias a contar do recebimento, por se tratar de vestuário, que é produto não durável.</p>
-    <p>Se o defeito não for resolvido em até 30 dias, você pode escolher entre a substituição do produto por outro igual em perfeitas condições, a devolução do valor pago, corrigido, ou o abatimento proporcional do preço.</p>
+    <h3>Produto com defeito</h3>
+    <p>Para defeitos visíveis, você tem 30 dias depois de receber o produto para nos avisar. Se o defeito não for resolvido em 30 dias, você escolhe entre: trocar por outro igual em perfeitas condições, receber o valor pago de volta, corrigido, ou ter um desconto proporcional ao defeito.</p>
     <p class="law">Base legal: arts. 18 e 26 do <a href="https://planalto.gov.br/ccivil_03/Leis/L8078compilado.htm" target="_blank" rel="noopener">Código de Defesa do Consumidor (Lei nº 8.078/1990)</a>.</p>
 
-    <h3>Como solicitar</h3>
-    <p>Para pedir troca ou devolução, fale com a gente pelo WhatsApp ou pelo e-mail indicados na seção de atendimento.</p>
+    <h3>Como pedir a troca ou devolução</h3>
+    <p>Fale com a gente pelo WhatsApp ou pelo e-mail, na seção de atendimento.</p>
     <p class="law"><a href="https://planalto.gov.br/ccivil_03/Leis/L8078compilado.htm" target="_blank" rel="noopener">Leia o Código de Defesa do Consumidor completo no site do Planalto</a></p>
   </section>
 
@@ -773,45 +783,42 @@
     <h2>Privacidade e proteção de dados (LGPD)</h2>
 
     <h3>Quem cuida dos seus dados</h3>
-    <p>A EME Moda &amp; Fit, inscrita no CNPJ 62.790.776/0001-00, é responsável pelas decisões sobre o tratamento dos seus dados pessoais, conforme a Lei Geral de Proteção de Dados Pessoais.</p>
-    <p>Tratamos seus dados somente para finalidades específicas, que informamos a você, e apenas pelo tempo necessário para cumpri-las.</p>
+    <p>A EME Moda &amp; Fit (CNPJ 62.790.776/0001-00) decide como os seus dados pessoais são usados, de acordo com a Lei Geral de Proteção de Dados (LGPD).</p>
+    <p>Usamos seus dados só para o que informamos aqui, e apenas pelo tempo necessário.</p>
 
-    <h3>Dados que coletamos</h3>
+    <h3>Quais dados pedimos</h3>
     <ul class="rights">
       <li>Nome completo</li>
-      <li>Endereço completo</li>
       <li>Telefone</li>
+      <li>Endereço de entrega: CEP, rua, número, bairro, cidade, estado e ponto de referência, se você informar</li>
     </ul>
 
-    <h3>Encarregado pelos dados (DPO)</h3>
-    <p>Marcelly Lourenço Chagas, responsável por receber e responder às solicitações sobre seus dados. Contato: WhatsApp (24) 99242-9055 ou e-mail contato.marcelly@outlook.com.</p>
+    <h3>Quem responde pelos seus dados</h3>
+    <p>Marcelly Lourenço Chagas. Você pode falar com ela pelo WhatsApp (24) 99242-9055 ou pelo e-mail contato.marcelly@outlook.com.</p>
 
     <h3>Cookies e ferramentas de terceiros</h3>
-    <p>Este site utiliza cookies, pequenos arquivos gravados no seu navegador, para o funcionamento da página e para entender como ela é usada.</p>
-    <p>Também pretendemos usar ferramentas do Google (como o Google Analytics e o Google Ads) e da Meta (como o Meta Pixel) para medir acessos e exibir anúncios. Essas ferramentas podem coletar informações como páginas visitadas, tempo de navegação e tipo de dispositivo.</p>
-    <p>Você pode bloquear ou apagar cookies nas configurações do seu navegador, mas algumas funções do site podem deixar de funcionar.</p>
+    <p>Usamos cookies, que são pequenos arquivos no seu navegador, para o site funcionar e para entender como ele é usado.</p>
+    <p>Também pretendemos usar ferramentas do Google (Google Analytics e Google Ads) e da Meta (Meta Pixel), para medir acessos e mostrar anúncios. Elas podem coletar páginas visitadas, tempo de navegação e tipo de aparelho.</p>
+    <p>Você pode apagar ou bloquear cookies no navegador. Mas algumas partes do site podem parar de funcionar.</p>
 
     <h3>Seus direitos</h3>
-    <p>Você pode, a qualquer momento e sem custo, pedir para:</p>
+    <p>Você pode pedir, a qualquer momento e sem custo:</p>
     <ul class="rights">
-      <li>confirmar se tratamos seus dados e acessá-los;</li>
-      <li>corrigir dados incompletos, inexatos ou desatualizados;</li>
-      <li>anonimizar, bloquear ou eliminar dados desnecessários, excessivos ou tratados fora da lei;</li>
-      <li>receber seus dados em formato que permita levá-los a outro fornecedor;</li>
-      <li>eliminar os dados tratados com base no seu consentimento;</li>
+      <li>ver quais dados temos sobre você;</li>
+      <li>corrigir dados errados ou desatualizados;</li>
+      <li>apagar dados que não precisamos mais;</li>
+      <li>receber seus dados em outro formato;</li>
       <li>saber com quem compartilhamos seus dados;</li>
-      <li>saber que pode não dar consentimento e quais são as consequências disso;</li>
-      <li>revogar o seu consentimento a qualquer momento.</li>
+      <li>tirar o seu consentimento a qualquer momento.</li>
     </ul>
-    <p>Você também pode levar sua reclamação à Autoridade Nacional de Proteção de Dados (ANPD).</p>
+    <p>Se não ficar satisfeita com a resposta, você pode reclamar na Autoridade Nacional de Proteção de Dados (ANPD).</p>
 
-    <h3>Como exercer seus direitos</h3>
-    <p>Para fazer um pedido, fale com a nossa encarregada pelo WhatsApp ou pelo e-mail indicados acima.</p>
+    <h3>Como fazer um pedido</h3>
+    <p>Fale com a nossa responsável pelo WhatsApp ou pelo e-mail acima.</p>
     <p class="law">Base legal: arts. 6º, 8º, 9º e 18 da <a href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm" target="_blank" rel="noopener">Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018)</a>.</p>
   </section>
-  </section>
+</section>
 
-  
 <section class="checkout page page-view" id="carrinho" hidden>
     <a class="page-back" href="#inicio">&larr; Voltar para a loja</a>
     <h2>Carrinho e finalização</h2>
@@ -2215,7 +2222,7 @@
       .sort(function (a, b) { return a.qtd - b.qtd; }).slice(0, 5);
     admEl("v-alertas").innerHTML = alertas.length ? alertas.map(function (v) {
       return '<li><div><strong>' + varTitulo(v) + '</strong><small>' + v.sku + ' · ' + v.qtd + ' em estoque (mínimo ' + v.min + ')</small></div>' +
-        '<button type="button" class="adm-btn" data-open="' + v.id + '">Repor</button></li>';
+        '<button type="button" class="adm-btn" data-open="' + v.id + '">Dar entrada</button></li>';
     }).join("") : '<li class="adm-empty">Nenhum alerta no momento.</li>';
     var movs = allMovs().slice(0, 5);
     admEl("v-movs").innerHTML = movs.length ? movs.map(function (m) {
@@ -2288,7 +2295,7 @@
       '<td data-label="Saídas (30 dias)">' + sparkHTML(v) + '</td>' +
       '<td class="num" data-label="Valor">' + brl(v.qtd * v.custo) + '</td>' +
       '<td data-label="Status"><span class="adm-tag ' + TAG_CLASS[s] + '">' + STATUS_LABEL[s] + '</span></td>' +
-      '<td class="acoes"><button type="button" class="adm-btn" data-open="' + v.id + '">Movimentar</button></td>' +
+      '<td class="acoes"><button type="button" class="adm-btn" data-open="' + v.id + '">Entrada ou saída</button></td>' +
       '</tr>';
   }
 
@@ -2334,7 +2341,7 @@
       return '<tr><td class="adm-sku" data-label="SKU">' + v.sku + '</td><td data-label="Produto">' + v.prod + '</td><td data-label="Cor">' + v.cor + '</td><td data-label="Tam.">' + v.tam + '</td>' +
         '<td class="num" data-label="Qtd">' + v.qtd + '</td><td class="num" data-label="Mínimo">' + v.min + '</td>' +
         '<td data-label="Status"><span class="adm-tag ' + TAG_CLASS[s] + '">' + STATUS_LABEL[s] + '</span></td>' +
-        '<td class="acoes"><button type="button" class="adm-btn dark" data-open="' + v.id + '">Repor</button></td></tr>';
+        '<td class="acoes"><button type="button" class="adm-btn dark" data-open="' + v.id + '">Dar entrada</button></td></tr>';
     }).join("") : '<tr><td colspan="8" class="adm-empty" style="text-align:center">Nenhum alerta no momento.</td></tr>';
   }
 
@@ -2622,16 +2629,25 @@
   }
 
   /* ---- modal de produto ---- */
-  function addColorRow(nome, hex, sizes) {
+  function addColorRow(nome, hex, sizes, atual) {
     var box = admEl("pm-colors");
     var row = document.createElement("div");
     row.className = "pm-color";
-    row.innerHTML = '<input class="pm-cn" type="text" placeholder="Nome da cor" value="' + esc(nome || "") + '" aria-label="Nome da cor">' +
-      '<input class="pm-ch" type="color" value="' + (hex || "#cccccc") + '" aria-label="Cor">' +
-      '<div class="sizes">' + SIZES.map(function (s) {
-        return '<label><input class="pm-s" type="checkbox" value="' + s + '"' + (sizes && sizes.indexOf(s) !== -1 ? " checked" : "") + '> ' + s + '</label>';
-      }).join("") + '</div>' +
-      '<button type="button" class="adm-btn pm-rm rowbtn">Remover</button>';
+    var tams = SIZES.map(function (s) {
+      var marcado = !!(sizes && sizes.indexOf(s) !== -1);
+      var tem = atual && atual[s] !== undefined ? '<span class="pm-tem">hoje: ' + atual[s] + ' peça(s)</span>' : '';
+      return '<div class="pm-tam">' +
+        '<label><input class="pm-s" type="checkbox" value="' + s + '"' + (marcado ? " checked" : "") + '> <strong>Tamanho ' + s + '</strong></label>' +
+        tem +
+        '<input class="pm-q" type="number" min="0" step="1" placeholder="Quantidade" aria-label="Quantidade que entrou no tamanho ' + s + '"' + (marcado ? "" : " hidden") + '>' +
+        '</div>';
+    }).join("");
+    row.innerHTML = '<div class="pm-cor-top">' +
+        '<input class="pm-cn" type="text" placeholder="Nome da cor (ex.: Preto)" value="' + esc(nome || "") + '" aria-label="Nome da cor">' +
+        '<label class="pm-cor-pick">Cor <input class="pm-ch" type="color" value="' + (hex || "#cccccc") + '" aria-label="Escolher a cor"></label>' +
+        '<button type="button" class="adm-btn pm-rm rowbtn">Remover cor</button>' +
+      '</div>' +
+      '<div class="pm-tams">' + tams + '</div>';
     box.appendChild(row);
   }
 
@@ -2660,7 +2676,11 @@
     admEl("pm-photo-file").value = "";
     admEl("pm-colors").innerHTML = "";
     if (p) {
-      p.colors.forEach(function (c) { addColorRow(c.n, c.c, p.estoque[c.n] || []); });
+      p.colors.forEach(function (c) {
+        var atual = {};
+        ADMIN_VARS.filter(function (v) { return v.pid === pid && v.cor === c.n; }).forEach(function (v) { atual[v.tam] = v.qtd; });
+        addColorRow(c.n, c.c, p.estoque[c.n] || [], atual);
+      });
     } else {
       addColorRow("", "#222222", []);
     }
@@ -2685,7 +2705,7 @@
     if (!(atacado > 0)) { erros.push("Informe o valor de atacado."); }
     if (!(varejo > 0)) { erros.push("Informe o valor de varejo."); }
     if (atacado > 0 && varejo > 0 && varejo < atacado) { erros.push("O varejo não pode ser menor que o atacado."); }
-    var colors = [], estoque = {}, nomes = [];
+    var colors = [], estoque = {}, nomes = [], entradas = [];
     document.querySelectorAll("#pm-colors .pm-color").forEach(function (row) {
       var n = row.querySelector(".pm-cn").value.trim();
       var c = row.querySelector(".pm-ch").value;
@@ -2696,9 +2716,14 @@
       nomes.push(n.toLowerCase());
       colors.push({ n: n, c: c });
       estoque[n] = s;
+      s.forEach(function (tam) {
+        var campo = row.querySelector(".pm-s[value='" + tam + "']").closest(".pm-tam").querySelector(".pm-q");
+        var q = parseInt(campo.value, 10);
+        if (q > 0) { entradas.push({ cor: n, tam: tam, qtd: q }); }
+      });
     });
     if (!colors.length) { erros.push("Cadastre pelo menos uma cor com tamanhos."); }
-    return { erros: erros, d: { nome: nome, cat: cat, atacado: atacado, varejo: varejo, desc: admEl("pm-desc").value.trim(), colors: colors, estoque: estoque, imgs: PM_IMGS.slice(0, MAX_FOTOS) } };
+    return { erros: erros, d: { nome: nome, cat: cat, atacado: atacado, varejo: varejo, desc: admEl("pm-desc").value.trim(), colors: colors, estoque: estoque, imgs: PM_IMGS.slice(0, MAX_FOTOS), entradas: entradas } };
   }
 
   function upsertProduct(d, pid) {
@@ -2731,11 +2756,35 @@
     afterProductsChanged();
   }
 
+  /* Impede que uma edição tire uma cor ou tamanho que ainda tem peças */
+  function estoqueQueSai(pid, estoque) {
+    if (!pid) { return null; }
+    var v = ADMIN_VARS.filter(function (x) {
+      return x.pid === pid && x.qtd > 0 && !(estoque[x.cor] && estoque[x.cor].indexOf(x.tam) !== -1);
+    })[0];
+    return v ? "Não dá para tirar " + v.cor + " (tamanho " + v.tam + ") porque ainda tem " + v.qtd + " peça(s). Dê saída dessas peças primeiro, ou mantenha essa cor e tamanho." : null;
+  }
+  /* Registra as quantidades digitadas no cadastro como Entrada no histórico */
+  function aplicarEntradas(pid, entradas) {
+    var hoje = isoHoje();
+    (entradas || []).forEach(function (e) {
+      var v = ADMIN_VARS.filter(function (x) { return x.pid === pid && x.cor === e.cor && x.tam === e.tam; })[0];
+      if (!v) { return; }
+      v.mov.push({ ts: ++movSeq, iso: hoje, data: fmtISO(hoje), tipo: "Entrada", qtd: "+" + e.qtd, saldo: v.qtd + e.qtd,
+        motivo: "Cadastro do produto", obs: "", out: 0 });
+      v.qtd += e.qtd;
+    });
+  }
+
   function salvarProduto() {
     var r = lerFormProduto();
     var msg = admEl("pm-msg");
     if (r.erros.length) { msg.style.color = "#a12a1f"; msg.textContent = r.erros[0]; return; }
-    upsertProduct(r.d, PM_EDIT);
+    var bloqueio = estoqueQueSai(PM_EDIT, r.d.estoque);
+    if (bloqueio) { msg.style.color = "#a12a1f"; msg.textContent = bloqueio; return; }
+    var pid = upsertProduct(r.d, PM_EDIT);
+    syncVariations();
+    aplicarEntradas(pid, r.d.entradas);
     closeProdModal();
     admEl("pr-msg").textContent = PM_EDIT ? "Produto atualizado." : "Produto cadastrado.";
     PM_EDIT = null;
@@ -2944,6 +2993,13 @@
     var b = e.target.closest(".pm-rm");
     if (b) { b.closest(".pm-color").remove(); }
   });
+  admEl("pm-colors").addEventListener("change", function (e) {
+    if (e.target.classList.contains("pm-s")) {
+      var campo = e.target.closest(".pm-tam").querySelector(".pm-q");
+      campo.hidden = !e.target.checked;
+      if (!e.target.checked) { campo.value = ""; }
+    }
+  });
   admEl("adm-prodmodal").addEventListener("click", function (e) {
     if (e.target.id === "adm-prodmodal" || e.target.closest("[data-pclose]")) { closeProdModal(); }
   });
@@ -2968,7 +3024,7 @@
 
   /* ---------- Fotos ---------- */
   function bgCss(img, grad) {
-    return img ? "background-image:url('" + img + "');background-size:cover;background-position:center" : "background:" + grad;
+    return img ? "background-image:url('" + img + "');background-size:cover;background-position:center" : "background:#f1ebe6";
   }
   function thumbCss(name) {
     for (var k in PRODUCTS) { if (PRODUCTS[k].name === name) { return bgCss(PRODUCTS[k].img, PRODUCTS[k].grad); } }
