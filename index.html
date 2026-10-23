@@ -925,12 +925,18 @@
       <div class="adm-card" style="max-width:380px;margin:48px auto">
         <h3>Entrar no painel</h3>
         <p class="adm-foot">Acesso restrito ao administrador da loja.</p>
-        <div class="adm-form" style="grid-template-columns:1fr">
+        <div class="adm-form" id="lg-form" style="grid-template-columns:1fr">
           <div><label for="lg-email">E-mail</label><input id="lg-email" type="email" autocomplete="username"></div>
           <div><label for="lg-senha">Senha</label><input id="lg-senha" type="password" autocomplete="current-password"></div>
         </div>
         <div class="adm-actions"><button type="button" class="adm-btn dark" id="lg-entrar">Entrar</button></div>
+        <p style="margin:12px 0 0"><a href="#" id="lg-esqueci">Esqueci minha senha</a></p>
         <div class="adm-msg" id="lg-msg" aria-live="polite"></div>
+        <div id="lg-nova" hidden style="margin-top:14px">
+          <p class="adm-foot" style="margin:0 0 8px">Crie uma nova senha para entrar no painel.</p>
+          <div class="adm-form" style="grid-template-columns:1fr"><div><label for="lg-nova-senha">Nova senha (mínimo 6 caracteres)</label><input id="lg-nova-senha" type="password" autocomplete="new-password"></div></div>
+          <div class="adm-actions"><button type="button" class="adm-btn dark" id="lg-salvar-nova">Salvar nova senha</button></div>
+        </div>
       </div>
     </div>
     <div class="adm-top">
@@ -1436,6 +1442,33 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(salvarTudo, 700);
   }
+  /* Lê o estoque atual do servidor (inclui vendas do site) e soma só o que o painel ainda não salvou */
+  async function mesclarEstoqueDoServidor() {
+    var r = await sb.from("loja_admin").select("dados").eq("id", 1).maybeSingle();
+    if (r.error) { return false; }
+    var servidor = ((r.data && r.data.dados) || {}).variacoes || {};
+    ADMIN_VARS.forEach(function (v) {
+      var srv = servidor[v.pid + "|" + v.cor + "|" + v.tam];
+      if (!srv) { return; }
+      var noServidor = {}, localIds = {};
+      (srv.mov || []).forEach(function (m) { noServidor[m.ts] = true; });
+      v.mov.forEach(function (m) { localIds[m.ts] = true; });
+      (srv.mov || []).forEach(function (m) { if (!localIds[m.ts]) { v.mov.push(m); } });
+      var pendentes = v.mov.filter(function (m) { return !noServidor[m.ts] && m.delta !== undefined; });
+      var q = (srv.qtd || 0) + pendentes.reduce(function (soma, m) { return soma + m.delta; }, 0);
+      v.qtd = Math.max(0, q);
+    });
+    return true;
+  }
+  function atualizarTelasEstoque() {
+    renderKpis();
+    renderVisao();
+    renderProdutos();
+    renderEstoque();
+    renderAlertas();
+    renderMovs();
+  }
+
   async function salvarTudo() {
     if (salvando) { scheduleSave(); return; }
     var sess = await sb.auth.getSession();
@@ -1443,6 +1476,9 @@
     salvando = true;
     setSaveMsg("Salvando…");
     try {
+      var estoqueOk = await mesclarEstoqueDoServidor();
+      if (!estoqueOk) { throw new Error("não foi possível ler o estoque atual"); }
+      atualizarTelasEstoque();
       await enviarFotos();
       var agora = new Date().toISOString();
       var r1 = await sb.from("loja_publico").upsert({ id: 1, dados: publicoPayload(), atualizado_em: agora });
@@ -1495,6 +1531,7 @@
     });
     ADMIN_READY = true;
     renderAll();
+    carregarPedidos();
     setSaveMsg("Dados carregados.");
   }
 
@@ -1505,6 +1542,7 @@
     document.getElementById("adm-login").hidden = on;
   }
   async function checkAdmin() {
+    if (RECUPERANDO) { mostrarApp(false); return; }
     if (!sb) { mostrarApp(false); document.getElementById("lg-msg").textContent = "Conexão com o banco indisponível."; return; }
     var s = await sb.auth.getSession();
     if (s.data.session) { mostrarApp(true); if (!ADMIN_READY) { await carregarAdmin(); } }
@@ -1523,6 +1561,47 @@
   document.getElementById("lg-senha").addEventListener("keydown", function (e) {
     if (e.key === "Enter") { document.getElementById("lg-entrar").click(); }
   });
+  /* Recuperação de senha: o link do e-mail volta para o site com a sessão de recuperação */
+  var RECUPERANDO = false;
+  function mostrarRecuperacao(on) {
+    RECUPERANDO = on;
+    document.getElementById("lg-form").hidden = on;
+    document.getElementById("lg-entrar").closest(".adm-actions").hidden = on;
+    document.getElementById("lg-esqueci").parentNode.hidden = on;
+    document.getElementById("lg-nova").hidden = !on;
+    document.getElementById("lg-msg").textContent = "";
+  }
+  if (sb) {
+    sb.auth.onAuthStateChange(function (event) {
+      if (event === "PASSWORD_RECOVERY") {
+        mostrarRecuperacao(true);
+        if (location.hash !== "#admin") { location.hash = "#admin"; }
+        mostrarApp(false);
+      }
+    });
+  }
+  document.getElementById("lg-esqueci").addEventListener("click", async function (e) {
+    e.preventDefault();
+    var msg = document.getElementById("lg-msg");
+    var email = document.getElementById("lg-email").value.trim();
+    if (!email) { msg.style.color = "#a12a1f"; msg.textContent = "Digite seu e-mail no campo acima."; return; }
+    var r = await sb.auth.resetPasswordForEmail(email, { redirectTo: "https://ememodaefit.netlify.app/?recuperar=1" });
+    msg.style.color = r.error ? "#a12a1f" : "#1e6b3a";
+    msg.textContent = r.error ? "Não foi possível enviar o e-mail agora. Tente de novo." : "Enviamos um link para o seu e-mail. Abra o link para criar uma nova senha.";
+  });
+  document.getElementById("lg-salvar-nova").addEventListener("click", async function () {
+    var msg = document.getElementById("lg-msg");
+    var senha = document.getElementById("lg-nova-senha").value;
+    if (senha.length < 6) { msg.style.color = "#a12a1f"; msg.textContent = "A senha precisa ter pelo menos 6 caracteres."; return; }
+    var r = await sb.auth.updateUser({ password: senha });
+    if (r.error) { msg.style.color = "#a12a1f"; msg.textContent = "Não foi possível salvar a senha. Peça um novo link."; return; }
+    await sb.auth.signOut();
+    document.getElementById("lg-nova-senha").value = "";
+    mostrarRecuperacao(false);
+    msg.style.color = "#1e6b3a";
+    msg.textContent = "Senha criada. Entre com a nova senha.";
+  });
+
   document.getElementById("adm-sair").addEventListener("click", async function () {
     await sb.auth.signOut();
     ADMIN_READY = false;
@@ -1929,6 +2008,11 @@
         body: JSON.stringify({
           cep: digits(cepInput.value),
           freteId: FRETE_SEL.id,
+          cliente: {
+            nome: fv("nome"), telefone: fv("telefone"), rua: fv("rua"), numero: fv("numero"),
+            complemento: fv("complemento"), bairro: fv("bairro"), cidade: fv("cidade"), uf: fv("uf"),
+            cep: digits(cepInput.value), referencia: fv("referencia")
+          },
           itens: cart.map(function (i) { return { nome: i.name, cor: i.color, tam: i.size, qtd: i.qty }; })
         })
       });
@@ -2442,7 +2526,7 @@
       return;
     }
     var p = pendingSingle;
-    v.mov.push({ ts: ++movSeq, iso: p.iso, data: fmtISO(p.iso), tipo: p.label, qtd: p.qtdTxt, saldo: p.novo, motivo: p.motivo, obs: p.obs, out: p.out });
+    v.mov.push({ ts: ++movSeq, iso: p.iso, data: fmtISO(p.iso), tipo: p.label, qtd: p.qtdTxt, saldo: p.novo, motivo: p.motivo, obs: p.obs, out: p.out, delta: p.tipo === "entrada" ? p.q : (p.tipo === "saida" ? -p.q : p.novo - v.qtd) });
     v.qtd = p.novo;
     admEl("a-qtd").value = "";
     admEl("a-obs").value = "";
@@ -2490,7 +2574,7 @@
     var motivo = admEl("b-motivo").value, obs = admEl("b-obs").value.trim();
     pendingBatch.forEach(function (l) {
       var novo = l.v.qtd + l.q;
-      l.v.mov.push({ ts: ++movSeq, iso: iso, data: fmtISO(iso), tipo: "Entrada", qtd: "+" + l.q, saldo: novo, motivo: motivo, obs: obs, out: 0 });
+      l.v.mov.push({ ts: ++movSeq, iso: iso, data: fmtISO(iso), tipo: "Entrada", qtd: "+" + l.q, saldo: novo, motivo: motivo, obs: obs, out: 0, delta: l.q });
       l.v.qtd = novo;
     });
     var n = pendingBatch.length;
@@ -2774,7 +2858,7 @@
       var v = ADMIN_VARS.filter(function (x) { return x.pid === pid && x.cor === e.cor && x.tam === e.tam; })[0];
       if (!v) { return; }
       v.mov.push({ ts: ++movSeq, iso: hoje, data: fmtISO(hoje), tipo: "Entrada", qtd: "+" + e.qtd, saldo: v.qtd + e.qtd,
-        motivo: "Cadastro do produto", obs: "", out: 0 });
+        motivo: "Cadastro do produto", obs: "", out: 0, delta: e.qtd });
       v.qtd += e.qtd;
     });
   }
@@ -3243,7 +3327,7 @@
       })[0];
       if (!v) { return; }
       v.mov.push({ ts: ++movSeq, iso: hoje, data: fmtISO(hoje), tipo: "Ajuste", qtd: "= " + r.qtd, saldo: r.qtd,
-        motivo: "Importação de planilha", obs: "Aba Estoque, linha " + r.linha, out: 0 });
+        motivo: "Importação de planilha", obs: "Aba Estoque, linha " + r.linha, out: 0, delta: r.qtd - v.qtd });
       v.qtd = r.qtd;
       if (r.min !== null) { v.min = r.min; }
       n++;
@@ -3259,6 +3343,19 @@
   /* ---------- Pedidos e cupom do pedido ---------- */
   var PEDIDOS = [];
   var STATUS_PED = { aguardando: "Aguardando pagamento", pago: "Pago", cancelado: "Cancelado" };
+
+  async function carregarPedidos() {
+    if (!sb) { return; }
+    var r = await sb.from("pedidos").select("id,numero,status,dados").order("numero", { ascending: false });
+    if (r.error) { admEl("ped-body").innerHTML = '<tr><td colspan="8" class="adm-empty" style="text-align:center">Não foi possível carregar os pedidos agora.</td></tr>'; return; }
+    PEDIDOS = (r.data || []).map(function (x) {
+      var d = x.dados || {};
+      return { numero: x.numero, status: x.status, data: d.data, cliente: d.cliente || {}, itens: d.itens || [],
+        subtotal: d.subtotal || 0, frete: d.frete || 0, frete_tipo: d.frete_tipo || "Frete", total: d.total || 0,
+        forma_pagamento: d.forma_pagamento || "Pix", cupom: null };
+    });
+    renderPedidos();
+  }
 
   function renderPedidos() {
     var busca = admEl("ped-busca").value.trim().toLowerCase();
