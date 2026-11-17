@@ -1371,6 +1371,9 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 .app.painel .top .tp .r{display:flex;align-items:center;gap:6px}
 @media (max-width:560px){ .sb-salvo{display:none} }
 
+/* v25 */
+.real [data-simav],.real [data-simrun],.real [data-pixpago],.real [data-pixv],.real #g-automatico .clock,.real [data-wateste]{display:none!important}
+
 /* ===== versão pública: só a loja ===== */
 .app:not(.painel) [data-go="gestao"],.sdrawer [data-go="gestao"],.proto,.app:not(.painel) .example{display:none!important}
 </style>
@@ -3159,13 +3162,13 @@ function renderConta(){
     return;
   }
   $('#contaSub').textContent = conta.email;
-  const meus = pedidos.filter(p => !p.exemplo && !p.pdv);
+  const meus = (typeof sbOn==='function' && sbOn()) ? minhasPeds : pedidos.filter(p => !p.exemplo && !p.pdv);
   b.innerHTML = `
     <div class="sec"><h2 style="font-size:16px">Meus pedidos</h2><span>${meus.length}</span></div>
-    ${meus.length ? meus.map(p => { const r = rastreio(p); return `<div class="order"><div class="h"><span class="tag dark">${numPed(p.num)}</span><b style="font-family:var(--display)">${brl(p.total)}</b></div>
+    ${meus.length ? meus.map(p => { const r = (typeof sbOn==='function' && sbOn()) ? (p.rastreioBanco||'') : rastreio(p); return `<div class="order"><div class="h"><span class="tag dark">${numPed(p.num)}</span><b style="font-family:var(--display)">${brl(p.total)}</b></div>
       <div class="meta">${esc(p.itens)}<br>${esc(p.entrega)} · ${esc(p.pag)} · ${dataBR(p.data)}</div>
       <div class="steps">${STATUS.map((s,i)=>`<div class="step ${i<=p.st?'on':''}"><i></i>${s}</div>`).join('')}</div>
-      ${r?`<div class="msg"><b>RASTREIO (EXEMPLO)</b><span style="user-select:all">${r}</span></div>`:''}</div>`; }).join('') : '<p class="empty">Você ainda não fez pedidos.</p>'}
+      ${r?`<div class="msg"><b>RASTREIO</b><span style="user-select:all">${r}</span></div>`:''}</div>`; }).join('') : '<p class="empty">Você ainda não fez pedidos.</p>'}
     <div class="sec"><h2 style="font-size:16px">Favoritos</h2><span>${favs.size} peças</span></div>
     ${favs.size ? `<div class="prod">${[...favs].map(id=>prod(id)).filter(Boolean).map(p=>`<button class="item" data-prod="${p.id}"><div class="thumb">${esc(p.n)}</div><div class="info2"><div class="n">${esc(p.n)}</div><div class="p">${brl(precoAtual(p))}</div></div></button>`).join('')}</div>` : '<p class="note">Toque em Favoritar na página da peça para guardar aqui.</p>'}
     <div class="sec"><h2 style="font-size:16px">Meus dados</h2><span>Usados nas mensagens</span></div>
@@ -3598,7 +3601,7 @@ document.addEventListener('click', e => {
     if (co.step===0){ guardaRapido(); if (ckCfg.rapido && co.whats) disparar('link', co.nome||'Nova cliente'); }
     if (co.step===2 && !freteAtual()){ co.err='Escolha uma forma de entrega.'; return renderCheckout(); }
     if (co.step===2 && co.frete!=='ret'){ leEnd(); if (!endOk()){ co.err='Preencha o endereço de entrega: rua, número, bairro, cidade e UF.'; return renderCheckout(); } }
-    co.step++; if (co.step===1 && conta.logada){ co.email = conta.email; co.step = 2; } if (co.step===2 && !co.cep && conta.ends[0]) co.cep = conta.ends[0].cep; if (co.step===2){ const e0 = conta.ends[0]; if (e0 && !co.end.rua) Object.assign(co.end, {rua:e0.rua, num:e0.num, bairro:e0.bairro, cidade:e0.cidade, uf:e0.uf}); } window.scrollTo(0,0); return renderCheckout();
+    co.step++; if (co.step===1 && conta.logada && conta.nome && conta.whats){ co.email = conta.email; co.nome = co.nome || conta.nome; co.whats = co.whats || conta.whats; co.step = 2; } if (co.step===2 && !co.cep && conta.ends[0]) co.cep = conta.ends[0].cep; if (co.step===2){ const e0 = conta.ends[0]; if (e0 && !co.end.rua) Object.assign(co.end, {rua:e0.rua, num:e0.num, bairro:e0.bairro, cidade:e0.cidade, uf:e0.uf}); } window.scrollTo(0,0); return renderCheckout();
   }
   if (t.closest('[data-cep]')){ leEnd(); co.cep = $('#coCep').value; co.frete=null; co.err=''; return renderCheckout(); }
   const pg = t.closest('[data-pag]'); if (pg){ co.pag = pg.dataset.pag; co.err=''; return renderCheckout(); }
@@ -5653,24 +5656,24 @@ ETAPAS[1] = 'Seus dados';
 
 /* ----- etapa 2: seus dados (cadastro rápido com e-mail) ----- */
 telaConta = function(){
-  return `<form class="panel" id="fDados" novalidate>
+  return `<form class="panel" id="fCoDados" novalidate>
       <h3 class="co-h">Seus dados</h3>
       <p class="note" style="margin:2px 0 0">Para a loja falar com você sobre o pedido.</p>
-      <div class="field"><label for="dNome">Nome completo</label><input id="dNome" autocomplete="name" value="${esc(co.nome)}"></div>
-      <div class="field"><label for="dEmail">E-mail</label><input id="dEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" value="${esc(co.email)}"></div>
-      <div class="field"><label for="dWhats">WhatsApp</label><input id="dWhats" inputmode="tel" autocomplete="tel" placeholder="(24) 90000-0000" value="${esc(co.whats)}"></div>
+      <div class="field"><label for="ckNome">Nome completo</label><input id="ckNome" autocomplete="name" value="${esc(co.nome)}"></div>
+      <div class="field"><label for="ckEmail">E-mail</label><input id="ckEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" value="${esc(co.email)}"></div>
+      <div class="field"><label for="ckWhats">WhatsApp</label><input id="ckWhats" inputmode="tel" autocomplete="tel" placeholder="(24) 90000-0000" value="${esc(co.whats)}"></div>
       ${co.err?`<div class="err">${esc(co.err)}</div>`:''}
       <div class="row2" style="margin-top:16px"><button type="button" class="btn ghost" data-back>Voltar</button><button class="btn" type="submit">Continuar</button></div>
     </form>`; };
 const mascTel = v => { const d = v.replace(/\D/g,'').slice(0,11); if (d.length < 3) return d; if (d.length < 8) return `(${d.slice(0,2)}) ${d.slice(2)}`; return `(${d.slice(0,2)}) ${d.slice(2, d.length-4)}-${d.slice(-4)}`; };
-document.addEventListener('submit', e => { if (e.target.id!=='fDados') return; e.preventDefault(); e.stopImmediatePropagation();
-  const n = $('#dNome').value.trim(), em = $('#dEmail').value.trim(), w = $('#dWhats').value.trim();
+document.addEventListener('submit', e => { if (e.target.id!=='fCoDados') return; e.preventDefault(); e.stopImmediatePropagation();
+  const n = $('#ckNome').value.trim(), em = $('#ckEmail').value.trim(), w = $('#ckWhats').value.trim();
   co.nome = n; co.email = em; co.whats = w;
   if (n.split(/\s+/).length < 2){ co.err = 'Digite o seu nome completo.'; return renderCheckout(); }
   if (!/^\S+@\S+\.\S+$/.test(em)){ co.err = 'Digite um e-mail válido.'; return renderCheckout(); }
   if (w.replace(/\D/g,'').length < 10){ co.err = 'Digite o WhatsApp com DDD.'; return renderCheckout(); }
   co.err = ''; co.step = 2; if (co.whats) disparar('link', co.nome); window.scrollTo(0,0); renderCheckout(); }, true);
-document.addEventListener('input', e => { if (e.target.id==='dWhats'){ e.target.value = mascTel(e.target.value); } });
+document.addEventListener('input', e => { if (e.target.id==='ckWhats'){ e.target.value = mascTel(e.target.value); } });
 
 /* ----- etapa 3: entrega com busca de CEP ----- */
 let cepBusca = {cep:'', st:'', manual:false};
@@ -5961,12 +5964,12 @@ document.addEventListener('submit', e => { if (e.target.id!=='fRev' || !sbOn()) 
 /* ----- painel: login ----- */
 function telaLogin(msg=''){
   const sh = $('#sheet'); sh.classList.remove('prodpage','minicart','quick'); sh.classList.add('cupompop','loginpop');
-  sh.innerHTML = `<form class="pop-in" id="fLogin" novalidate><small>Painel da loja</small><h3>Entrar no painel</h3>
-    <div class="field" style="width:100%;text-align:left"><label for="lgEmail">E-mail</label><input id="lgEmail" type="email" autocomplete="username"></div>
-    <div class="field" style="width:100%;text-align:left"><label for="lgSenha">Senha</label><input id="lgSenha" type="password" autocomplete="current-password"></div>
+  sh.innerHTML = `<form class="pop-in" id="fPainelLogin" novalidate><small>Painel da loja</small><h3>Entrar no painel</h3>
+    <div class="field" style="width:100%;text-align:left"><label for="plEmail">E-mail</label><input id="plEmail" type="email" autocomplete="username"></div>
+    <div class="field" style="width:100%;text-align:left"><label for="plSenha">Senha</label><input id="plSenha" type="password" autocomplete="current-password"></div>
     ${msg?`<p class="err" style="margin:6px 0 0">${esc(msg)}</p>`:''}
     <button class="btn full" type="submit" style="margin-top:10px">Entrar</button><button type="button" class="link" data-close>Voltar para a loja</button></form>`;
-  $('#veil').hidden = false; setTimeout(() => $('#lgEmail')?.focus(), 50); }
+  $('#veil').hidden = false; setTimeout(() => $('#plEmail')?.focus(), 50); }
 async function entrarPainel(){
   if (!sbOn()) return mostrar('gestao');
   const {data:{session}} = await sb.auth.getSession();
@@ -5975,14 +5978,14 @@ async function entrarPainel(){
   sbAdmin = true; fecharSheet(); toast('Carregando o painel…');
   try { await sbCarregar(true); } catch(e){ toast('Não foi possível carregar os dados. Confira a internet.'); }
   gesAtual = 'inicio'; mostrar('gestao'); if (location.hash!=='#painel') history.replaceState(null, '', '#painel'); }
-document.addEventListener('submit', async e => { if (e.target.id!=='fLogin') return; e.preventDefault(); e.stopImmediatePropagation();
-  const em = $('#lgEmail').value.trim(), se = $('#lgSenha').value; const b = e.target.querySelector('[type=submit]'); b.disabled = true; b.textContent = 'Entrando…';
+document.addEventListener('submit', async e => { if (e.target.id!=='fPainelLogin') return; e.preventDefault(); e.stopImmediatePropagation();
+  const em = $('#plEmail').value.trim(), se = $('#plSenha').value; const b = e.target.querySelector('[type=submit]'); b.disabled = true; b.textContent = 'Entrando…';
   const {error} = await sb.auth.signInWithPassword({email:em, password:se});
   if (error) return telaLogin('E-mail ou senha incorretos.');
   entrarPainel(); }, true);
 { const _m8 = mostrar; mostrar = function(n){ if (n==='gestao' && sbOn() && !sbAdmin){ entrarPainel(); return; } _m8(n); }; }
-{ const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<button class="btn sm ghost sair-btn" data-sair hidden>Sair</button>'); }
-document.addEventListener('click', async e => { if (!e.target.closest('[data-sair]')) return; await salvarAgora(); await sb.auth.signOut(); sbAdmin = false; history.replaceState(null, '', location.pathname); location.reload(); });
+{ const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<button class="btn sm ghost sair-btn" data-sairpainel hidden>Sair</button>'); }
+document.addEventListener('click', async e => { if (!e.target.closest('[data-sairpainel]')) return; await salvarAgora(); await sb.auth.signOut(); sbAdmin = false; history.replaceState(null, '', location.pathname); location.reload(); });
 
 /* ----- painel: salva sozinho tudo o que mudar ----- */
 let fotoAnt = null, salvando = false, pendente = false;
@@ -6025,7 +6028,7 @@ function marcaSalvo(s){ const el = $('#sbSalvo'); if (!el) return; el.dataset.s 
 { const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<span class="sb-salvo" id="sbSalvo" hidden>Tudo salvo</span>'); }
 setInterval(() => { if (!sbAdmin || !fotoAnt) return; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 3000);
 window.addEventListener('beforeunload', e => { if (sbAdmin && fotoAnt && J(retrato()) !== J(fotoAnt)){ salvarAgora(); e.preventDefault(); e.returnValue = ''; } });
-{ const _rg3 = renderGestao; renderGestao = function(){ _rg3(); const s = $('#sbSalvo'), b = $('[data-sair]'); if (s) s.hidden = !sbAdmin; if (b) b.hidden = !sbAdmin; }; }
+{ const _rg3 = renderGestao; renderGestao = function(){ _rg3(); const s = $('#sbSalvo'), b = $('[data-sairpainel]'); if (s) s.hidden = !sbAdmin; if (b) b.hidden = !sbAdmin; }; }
 
 /* ----- fila do WhatsApp guardada no banco (para o servidor do QR Code enviar) ----- */
 { const _pw = paraWA; paraWA = function(e){ _pw(e); if (sbAdmin) sb.from('fila_whatsapp').insert({para_nome:e.para, titulo:e.n, mensagem:e.m, regra:e.k||null}).then(()=>{}); }; }
@@ -6037,6 +6040,110 @@ if (sbOn()){
   if (location.hash==='#painel') setTimeout(entrarPainel, 0);
   window.addEventListener('hashchange', () => { if (location.hash==='#painel') entrarPainel(); });
 }
+
+/* ================= v25: frete real, contas reais e fim dos dados de exemplo (site com Supabase) ================= */
+/* favoritos ficam guardados no aparelho, mesmo sem conta */
+try { (JSON.parse(localStorage.getItem('emeFavs')||'[]')).forEach(id => favs.add(id)); } catch(e){}
+let favsAnt = '';
+setInterval(() => { const j = JSON.stringify([...favs]); if (j===favsAnt) return; favsAnt = j; try { localStorage.setItem('emeFavs', j); } catch(e){} }, 1500);
+
+if (sbOn()){
+  document.body.classList.add('real');
+  /* ofertas começam desligadas até você configurar no painel */
+  ['relampago','bump','upsell','brinde','kit','progressivo'].forEach(k => { if (ofertas[k]) ofertas[k].on = false; });
+  /* sem dados inventados no painel */
+  clientesEx = []; conversas = []; contas = [];
+  Object.values(MK).forEach(m => { m.on = false; });
+  document.querySelectorAll('#g-integracoes .integ .h').forEach(h => { const b = h.querySelector('b')?.textContent || '', tag = h.querySelector('.tag'); if (!tag) return;
+    if (/Stone/.test(b)){ tag.className = 'tag warn'; tag.textContent = 'Em breve'; }
+    else if (/WhatsApp/.test(b)){ tag.className = 'tag warn'; tag.textContent = 'Precisa do servidor'; }
+    else if (/Melhor Envio/.test(b)){ tag.className = 'tag'; tag.textContent = 'Pelo Supabase'; } });
+}
+
+/* ----- frete real pelo Melhor Envio (função "frete" no Supabase) ----- */
+const cotacoes = {};
+function reFrete(){ if (telaAtual==='sacola' && co.step===2){ leEnd(); renderCheckout(); } else if (pd && $('#pdFrete') && !$('#veil').hidden) document.querySelector('[data-pdcep]')?.click(); }
+function cotaME(cep, itens, key){
+  cotacoes[key] = {st:'busca'};
+  sb.functions.invoke('frete', {body:{cep, itens}}).then(({data, error}) => { cotacoes[key] = (error || !data || !Array.isArray(data.opcoes)) ? {st:'erro'} : {st:'ok', l:data.opcoes}; reFrete(); })
+    .catch(() => { cotacoes[key] = {st:'erro'}; reFrete(); }); }
+if (sbOn()){ const _of = opcoesFrete; opcoesFrete = function(cep, base){
+  const l = _of(cep, base); if (!l.length) return l;
+  const locais = l.filter(o => o.local), gratis = l.some(o => o.orig != null), d = String(cep ?? co.cep).replace(/\D/g,'');
+  const fonte = (base != null && pd) ? [{p:prod(pd.id), q:pd.qtd}] : cart.map(i => ({p:prod(i.id), q:i.qtd}));
+  const itens = fonte.filter(x => x.p).map(x => ({id:x.p.id, peso_g:x.p.peso, altura:x.p.dim?.a, largura:x.p.dim?.l, comprimento:x.p.dim?.c, valor:precoAtual(x.p), qtd:x.q}));
+  const key = d + '|' + itens.map(i => i.id + 'x' + i.qtd).join(','), q = cotacoes[key], G = 'Correios e transportadoras';
+  if (!q) cotaME(d, itens, key);
+  let me;
+  if (!q || q.st==='busca') me = [{id:'calc', g:G, n:'Calculando o frete…', prazo:'Só um instante', v:0, calc:true}];
+  else if (q.st==='ok' && q.l.length) me = [...q.l].sort((a,b) => a.preco - b.preco).map((o,i) => ({id:o.id, g:G, n:o.nome, prazo:`${o.prazo} dia${o.prazo>1?'s':''} útei${o.prazo>1?'s':'l'} após a postagem`, v:o.preco, tag: i===0 ? 'Mais barato' : ''})).map(o => gratis ? {...o, orig:o.v, v:0} : o);
+  else me = [{id:'combinar', g:G, n:'Frete a combinar no WhatsApp', prazo:'A loja calcula e te passa o valor', v:0}];
+  return [...me, ...locais]; }; }
+document.addEventListener('click', e => { if (e.target.closest('[data-next]') && co.step===2 && co.frete==='calc'){ e.stopImmediatePropagation(); co.err = 'Aguarde o cálculo do frete terminar.'; renderCheckout(); } }, true);
+document.addEventListener('change', e => { if (e.target.name==='frete' && e.target.value==='calc'){ e.target.checked = false; co.frete = null; } }, true);
+
+/* ----- contas de verdade para as clientes ----- */
+let minhasPeds = [], contaAnt = '';
+async function carregarConta(){
+  const {data:{session}} = await sb.auth.getSession(); if (!session) return;
+  const {data:f, error} = await sb.rpc('ligar_minha_ficha'); if (error){ console.error('conta', error); return; }
+  Object.assign(conta, {logada:true, err:'', msg:'', email:f.email || session.user.email, nome:f.nome || '', whats:f.whatsapp || '', aniver:f.aniversario || '', ends:f.enderecos || []});
+  (f.favoritos || []).forEach(id => favs.add(id));
+  if (!co.nome) co.nome = conta.nome; if (!co.email) co.email = conta.email; if (!co.whats) co.whats = conta.whats;
+  const {data:ps} = await sb.from('pedidos').select('*, pedido_itens(*)').eq('cliente_email', conta.email.toLowerCase()).order('criado_em', {ascending:false});
+  minhasPeds = (ps||[]).map(r => pedDoBanco(r, r.pedido_itens || []));
+  contaAnt = JSON.stringify([conta.nome, conta.whats, conta.aniver, conta.ends, [...favs]]);
+  if (telaAtual==='conta') renderConta(); }
+setInterval(async () => { if (!sbOn() || !conta.logada) return; const j = JSON.stringify([conta.nome, conta.whats, conta.aniver, conta.ends, [...favs]]); if (j===contaAnt) return; contaAnt = j;
+  const {data:{session}} = await sb.auth.getSession(); if (!session) return;
+  await sb.from('clientes').update({nome:conta.nome || conta.email, whatsapp:conta.whats || null, aniversario:conta.aniver || null, enderecos:conta.ends, favoritos:[...favs]}).eq('user_id', session.user.id); }, 2500);
+document.addEventListener('submit', async e => { if (e.target.id!=='fLogin' || !sbOn()) return; e.preventDefault(); e.stopImmediatePropagation();
+  const em = $('#lgEmail').value.trim(), se = $('#lgSenha').value, criar = e.submitter?.dataset.modo==='criar';
+  conta.email = em; conta.err = ''; conta.msg = '';
+  if (!/^\S+@\S+\.\S+$/.test(em)){ conta.err = 'Digite um e-mail válido.'; return renderConta(); }
+  if (se.length < 6){ conta.err = 'A senha precisa ter pelo menos 6 caracteres.'; return renderConta(); }
+  e.target.querySelectorAll('button').forEach(b => b.disabled = true);
+  if (criar){ const {data, error} = await sb.auth.signUp({email:em, password:se, options:{emailRedirectTo: location.origin + '/#conta'}});
+    if (error){ conta.err = /registered|exists/i.test(error.message) ? 'Já existe uma conta com esse e-mail. Toque em Entrar.' : 'Não foi possível criar a conta agora.'; return renderConta(); }
+    if (!data.session){ conta.msg = `Enviamos um e-mail para ${em}. Toque no link dele para ativar a sua conta e depois entre aqui.`; return renderConta(); } }
+  else { const {error} = await sb.auth.signInWithPassword({email:em, password:se});
+    if (error){ conta.err = /confirm/i.test(error.message) ? 'Confirme o seu e-mail pelo link que enviamos antes de entrar.' : 'E-mail ou senha incorretos.'; return renderConta(); } }
+  await carregarConta(); toast('Você entrou na sua conta.'); renderConta(); }, true);
+document.addEventListener('submit', e => { if (e.target.id!=='fDados' || !sbOn() || telaAtual!=='conta') return; setTimeout(() => toast('Dados salvos na sua conta.'), 0); }, false);
+document.addEventListener('click', async e => {
+  if (e.target.closest('#contaBody [data-sair]') && sbOn()){ e.stopImmediatePropagation(); await sb.auth.signOut(); Object.assign(conta, {logada:false, nome:'', email:'', whats:'', aniver:'', ends:[], err:'', msg:''}); minhasPeds = []; sbAdmin = false; renderConta(); toast('Você saiu da sua conta.'); return; }
+  if (e.target.closest('[data-esqueci]')){ const em = ($('#lgEmail')?.value || '').trim(); if (!/^\S+@\S+\.\S+$/.test(em)){ conta.err = 'Digite o seu e-mail acima e toque de novo em "Esqueci minha senha".'; return renderConta(); }
+    await sb.auth.resetPasswordForEmail(em, {redirectTo: location.origin + '/#nova-senha'}); conta.err = ''; conta.msg = `Se existir uma conta com ${em}, enviamos um link para criar uma senha nova.`; renderConta(); }
+}, true);
+function telaNovaSenha(msg=''){ const sh = $('#sheet'); sh.classList.remove('prodpage','minicart','quick'); sh.classList.add('cupompop','loginpop');
+  sh.innerHTML = `<form class="pop-in" id="fNovaSenha" novalidate><small>Minha conta</small><h3>Criar senha nova</h3><div class="field" style="width:100%;text-align:left"><label for="nsSenha">Senha nova</label><input id="nsSenha" type="password" autocomplete="new-password" placeholder="Mínimo de 6 caracteres"></div>${msg?`<p class="err">${esc(msg)}</p>`:''}<button class="btn full" type="submit">Salvar senha</button></form>`;
+  $('#veil').hidden = false; }
+document.addEventListener('submit', async e => { if (e.target.id!=='fNovaSenha') return; e.preventDefault(); const s = $('#nsSenha').value; if (s.length < 6) return telaNovaSenha('A senha precisa ter pelo menos 6 caracteres.');
+  const {error} = await sb.auth.updateUser({password:s}); if (error) return telaNovaSenha('Não foi possível salvar. Peça um link novo.'); fecharSheet(); toast('Senha nova salva.'); history.replaceState(null, '', location.pathname); await carregarConta(); mostrar('conta'); });
+if (sbOn()){
+  sb.auth.onAuthStateChange((ev) => { if (ev==='PASSWORD_RECOVERY') setTimeout(() => telaNovaSenha(), 300); });
+  sb.auth.getSession().then(({data:{session}}) => { if (session && location.hash!=='#nova-senha') carregarConta(); });
+  if (location.hash==='#conta') setTimeout(() => mostrar('conta'), 0);
+}
+{ const _rco = renderConta; renderConta = function(){ _rco(); if (!sbOn()) return;
+  const b = $('#contaBody'); if (!b) return;
+  if (!conta.logada){ const f = b.querySelector('#fLogin'); if (f){ f.querySelector('h3').textContent = 'Entre ou crie a sua conta';
+      if (conta.msg) f.querySelector('.row2').insertAdjacentHTML('beforebegin', `<p class="okmsg" style="margin-top:10px">${esc(conta.msg)}</p>`);
+      f.insertAdjacentHTML('beforeend', '<button type="button" class="link" data-esqueci style="margin-top:10px">Esqueci minha senha</button><p class="note" style="margin:8px 0 0">Com a conta, você acompanha os seus pedidos e guarda endereços e favoritos.</p>'); } } }; }
+
+/* ----- painel: o que ainda depende de servidor aparece como "em breve" ----- */
+if (sbOn()){ const _rw = renderWhats; renderWhats = function(){ _rw(); const box = $('#g-whatsapp'); if (!box) return;
+  box.querySelector('.wa-con').innerHTML = `<div class="wa-status off"><span class="dot"></span><div><b>Envio automático: em breve</b><small>Precisa do servidor da Evolution API ligado 24 horas</small></div></div>
+    <p class="note" style="margin:10px 0 0">As mensagens que o piloto automático e os pedidos geram já ficam guardadas nesta fila e no banco. Quando o servidor for ligado, ele envia sozinho, respeitando os limites abaixo.</p>`; }; }
+if (sbOn()){ renderAnalytics = function(){
+  const per = anaPer || 30, ini = Date.now() - per*864e5, ps = pedidos.filter(p => p.banco && p.data >= ini && !p.cancel && !p.reemb), pagos = ps.filter(p => p.st>=1);
+  const tot = pagos.reduce((a,p)=>a+p.total,0), cont = {}, formas = {}, ents = {};
+  pagos.forEach(p => { (p.linhas||[]).forEach(l => cont[l.nome.replace(/ (P|M|G)$/,'')] = (cont[l.nome.replace(/ (P|M|G)$/,'')]||0) + l.qtd); const f = (p.pag||'').split(' · ')[0]; formas[f] = (formas[f]||0)+1; ents[p.entrega] = (ents[p.entrega]||0)+1; });
+  const lista = (t, o) => { const l = Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6); return `<div class="panel"><div class="lbl" style="margin-top:0">${t}</div>${l.length ? l.map(([n,v])=>`<div class="vg-row"><span>${esc(n)}</span><b style="color:var(--ink)">${v}</b></div>`).join('') : '<p class="note" style="margin:0">Ainda sem dados neste período.</p>'}</div>`; };
+  $('#g-analytics').innerHTML = `<div class="chips">${[[7,'7 dias'],[30,'30 dias'],[90,'90 dias']].map(([d,t])=>`<button class="chipbtn" aria-pressed="${d===per}" data-anap="${d}">${t}</button>`).join('')}</div>
+    <div class="vg-kpis"><div><span>Vendas</span><b>${brl(tot)}</b><small>${per} dias</small></div><div><span>Pedidos pagos</span><b>${pagos.length}</b><small>${ps.length - pagos.length} aguardando</small></div><div><span>Ticket médio</span><b>${brl(pagos.length ? tot/pagos.length : 0)}</b><small>por pedido</small></div><div><span>Peças vendidas</span><b>${Object.values(cont).reduce((a,b)=>a+b,0)}</b><small>no período</small></div></div>
+    ${lista('Peças mais vendidas', cont)}${lista('Formas de pagamento', formas)}${lista('Formas de entrega', ents)}
+    <p class="note">Visitas e de onde vêm as clientes: em breve, ligando o Google Analytics ou o Netlify Analytics.</p>`; }; }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
