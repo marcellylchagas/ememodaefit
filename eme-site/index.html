@@ -3418,7 +3418,7 @@ function fotosDe(nome){ const s = slug(nome); return imp.fotos.filter(f => slug(
 function renderImport(){
   const g = $('#g-importacao'), L = imp.linhas;
   g.innerHTML = `
-    <label class="drop" id="dropZone" for="impFile"><b>Arraste os arquivos aqui ou toque para escolher</b><span class="note">Planilha da loja (.xlsx ou .csv), nota fiscal (XML), catálogo ou feed, fotos JPG/PNG e ZIP. Pode mandar vários de uma vez.</span>
+    <label class="drop" id="dropZone" for="impFile"><b>Arraste os arquivos aqui ou toque para escolher</b><span class="note">Planilha da loja (.xlsx ou .csv), nota fiscal (XML), catálogo ou feed, fotos JPG, PNG ou WEBP e ZIP. Pode mandar vários de uma vez.</span>
       <input id="impFile" type="file" multiple accept=".xlsx,.xls,.csv,.xml,.json,.zip,.jpg,.jpeg,.png,.webp,.txt" hidden></label>
     <div class="panel"><div class="lbl" style="margin-top:0">Regras da importação</div>
       <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--soft);line-height:1.6">
@@ -4519,7 +4519,7 @@ const semTam = d => String(d||'').replace(TAM_TXT,'').replace(/\n{3,}/g,'\n\n').
 const descComTam = p => `${semTam(p.desc || descMontada(p))}\n\n${TAM_TXT}`;
 const COLUNAS = ['Imagem','Produto','Descrição do produto','Categoria','Subcategoria','Situação','Preço (R$)','Preço promocional (R$)','Preço de custo (R$)','Estoque','SKU','Código de barras','Peso (kg)','Altura (cm)','Largura (cm)','Comprimento (cm)','Dias para envio','Variações'];
 const COL_AJUDA = {
-  'Imagem':'Link público (https://…) ou nome do arquivo JPG/PNG enviado junto ou no ZIP. Mais de uma: separe com ponto e vírgula. Obrigatória.',
+  'Imagem':'Link público (https://…) de uma imagem JPG, PNG ou WEBP, ou nome do arquivo JPG, PNG ou WEBP enviado junto ou no ZIP. Mais de uma: separe com ponto e vírgula. Obrigatória.',
   'Produto':'Nome do produto. Linhas com o mesmo nome viram um produto só, com uma variação por linha. Obrigatório.',
   'Descrição do produto':'Texto do fornecedor. A informação de tamanhos entra sozinha no final.',
   'Categoria':'Ex.: Moda Fitness. É criada se ainda não existir.',
@@ -4587,7 +4587,7 @@ function montaProdutos(rows, imgMap){
     if (g.dias==null && r.dias) g.dias = parseInt(r.dias) || null;
     String(r.img||'').split(/[;\n|]|,(?=\s*(https?:|[^,]+\.(jpe?g|png|webp)))/i).map(x => (x||'').trim()).filter(x => x && !/^(jpe?g|png|webp)$/i.test(x)).forEach(x => {
       if (g.imgs.some(i => i.ref===x)) return;
-      if (/^https?:\/\//i.test(x)) g.imgs.push({ref:x, url:x});
+      if (/^https?:\/\//i.test(x)) g.imgs.push({ref:x, url:x, src:x});
       else { const nome = x.split(/[\\/]/).pop().toLowerCase(); const src = imgMap[nome] || imgMap[nome.replace(/\.[^.]+$/,'')]; if (src) g.imgs.push({ref:x, src, nome}); else if (!g.falta.includes(x)) g.falta.push(x); }
     });
     const v = parseVar(r.var), qtd = Math.round(numBR(r.est));
@@ -4608,7 +4608,7 @@ function montaProdutos(rows, imgMap){
   });
   return {prods: out, zerados};
 }
-const imgAt = (p, i=0) => { const l = (p.imgs||[]).filter(x=>x.src); return l.length ? l[i % l.length].src : null; };
+const imgAt = (p, i=0) => { (p.imgs||[]).forEach(x => { if (!x.src && /^https?:\/\//i.test(x.url||'')) x.src = x.url; }); const l = (p.imgs||[]).filter(x=>x.src); return l.length ? l[i % l.length].src : null; };
 
 /* ---------- arquivos: planilha única + fotos soltas ou no ZIP ---------- */
 const lerDataURL = f => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(f); });
@@ -4707,8 +4707,8 @@ function extrasFormHTML(){
   const imgs = pf.imgs || [], cores = Object.keys(pf.est);
   return `<div class="lbl">Imagens</div>
     <div class="thumbs">${imgs.map((im,i)=>`<div class="tb">${im.src?`<img src="${im.src}" alt="">`:`<span class="note" style="font-size:10px;overflow-wrap:anywhere">${esc(im.url)}</span>`}<button class="x" type="button" data-imgrm="${i}" aria-label="Remover imagem">×</button></div>`).join('')}
-      <label class="tb add">+ JPG ou PNG<input type="file" accept="image/jpeg,image/png,image/webp" multiple id="pfImgs" hidden></label></div>
-    <div class="field"><label for="pfImgUrl">Ou cole um link público</label><div class="inrow"><input id="pfImgUrl" type="url" placeholder="https://…"><button class="btn sm" type="button" data-imgurl>Adicionar</button></div><span class="hint">Neste protótipo, a foto do link só aparece no app publicado.</span></div>
+      <label class="tb add">+ JPG, PNG ou WEBP<input type="file" accept="image/jpeg,image/png,image/webp" multiple id="pfImgs" hidden></label></div>
+    <div class="field"><label for="pfImgUrl">Ou cole um link público</label><div class="inrow"><input id="pfImgUrl" type="url" placeholder="https://…"><button class="btn sm" type="button" data-imgurl>Adicionar</button></div><span class="hint">Aceita links de imagens JPG, PNG ou WEBP.</span></div>
     <div class="lbl">Envio</div>
     <div class="row2"><div class="field" style="margin-top:0"><label for="pfPeso">Peso (kg)</label><input id="pfPeso" type="number" min="0" step="0.01" inputmode="decimal" value="${pf.peso?(pf.peso/1000):''}" placeholder="Ex.: 0,25"></div>
       <div class="field" style="margin-top:0"><label for="pfDias">Dias para envio</label><input id="pfDias" type="number" min="0" inputmode="numeric" value="${esc(pf.dias??'')}"></div></div>
@@ -4746,11 +4746,11 @@ document.addEventListener('click', e => {
     if (k==='export') return baixar('produtos-eme.xlsx', xlsxDe(catalogoComoLinhas())); }
   if (t.closest('[data-uniok]')) return confirmarUni();
   const ir = t.closest('[data-imgrm]'); if (ir){ lerForm(); pf.imgs.splice(+ir.dataset.imgrm,1); return renderForm(); }
-  if (t.closest('[data-imgurl]')){ lerForm(); const u = $('#pfImgUrl').value.trim(); if (!/^https?:\/\/\S+\.\S+/.test(u)){ toast('Cole um link que comece com https://'); return; } pf.imgs.push({ref:u, url:u}); return renderForm(); }
+  if (t.closest('[data-imgurl]')){ lerForm(); const u = $('#pfImgUrl').value.trim(); if (!/^https?:\/\/\S+\.\S+/.test(u)){ toast('Cole um link que comece com https://'); return; } pf.imgs.push({ref:u, url:u, src:u}); return renderForm(); }
 });
 document.addEventListener('change', async e => {
   if (e.target.id!=='pfImgs') return; lerForm();
-  for (const f of [...e.target.files]){ if (!/^image\/(jpeg|png|webp)$/.test(f.type)){ toast(`${f.name}: use JPG ou PNG.`); continue; } if (f.size > 8*1024*1024){ toast(`${f.name} passa de 8 MB.`); continue; } const d = await lerDataURL(f); if (d) pf.imgs.push({ref:f.name, src:d, nome:f.name.toLowerCase()}); }
+  for (const f of [...e.target.files]){ if (!/^image\/(jpeg|png|webp)$/.test(f.type)){ toast(`${f.name}: use JPG, PNG ou WEBP.`); continue; } if (f.size > 8*1024*1024){ toast(`${f.name} passa de 8 MB.`); continue; } const d = await lerDataURL(f); if (d) pf.imgs.push({ref:f.name, src:d, nome:f.name.toLowerCase()}); }
   renderForm();
 });
 
@@ -5304,7 +5304,7 @@ function remapCats(fn){
 }
 const pubDe = c => PRODUTOS.filter(p => p.status==='Publicado' && inCat(p, catPath(c)));
 const topsVis = () => CATS.filter(c => c.vis && !c.pai && pubDe(c).length);
-const subsVis = c => CATS.filter(x => x.vis && x.pai===c.id && pubDe(x).length);
+const subsVis = c => CATS.filter(x => x.vis && x.pai===c.id && pubDe(x).length).sort((a,b) => pubDe(b).length - pubDe(a).length || a.nome.localeCompare(b.nome,'pt-BR'));
 const topoDe = c => { let x = c; while (x && x.pai) x = catById(x.pai); return x; };
 
 /* ----- loja: categoria em cima, subcategorias embaixo ----- */
@@ -6375,6 +6375,33 @@ document.addEventListener('click', e => {
 @keyframes mpPulso{50%{opacity:.25}}
 .mp-card #mpBrick{min-height:120px}
 .done .link,.mp-card .link{font-size:inherit}`; document.head.appendChild(st); }
+/* ===== v28 · categorias do início: círculos menores, as duas sempre visíveis, subcategorias organizadas ===== */
+{ const _rhC = renderHome; renderHome = function(){ _rhC();
+  const box = $('#homeCats'); if (!box) return;
+  const tops = CATS.filter(c => c.vis && !c.pai); if (!tops.some(c => c.foto)) return;
+  box.className = 'catbig';
+  box.innerHTML = tops.map(c => { const ps = pubDe(c), subs = subsVis(c), path = esc(catPath(c));
+    if (!c.foto && !ps.length) return '';
+    const img = c.foto ? `<img src="${c.foto}" alt="${esc(c.nome)}">` : '';
+    if (!ps.length) return `<div class="cb-item arte vazio"><div class="cb-arte" role="img" aria-label="${esc(c.nome)}: em breve">${img}</div><span class="cb-breve">Em breve</span></div>`;
+    return `<div class="cb-item arte"><button class="cb-arte" data-blink="cat:${path}" aria-label="${esc(c.nome)}: ver todas as peças">${img}</button>
+      <button class="cb-ver" data-blink="cat:${path}">Ver tudo · ${ps.length} ${ps.length===1?'peça':'peças'} →</button>
+      ${subs.length ? `<div class="cb-subs">${subs.map(x => `<button data-blink="cat:${esc(catPath(x))}" title="${esc(x.nome)}">${esc(x.nome)}</button>`).join('')}</div>` : ''}</div>`; }).join(''); }; }
+
+/* subcategorias antigas que ficaram vazias e repetidas depois da planilha (só as de Moda Fitness, sem nenhuma peça) */
+if (sbOn()){ const _scC = sbCarregar; sbCarregar = async function(admin){ await _scC(admin); if (!admin) return;
+  const velhas = ['fconj','fleg','fsho','ftop','fmac','fblu','fjaq'];
+  const sai = CATS.filter(c => velhas.includes(c.id) && !CATS.some(x => x.pai===c.id) && !PRODUTOS.some(p => p.c===catPath(c) || String(p.c||'').startsWith(catPath(c)+' ›'))).map(c => c.id);
+  if (sai.length){ CATS = CATS.filter(c => !sai.includes(c.id)); renderCats?.(); if (!$('#s-gestao').hidden) renderGestao(); } }; }
+
+{ const st = document.createElement('style'); st.textContent = `
+.cb-arte{width:70%;max-width:190px}
+.cb-item.arte .cb-subs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;max-width:330px;margin-top:12px}
+.cb-item.arte .cb-subs button{width:100%;min-width:0;height:34px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.cb-item.arte .cb-subs button:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc(50% - 3px)}
+.cb-breve{margin-top:10px;font:700 11.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cb-item.vazio .cb-arte{cursor:default;opacity:.92}
+@media (max-width:519px){ .cb-arte{width:78%} .cb-item.arte .cb-subs{grid-template-columns:1fr;max-width:170px} .cb-item.arte .cb-subs button:last-child:nth-child(odd){grid-column:auto;width:100%} .cb-item.arte .cb-subs button{height:30px;font-size:12px} }`; document.head.appendChild(st); }
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
 
