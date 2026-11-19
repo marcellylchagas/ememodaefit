@@ -5276,7 +5276,11 @@ function abrirPopCupom(){ const c = cupomPrimeira(); if (!c || popVisto) return;
   sh.innerHTML = `<button class="x pop-x" data-close aria-label="Fechar">×</button><div class="pop-in"><small>Boas-vindas à EME</small><h3>Ganhe <em>${c.valor}% OFF</em><br>na sua primeira compra</h3><p>Use o cupom abaixo em compras acima de ${brl(c.min)}.</p>
     <button class="pop-code" data-popcopy="${esc(c.cod)}"><b>${esc(c.cod)}</b><span>Copiar</span></button><button class="btn full" data-popgo>Quero aproveitar</button><button class="link" data-close>Agora não</button></div>`;
   $('#veil').hidden = false; }
-setTimeout(() => { if (telaAtual==='inicio' && $('#veil').hidden && !cart.length && !$('.app').classList.contains('painel')) abrirPopCupom(); }, 9000);
+/* o quadro do cupom entra 1 segundo depois de abrir a loja (se os cupons ainda estiverem chegando do banco, espera mais um pouquinho) */
+{ const t0Pop = Date.now(); const tentaPop = () => { if (popVisto) return; const pronto = typeof sbOn !== 'function' || !sbOn() || sbCarregado;
+    if (!pronto && Date.now() - t0Pop < 8000) return setTimeout(tentaPop, 200);
+    if (telaAtual==='inicio' && $('#veil').hidden && !cart.length && !$('.app').classList.contains('painel')) abrirPopCupom(); };
+  setTimeout(tentaPop, 1000); }
 
 /* ----- início reorganizado ----- */
 { const s = $('#s-inicio');
@@ -5462,7 +5466,7 @@ document.addEventListener('click', e => {
   const c = e.target.closest('[data-cookie]'); if (c){ cookieOk = c.dataset.cookie; try { localStorage.setItem('emeCookies', cookieOk); } catch(err){} $('#cookieBar')?.remove(); toast(cookieOk==='todos' ? 'Preferência salva: todos os cookies.' : 'Preferência salva: só os essenciais. Os pixels de anúncio ficam desligados.'); return; }
   if (e.target.closest('[data-cookieinfo]')){ infoAtual = 'privacidade'; return mostrar('info'); }
 });
-setTimeout(avisoCookies, 1200);
+setTimeout(avisoCookies, 50);
 const pixelsLiberados = () => cookieOk === 'todos';
 
 /* ----- título e descrição de cada página (Google e compartilhamento) ----- */
