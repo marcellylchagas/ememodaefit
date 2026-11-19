@@ -7032,7 +7032,7 @@ if (typeof retrato==='function' && sbOn()){
 .adm-mais{justify-content:space-between}`; document.head.appendChild(st); }
 /* ===== v38 · convite para baixar o app no celular (depois do quadro de boas-vindas) ===== */
 { const fechadoEm = () => { try { return +localStorage.getItem('emeAppFechado') || 0; } catch(_){ return 0; } };
-  const podeMostrar = () => matchMedia('(max-width:820px)').matches && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
+  const podeMostrar = () => matchMedia('(max-width:820px)').matches && !$('#cookieBar') && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
   document.body.insertAdjacentHTML('beforeend', `<div class="app-conv" id="appConv" role="dialog" aria-label="Baixar o app da EME" hidden><img src="icone-192.png" alt="" width="44" height="44"><div><b>Baixe o app da EME</b><span>Compre mais rápido, direto da tela inicial do celular.</span></div><button class="btn sm" data-instalar data-appconv>Baixar</button><button class="app-x" data-appx aria-label="Fechar">×</button></div>`);
   const el = $('#appConv'); let mostrado = false;
   const tenta = () => { if (mostrado || !podeMostrar()) return; mostrado = true; el.hidden = false; requestAnimationFrame(() => el.classList.add('on')); };
@@ -8128,7 +8128,7 @@ if (sbOn()) REGRAS.forEach(r => { if (r.k === 'enviaAuto' || r.k === 'entregaAut
 /* ---------- 4) a Mel: avatar animada que conversa com a cliente ---------- */
 /* Mel em vídeo: os vídeos dela (com o fundo já tirado) tocam num canvas transparente e trocam conforme o que a cliente faz */
 function MelVideo(box, base){
-  const CLIPS = {parada:'mel-1.mp4', acena:'mel-2.mp4', aponta:'mel-3.mp4', comemora:'mel-4.mp4', pensa:'mel-5.mp4', look:'mel-7.mp4', coracao:'mel-8.mp4', fala:'mel-9.mp4'};
+  const MEL_SEM = {acena:'parada', look:'parada'} /* acenar e olhar ficaram com a boca torta: ela fica parada sorrindo no lugar */, CLIPS = {parada:'mel-1.mp4', acena:'mel-2.mp4', aponta:'mel-3.mp4', comemora:'mel-4.mp4', pensa:'mel-5.mp4', look:'mel-7.mp4', coracao:'mel-8.mp4', fala:'mel-9.mp4'};
   const api = {ok:false, tocar(){}, fala(){}, pula(){}, festa(){}, olha(){}, parar(){}};
   const cv = document.createElement('canvas'); cv.className = 'mel-cv'; cv.setAttribute('aria-hidden','true');
   cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block'; box.appendChild(cv);
@@ -8160,7 +8160,7 @@ function MelVideo(box, base){
   gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return api; gl.useProgram(pr);
   const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
   const aP = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
-  const uO = gl.getUniformLocation(pr, 'o'), uCA = gl.getUniformLocation(pr, 'cA'), uCB = gl.getUniformLocation(pr, 'cB'), uTA = gl.getUniformLocation(pr, 'tA'), uTB = gl.getUniformLocation(pr, 'tB'), uRV = gl.getUniformLocation(pr, 'rv'), uGW = gl.getUniformLocation(pr, 'gw'), uPH = gl.getUniformLocation(pr, 'ph'), TROCA = 480, RV = {parada:0.867, acena:0.929, aponta:0.686, comemora:0.827, pensa:0.843, look:0.957, coracao:0.914, fala:0.984};
+  const uO = gl.getUniformLocation(pr, 'o'), uCA = gl.getUniformLocation(pr, 'cA'), uCB = gl.getUniformLocation(pr, 'cB'), uTA = gl.getUniformLocation(pr, 'tA'), uTB = gl.getUniformLocation(pr, 'tB'), uRV = gl.getUniformLocation(pr, 'rv'), uGW = gl.getUniformLocation(pr, 'gw'), uPH = gl.getUniformLocation(pr, 'ph'), TROCA = 420, RV = {parada:0.867, acena:0.929, aponta:0.686, comemora:0.827, pensa:0.843, look:0.957, coracao:0.914, fala:0.984};
   let COR = {a:null, b:null}; const poeCor = () => { gl.uniform3fv(uCA, COR.a || [0,0,0]); gl.uniform3fv(uCB, COR.b || [0,0,0]); gl.uniform1f(uTA, COR.a ? 1 : 0); gl.uniform1f(uTB, COR.b ? 1 : 0); }; poeCor(); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   const novaTex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE)); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); return t; };
   const esconde = document.createElement('div'); esconde.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none;clip-path:inset(50%)'; document.body.appendChild(esconde);
@@ -8177,7 +8177,7 @@ function MelVideo(box, base){
   function troca(n){ const c = pega(n); if (!c.pronto && c.el.readyState < 3) return false; if (atual === c) return true;
     antes = atual; atual = c; fade = 0; ultimaTroca = performance.now(); c.el.currentTime = 0; c.el.loop = n === 'parada';
     c.el.play().catch(() => {}); try { api.aoComecar?.(n); } catch(_){}
-    if (n !== 'parada') c.el.onended = () => { const d = api.depois; api.depois = null; troca(d && d !== n ? d : 'parada'); }; return true; }
+    if (n !== 'parada') c.el.onended = () => { const d = MEL_SEM[api.depois] || api.depois; api.depois = null; troca(d && d !== n ? d : 'parada'); }; return true; }
   function desenha(c, o){ if (!c || c.el.readyState < 2) return; gl.bindTexture(gl.TEXTURE_2D, c.tex);
     try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c.el); } catch(_){ return; }
     gl.uniform1f(uO, o); gl.uniform1f(uRV, RV[c.n] || .87); gl.uniform1f(uGW, BRI); gl.uniform1f(uPH, FASE); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
@@ -8186,15 +8186,15 @@ function MelVideo(box, base){
     const dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
     if (!atual) return; if (!api.ok){ api.ok = true; box.classList.add('gl-ok'); }
     /* troca de look com um brilho rápido: o brilho sobe, o look troca no meio e o brilho some (~0,5 s) */
-    const tt = antes ? Math.min(1, (performance.now() - ultimaTroca) / TROCA) : 1; fade = tt < .4 ? 0 : tt > .6 ? 1 : (tt - .4) / .2; fade = fade * fade * (3 - 2 * fade); BRI = antes ? Math.sin(Math.PI * tt) : 0; FASE = tt;
+    const tt = antes ? Math.min(1, (performance.now() - ultimaTroca) / TROCA) : 1; fade = tt * tt * (3 - 2 * tt); let fa = Math.max(0, (tt - .35) / .65); fa = 1 - fa * fa * (3 - 2 * fa); BRI = 0; FASE = 0;
     gl.viewport(0, 0, w, h); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
-    if (antes && tt < 1){ if (fade < 1) desenha(antes, 1 - fade); } else if (antes){ antes.el.pause(); antes = null; BRI = 0; }
+    if (antes && tt < 1){ desenha(antes, fa); } else if (antes){ antes.el.pause(); antes = null; BRI = 0; }
     desenha(atual, antes ? fade : 1);
     if (fila && performance.now() - ultimaTroca > TROCA + 80){ const f = fila; fila = null; troca(f); } }
   raf = requestAnimationFrame(quadro);
   /* toca um gesto; se ela já estiver no meio de outro gesto, espera um pouco (como uma pessoa faria) */
-  api.tocar = n => { if (!CLIPS[n]) return; if (atual && atual.n !== 'parada' && !atual.el.ended && atual.el.currentTime < atual.el.duration - .6){ fila = n; return; } if (!troca(n)) fila = n; };
-  api.fala = () => api.tocar('fala'); api.pula = () => api.tocar('acena'); api.festa = () => api.tocar('comemora'); api.olha = () => {};
+  api.tocar = n => { n = MEL_SEM[n] || n; if (!CLIPS[n] || (n === 'parada' && atual && atual.n === 'parada')) return; if (atual && atual.n !== 'parada' && !atual.el.ended && atual.el.currentTime < atual.el.duration - .6){ fila = n; return; } if (!troca(n)) fila = n; };
+  api.fala = () => api.tocar('look'); api.pula = () => api.tocar('acena'); api.festa = () => api.tocar('comemora'); api.olha = () => {};
   api.parar = () => { rodando = false; cancelAnimationFrame(raf); Object.values(V).forEach(c => c.el.pause()); };
   api.livre = () => !atual || atual.n === 'parada';
   api.video = n => pega(n).el; api.pronta = n => { const c = pega(n); return c.pronto || c.el.readyState >= 3; };
@@ -8244,8 +8244,8 @@ function melFala(txt, acoes, ms, gesto){ const m = $('#mel'); if (!m || melOff |
   melFalaT = setTimeout(() => { $('#melBalao').hidden = true; m.classList.remove('falando'); }, ms || 6500); }
 /* parada: de vez em quando ela muda de posição sozinha, sem falar (como alguém esperando) */
 function melOcio(){ clearTimeout(melOcioT); melOcioT = setTimeout(() => { const quieta = $('#melBalao')?.hidden && Date.now() - melUltGesto > 20000;
-    if (!document.hidden && quieta && MELGL?.livre?.()){ if (Math.random() < .35) melFala(sorteia(melFrases()), '', 6000, sorteia(['look','pensa'])); else { MELGL.tocar(sorteia(['look','pensa','look'])); melUltGesto = Date.now(); } }
-    melOcio(); }, 22000 + Math.random() * 20000); }
+    if (!document.hidden && quieta && MELGL?.livre?.()){ if (Math.random() < .5) { MELGL.tocar('look'); melUltGesto = Date.now(); } }
+    melOcio(); }, 70000 + Math.random() * 50000); }
 function melOlha(){}
 var MEL_ATIVA = true;
 function melInicia(){ if (melIniciou || !MEL_ATIVA) return; melIniciou = true; melMonta(); melLigaGL(); $('#mel')?.classList.add('mel-aguarda'); melVisivel();
@@ -8254,10 +8254,14 @@ function melInicia(){ if (melIniciou || !MEL_ATIVA) return; melIniciou = true; m
   const espera = () => { const veil = !$('#veil').hidden, cookie = document.querySelector('.cookie:not([hidden]), #cookieBar:not([hidden])');
     const cupomVem = !popVisto && typeof cupomPrimeira === 'function' && cupomPrimeira() && telaAtual === 'inicio' && Date.now() - t0 < 11000;
     const semConfig = typeof sbOn === 'function' && sbOn() && !sbCarregado && Date.now() - t0 < 8000;
-    if (veil || cookie || cupomVem || semConfig || !MELGL || !MELGL.pronta?.('fala')) return setTimeout(espera, 400);
+    /* aparece assim que o vídeo de boas-vindas carrega (não espera cookies nem o cupom); a cor da roupa espera no máximo 1,5 s */
+    const semCor = typeof sbOn === 'function' && sbOn() && !sbCarregado && Date.now() - t0 < 1500;
+    const cupomAberto = !$('#veil').hidden && $('#sheet').classList.contains('cupompop');
+    if (semCor || !MELGL || !MELGL.pronta?.('fala') || Date.now() - t0 < 1600 || $('#cookieBar') || cupomVem || cupomAberto) return setTimeout(espera, 150);
+    $('#mel')?.classList.remove('mel-aguarda'); melVisivel();
     melAplicaRoupa();
     melTentaOi(); melOcio(); };
-  setTimeout(espera, 1200); }
+  setTimeout(espera, 50); }
 var melIniciou = false, melFalou = false;
 const MEL_OI = 'Oi, seja bem-vinda à EME Moda & Fit!';
 /* primeira fala: sempre o vídeo falando com a voz dela; depois ela acena */
@@ -8266,7 +8270,7 @@ function melOi(){ const m = $('#mel'); if (!m || melFalou) return; melFalou = tr
   const v = MELGL?.video?.('fala');
   if (melVoz && melVoz.src){ try { melVoz.currentTime = 0; melVoz.play().catch(() => {}); } catch(_){} }
   if (MELGL){ MELGL.depois = 'acena'; MELGL.reinicia('fala'); }
-  if (v && melVoz){ const acerta = () => { if (melVoz.paused || v.paused) return; if (Math.abs(melVoz.currentTime - v.currentTime) > .12) melVoz.currentTime = v.currentTime; };
+  if (v && melVoz){ let ultAcerto = 0; const acerta = () => { if (melVoz.paused || v.paused || melVoz.seeking || performance.now() - ultAcerto < 1200) return; if (Math.abs(melVoz.currentTime - v.currentTime) > .3){ ultAcerto = performance.now(); melVoz.currentTime = v.currentTime; } };
     v.addEventListener('timeupdate', acerta); v.addEventListener('ended', () => { v.removeEventListener('timeupdate', acerta); try { melVoz.pause(); } catch(_){} }, {once:true}); }
   m.classList.remove('mel-aguarda'); melVisivel();
   melFala(MEL_OI, '<button class="mel-b" data-mel="novidades">Ver novidades</button>', 8000, 'nenhum'); melUltGesto = Date.now(); }
@@ -8275,11 +8279,16 @@ var melEsperaToque = false;
 function melTentaOi(){ if (melFalou) return; if (!melVoz || !melVoz.src){ return melOi(); }
   melVoz.muted = false; const t = melVoz.play();
   const ok = () => { melVoz.pause(); melVoz.currentTime = 0; melOi(); };
-  if (t && t.then) t.then(ok).catch(() => { melEsperaToque = true; setTimeout(() => { if (!melFalou){ melEsperaToque = false; melOiMudo(); } }, 15000); }); else ok(); }
+  /* se o celular segurar o som, ela aparece do mesmo jeito, falando no vídeo e no balão (sem voz) */
+  if (t && t.then) t.then(ok).catch(() => { melEsperaToque = true; const m = $('#mel'); if (m){ m.classList.remove('mel-aguarda'); melVisivel(); } if (MELGL) MELGL.tocar('parada'); }); else ok(); }
 /* se a cliente não tocar em nada em 15 s, ela aparece com o oi no balão (sem repetir depois) */
-function melOiMudo(){ const m = $('#mel'); if (!m || melFalou) return; melFalou = true; if (MELGL){ MELGL.depois = 'acena'; MELGL.reinicia('fala'); }
+function melOiMudo(){ const m = $('#mel'); if (!m || melFalou) return; melFalou = true; if (MELGL) MELGL.tocar('acena');
   m.classList.remove('mel-aguarda'); melVisivel(); melFala(MEL_OI, '<button class="mel-b" data-mel="novidades">Ver novidades</button>', 8000, 'nenhum'); melUltGesto = Date.now(); }
-['pointerup','keydown','touchend','click'].forEach(ev => document.addEventListener(ev, () => { if (!melEsperaToque || melFalou) return; melEsperaToque = false; melOi(); }, {capture:true, passive:true}));
+['pointerup','keydown','touchend','click'].forEach(ev => document.addEventListener(ev, () => { melDestrava(); if (!melEsperaToque || melFalou || $('#mel')?.classList.contains('mel-aguarda')) return; melEsperaToque = false; melOi(); }, {capture:true, passive:true}));
+/* no iPhone o som só é liberado dentro de um toque: o primeiro toque da cliente (nos cookies ou no cupom) já deixa a voz da Mel liberada */
+var melDestravada = false;
+function melDestrava(){ if (melDestravada || melFalou || !melVoz || !melVoz.src) return; melDestravada = true;
+  try { melVoz.muted = true; const t = melVoz.play(); const fim = () => { if (melFalou) return; melVoz.pause(); melVoz.currentTime = 0; melVoz.muted = false; }; if (t && t.then) t.then(fim).catch(() => { melVoz.muted = false; melDestravada = false; }); else fim(); } catch(_){ melDestravada = false; } }
 const melVoz = (() => { try { const a = new Audio(); a.preload = 'auto'; a.src = (document.querySelector('#mel .mel-img')?.getAttribute('src') || 'mel.webp').startsWith('data:') ? '' : 'mel-voz.m4a'; return a; } catch(_){ return null; } })();
 document.addEventListener('click', e => { const b = e.target.closest('[data-mel="som-removido"]'); if (!b || melFalou) return; e.stopImmediatePropagation(); melFalou = true;
   if (melVoz && melVoz.src){ melVoz.currentTime = 0; melVoz.play().catch(() => {}); }
@@ -8307,7 +8316,8 @@ document.addEventListener('click', e => { if (!e.target.closest('[data-medidas],
 { const _moM = mostrar; mostrar = function(t){ const r = _moM.apply(this, arguments); setTimeout(() => { melVisivel(); if (melOff) return;
     if (t === 'conta' && !conta.logada) melFala('Criando a sua conta, na próxima compra é só entrar e pagar.', '', 6000, 'aponta'); }, 400); return r; }; }
 { const _fsM = fecharSheet; fecharSheet = function(){ const r = _fsM.apply(this, arguments); setTimeout(melVisivel, 50); return r; }; }
-setInterval(() => { if (!melIniciou && sbCarregado !== undefined && (sbOn() ? sbCarregado : true) && $('#s-gestao')?.hidden !== false) melInicia(); else melVisivel(); }, 1000);
+setInterval(() => { if (!melIniciou && $('#s-gestao')?.hidden !== false) melInicia(); else melVisivel(); }, 1000);
+{ const comeca = () => { if (!melIniciou && $('#s-gestao')?.hidden !== false && !location.hash.includes('painel')) melInicia(); }; if (document.readyState !== 'loading') setTimeout(comeca, 0); else document.addEventListener('DOMContentLoaded', comeca); }
 
 { const st = document.createElement('style'); st.textContent = `
 .hero.mesmo-tam{aspect-ratio:1946/808;min-height:0!important;box-sizing:border-box}
@@ -8363,8 +8373,8 @@ setInterval(() => { if (!melIniciou && sbCarregado !== undefined && (sbOn() ? sb
 .mel-balao{position:relative;z-index:3;border-radius:18px 18px 4px 18px!important;margin-bottom:230px!important;margin-right:-34px}
 .mel-som{display:inline-flex;align-items:center;gap:5px}
 .mel-volta{gap:0}
-@media (min-width:720px){ .mel.no-produto{right:4px;bottom:4px} .mel.no-produto .mel-boneca{width:150px!important;height:250px!important} .mel.no-produto .mel-balao{margin-bottom:150px!important;max-width:220px} }
-@media (max-width:719px){ .mel{right:0;bottom:70px} .mel-boneca{width:138px!important;height:230px!important} .mel-balao{margin-bottom:150px!important;margin-right:-24px;max-width:200px} .mel.no-produto{bottom:92px} .mel.no-produto .mel-boneca{width:102px!important;height:170px!important} }`; document.head.appendChild(st); }
+@media (min-width:720px){ .mel.no-produto{right:4px;bottom:4px} .mel.no-produto .mel-boneca{width:228px!important;height:380px!important} .mel.no-produto .mel-balao{margin-bottom:230px!important;max-width:220px} }
+@media (max-width:719px){ .mel{right:0;bottom:70px} .mel-boneca{width:138px!important;height:230px!important} .mel-balao{margin-bottom:150px!important;margin-right:-24px;max-width:200px} .mel.no-produto{bottom:92px} .mel.no-produto .mel-boneca{width:138px!important;height:230px!important} }`; document.head.appendChild(st); }
 
 /* ===== v53 · roupa da Mel (modelo e cor da paleta da marca) no painel ===== */
 const melRGB = h => [1,3,5].map(i => parseInt(h.substr(i,2),16)/255);
@@ -8606,7 +8616,7 @@ async function mcEnvia(txt){ txt = String(txt || '').trim(); if (!txt || MC.ocup
   if (ativo){ try { const {data} = await sb.functions.invoke('mel-chat', {body:{mensagens: MC.msgs.map(m => ({role:m.role, content:m.content})), contexto: mcContexto(), politicas: mcPoliticas()}}); r = data; } catch(_){ r = null; } }
   MC.ocupado = false;
   if (!r || (!r.texto && !(r.acoes || []).length)) r = {texto: 'Agora eu não consigo responder por aqui, mas a equipe te atende rapidinho no WhatsApp.', acoes:[{tipo:'abrir_whatsapp'}]};
-  const msg = {role:'assistant', content: r.texto || 'Pronto!', cards: []}; let gesto = 'fala';
+  const msg = {role:'assistant', content: r.texto || 'Pronto!', cards: []}; let gesto = 'look';
   for (const a of r.acoes || []){
     if (a.tipo === 'mostrar_produtos'){ msg.cards = (a.ids || []).filter(id => prod(id)); if (msg.cards.length) gesto = 'aponta'; }
     if (a.tipo === 'adicionar_sacola'){ const p = prod(a.produto_id), cor = p && Object.keys(p.est).find(c => c.toLowerCase() === String(a.cor || '').toLowerCase()), tam = cor && Object.keys(p.est[cor]).find(t => t.toLowerCase() === String(a.tamanho || '').toLowerCase());
@@ -8683,6 +8693,21 @@ async function buscaCupom(cod){ cod = String(cod || '').trim().toUpperCase(); if
     return r; }; }
 document.addEventListener('click', async e => { const b = e.target.closest('[data-cup]'); if (!b || b.dataset.cupOk) return; const inp = $('#cupIn'); if (!inp || !sbOn()) return;
   e.preventDefault(); e.stopImmediatePropagation(); await buscaCupom(inp.value); b.dataset.cupOk = '1'; b.click(); delete b.dataset.cupOk; }, true);
+
+/* ===== v68 · celular: a Mel fica no canto de baixo e os avisos sobem para logo abaixo do topo ===== */
+{ const topo = () => { const t = document.querySelector('.top'); const y = t ? Math.max(0, Math.round(t.getBoundingClientRect().bottom)) : 0; document.documentElement.style.setProperty('--topo-loja', y + 'px'); };
+  addEventListener('scroll', topo, {passive:true}); addEventListener('resize', topo); setInterval(topo, 1000); topo();
+  const st = document.createElement('style'); st.textContent = `
+@media (max-width:719px){
+  .cookiebar{top:calc(var(--topo-loja, 64px) + 8px)!important;bottom:auto!important;left:10px!important;right:10px!important;max-width:none!important;z-index:40;padding:12px 14px;gap:8px}
+  .cookiebar p{font-size:12.5px}
+  .app-conv{top:calc(var(--topo-loja, 64px) + 8px)!important;bottom:auto!important;left:10px!important;right:10px!important;transform:translateY(-14px)}
+  .app-conv.on{transform:none}
+}
+/* com o quadro do cupom aberto, a Mel sai de cena e volta quando ele fecha */
+.mel{transition:opacity .25s}
+body:has(#sheet.cupompop):has(#veil:not([hidden])) .mel{opacity:0!important;pointer-events:none!important}`;
+  document.head.appendChild(st); }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
