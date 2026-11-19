@@ -8160,7 +8160,7 @@ function MelVideo(box, base){
   gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return api; gl.useProgram(pr);
   const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
   const aP = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
-  const uO = gl.getUniformLocation(pr, 'o'), uCA = gl.getUniformLocation(pr, 'cA'), uCB = gl.getUniformLocation(pr, 'cB'), uTA = gl.getUniformLocation(pr, 'tA'), uTB = gl.getUniformLocation(pr, 'tB'), uRV = gl.getUniformLocation(pr, 'rv'), uGW = gl.getUniformLocation(pr, 'gw'), uPH = gl.getUniformLocation(pr, 'ph'), TROCA = 480, RV = {parada:0.867, acena:0.929, aponta:0.686, comemora:0.827, pensa:0.843, look:0.957, coracao:0.914, fala:0.984};
+  const uO = gl.getUniformLocation(pr, 'o'), uCA = gl.getUniformLocation(pr, 'cA'), uCB = gl.getUniformLocation(pr, 'cB'), uTA = gl.getUniformLocation(pr, 'tA'), uTB = gl.getUniformLocation(pr, 'tB'), uRV = gl.getUniformLocation(pr, 'rv'), uGW = gl.getUniformLocation(pr, 'gw'), uPH = gl.getUniformLocation(pr, 'ph'), TROCA = 420, RV = {parada:0.867, acena:0.929, aponta:0.686, comemora:0.827, pensa:0.843, look:0.957, coracao:0.914, fala:0.984};
   let COR = {a:null, b:null}; const poeCor = () => { gl.uniform3fv(uCA, COR.a || [0,0,0]); gl.uniform3fv(uCB, COR.b || [0,0,0]); gl.uniform1f(uTA, COR.a ? 1 : 0); gl.uniform1f(uTB, COR.b ? 1 : 0); }; poeCor(); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   const novaTex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE)); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); return t; };
   const esconde = document.createElement('div'); esconde.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none;clip-path:inset(50%)'; document.body.appendChild(esconde);
@@ -8186,15 +8186,15 @@ function MelVideo(box, base){
     const dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
     if (!atual) return; if (!api.ok){ api.ok = true; box.classList.add('gl-ok'); }
     /* troca de look com um brilho rápido: o brilho sobe, o look troca no meio e o brilho some (~0,5 s) */
-    const tt = antes ? Math.min(1, (performance.now() - ultimaTroca) / TROCA) : 1; fade = tt < .4 ? 0 : tt > .6 ? 1 : (tt - .4) / .2; fade = fade * fade * (3 - 2 * fade); BRI = antes ? Math.sin(Math.PI * tt) : 0; FASE = tt;
+    const tt = antes ? Math.min(1, (performance.now() - ultimaTroca) / TROCA) : 1; fade = tt * tt * (3 - 2 * tt); let fa = Math.max(0, (tt - .35) / .65); fa = 1 - fa * fa * (3 - 2 * fa); BRI = 0; FASE = 0;
     gl.viewport(0, 0, w, h); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
-    if (antes && tt < 1){ if (fade < 1) desenha(antes, 1 - fade); } else if (antes){ antes.el.pause(); antes = null; BRI = 0; }
+    if (antes && tt < 1){ desenha(antes, fa); } else if (antes){ antes.el.pause(); antes = null; BRI = 0; }
     desenha(atual, antes ? fade : 1);
     if (fila && performance.now() - ultimaTroca > TROCA + 80){ const f = fila; fila = null; troca(f); } }
   raf = requestAnimationFrame(quadro);
   /* toca um gesto; se ela já estiver no meio de outro gesto, espera um pouco (como uma pessoa faria) */
   api.tocar = n => { if (!CLIPS[n]) return; if (atual && atual.n !== 'parada' && !atual.el.ended && atual.el.currentTime < atual.el.duration - .6){ fila = n; return; } if (!troca(n)) fila = n; };
-  api.fala = () => api.tocar('fala'); api.pula = () => api.tocar('acena'); api.festa = () => api.tocar('comemora'); api.olha = () => {};
+  api.fala = () => api.tocar('look'); api.pula = () => api.tocar('acena'); api.festa = () => api.tocar('comemora'); api.olha = () => {};
   api.parar = () => { rodando = false; cancelAnimationFrame(raf); Object.values(V).forEach(c => c.el.pause()); };
   api.livre = () => !atual || atual.n === 'parada';
   api.video = n => pega(n).el; api.pronta = n => { const c = pega(n); return c.pronto || c.el.readyState >= 3; };
@@ -8244,8 +8244,8 @@ function melFala(txt, acoes, ms, gesto){ const m = $('#mel'); if (!m || melOff |
   melFalaT = setTimeout(() => { $('#melBalao').hidden = true; m.classList.remove('falando'); }, ms || 6500); }
 /* parada: de vez em quando ela muda de posição sozinha, sem falar (como alguém esperando) */
 function melOcio(){ clearTimeout(melOcioT); melOcioT = setTimeout(() => { const quieta = $('#melBalao')?.hidden && Date.now() - melUltGesto > 20000;
-    if (!document.hidden && quieta && MELGL?.livre?.()){ if (Math.random() < .35) melFala(sorteia(melFrases()), '', 6000, sorteia(['look','pensa'])); else { MELGL.tocar(sorteia(['look','pensa','look'])); melUltGesto = Date.now(); } }
-    melOcio(); }, 22000 + Math.random() * 20000); }
+    if (!document.hidden && quieta && MELGL?.livre?.()){ if (Math.random() < .5) { MELGL.tocar('look'); melUltGesto = Date.now(); } }
+    melOcio(); }, 70000 + Math.random() * 50000); }
 function melOlha(){}
 var MEL_ATIVA = true;
 function melInicia(){ if (melIniciou || !MEL_ATIVA) return; melIniciou = true; melMonta(); melLigaGL(); $('#mel')?.classList.add('mel-aguarda'); melVisivel();
@@ -8278,9 +8278,9 @@ function melTentaOi(){ if (melFalou) return; if (!melVoz || !melVoz.src){ return
   melVoz.muted = false; const t = melVoz.play();
   const ok = () => { melVoz.pause(); melVoz.currentTime = 0; melOi(); };
   /* se o celular segurar o som, ela aparece do mesmo jeito, falando no vídeo e no balão (sem voz) */
-  if (t && t.then) t.then(ok).catch(() => { melOiMudo(); }); else ok(); }
+  if (t && t.then) t.then(ok).catch(() => { melEsperaToque = true; const m = $('#mel'); if (m){ m.classList.remove('mel-aguarda'); melVisivel(); } if (MELGL) MELGL.tocar('parada'); }); else ok(); }
 /* se a cliente não tocar em nada em 15 s, ela aparece com o oi no balão (sem repetir depois) */
-function melOiMudo(){ const m = $('#mel'); if (!m || melFalou) return; melFalou = true; if (MELGL){ MELGL.depois = 'acena'; MELGL.reinicia('fala'); }
+function melOiMudo(){ const m = $('#mel'); if (!m || melFalou) return; melFalou = true; if (MELGL) MELGL.tocar('acena');
   m.classList.remove('mel-aguarda'); melVisivel(); melFala(MEL_OI, '<button class="mel-b" data-mel="novidades">Ver novidades</button>', 8000, 'nenhum'); melUltGesto = Date.now(); }
 ['pointerup','keydown','touchend','click'].forEach(ev => document.addEventListener(ev, () => { if (!melEsperaToque || melFalou) return; melEsperaToque = false; melOi(); }, {capture:true, passive:true}));
 const melVoz = (() => { try { const a = new Audio(); a.preload = 'auto'; a.src = (document.querySelector('#mel .mel-img')?.getAttribute('src') || 'mel.webp').startsWith('data:') ? '' : 'mel-voz.m4a'; return a; } catch(_){ return null; } })();
@@ -8367,8 +8367,8 @@ setInterval(() => { if (!melIniciou && $('#s-gestao')?.hidden !== false) melInic
 .mel-balao{position:relative;z-index:3;border-radius:18px 18px 4px 18px!important;margin-bottom:230px!important;margin-right:-34px}
 .mel-som{display:inline-flex;align-items:center;gap:5px}
 .mel-volta{gap:0}
-@media (min-width:720px){ .mel.no-produto{right:4px;bottom:4px} .mel.no-produto .mel-boneca{width:150px!important;height:250px!important} .mel.no-produto .mel-balao{margin-bottom:150px!important;max-width:220px} }
-@media (max-width:719px){ .mel{right:0;bottom:70px} .mel-boneca{width:138px!important;height:230px!important} .mel-balao{margin-bottom:150px!important;margin-right:-24px;max-width:200px} .mel.no-produto{bottom:92px} .mel.no-produto .mel-boneca{width:102px!important;height:170px!important} }`; document.head.appendChild(st); }
+@media (min-width:720px){ .mel.no-produto{right:4px;bottom:4px} .mel.no-produto .mel-boneca{width:228px!important;height:380px!important} .mel.no-produto .mel-balao{margin-bottom:230px!important;max-width:220px} }
+@media (max-width:719px){ .mel{right:0;bottom:70px} .mel-boneca{width:138px!important;height:230px!important} .mel-balao{margin-bottom:150px!important;margin-right:-24px;max-width:200px} .mel.no-produto{bottom:92px} .mel.no-produto .mel-boneca{width:138px!important;height:230px!important} }`; document.head.appendChild(st); }
 
 /* ===== v53 · roupa da Mel (modelo e cor da paleta da marca) no painel ===== */
 const melRGB = h => [1,3,5].map(i => parseInt(h.substr(i,2),16)/255);
@@ -8610,7 +8610,7 @@ async function mcEnvia(txt){ txt = String(txt || '').trim(); if (!txt || MC.ocup
   if (ativo){ try { const {data} = await sb.functions.invoke('mel-chat', {body:{mensagens: MC.msgs.map(m => ({role:m.role, content:m.content})), contexto: mcContexto(), politicas: mcPoliticas()}}); r = data; } catch(_){ r = null; } }
   MC.ocupado = false;
   if (!r || (!r.texto && !(r.acoes || []).length)) r = {texto: 'Agora eu não consigo responder por aqui, mas a equipe te atende rapidinho no WhatsApp.', acoes:[{tipo:'abrir_whatsapp'}]};
-  const msg = {role:'assistant', content: r.texto || 'Pronto!', cards: []}; let gesto = 'fala';
+  const msg = {role:'assistant', content: r.texto || 'Pronto!', cards: []}; let gesto = 'look';
   for (const a of r.acoes || []){
     if (a.tipo === 'mostrar_produtos'){ msg.cards = (a.ids || []).filter(id => prod(id)); if (msg.cards.length) gesto = 'aponta'; }
     if (a.tipo === 'adicionar_sacola'){ const p = prod(a.produto_id), cor = p && Object.keys(p.est).find(c => c.toLowerCase() === String(a.cor || '').toLowerCase()), tam = cor && Object.keys(p.est[cor]).find(t => t.toLowerCase() === String(a.tamanho || '').toLowerCase());
