@@ -8254,10 +8254,12 @@ function melInicia(){ if (melIniciou || !MEL_ATIVA) return; melIniciou = true; m
   const espera = () => { const veil = !$('#veil').hidden, cookie = document.querySelector('.cookie:not([hidden]), #cookieBar:not([hidden])');
     const cupomVem = !popVisto && typeof cupomPrimeira === 'function' && cupomPrimeira() && telaAtual === 'inicio' && Date.now() - t0 < 11000;
     const semConfig = typeof sbOn === 'function' && sbOn() && !sbCarregado && Date.now() - t0 < 8000;
-    if (veil || cookie || cupomVem || semConfig || !MELGL || !MELGL.pronta?.('fala')) return setTimeout(espera, 400);
+    /* aparece assim que o vídeo de boas-vindas carrega (não espera cookies nem o cupom); a cor da roupa espera no máximo 1,5 s */
+    const semCor = typeof sbOn === 'function' && sbOn() && !sbCarregado && Date.now() - t0 < 1500;
+    if (semCor || !MELGL || !MELGL.pronta?.('fala')) return setTimeout(espera, 100);
     melAplicaRoupa();
     melTentaOi(); melOcio(); };
-  setTimeout(espera, 1200); }
+  setTimeout(espera, 50); }
 var melIniciou = false, melFalou = false;
 const MEL_OI = 'Oi, seja bem-vinda à EME Moda & Fit!';
 /* primeira fala: sempre o vídeo falando com a voz dela; depois ela acena */
@@ -8275,7 +8277,8 @@ var melEsperaToque = false;
 function melTentaOi(){ if (melFalou) return; if (!melVoz || !melVoz.src){ return melOi(); }
   melVoz.muted = false; const t = melVoz.play();
   const ok = () => { melVoz.pause(); melVoz.currentTime = 0; melOi(); };
-  if (t && t.then) t.then(ok).catch(() => { melEsperaToque = true; setTimeout(() => { if (!melFalou){ melEsperaToque = false; melOiMudo(); } }, 15000); }); else ok(); }
+  /* se o celular segurar o som, ela aparece do mesmo jeito, falando no vídeo e no balão (sem voz) */
+  if (t && t.then) t.then(ok).catch(() => { melOiMudo(); }); else ok(); }
 /* se a cliente não tocar em nada em 15 s, ela aparece com o oi no balão (sem repetir depois) */
 function melOiMudo(){ const m = $('#mel'); if (!m || melFalou) return; melFalou = true; if (MELGL){ MELGL.depois = 'acena'; MELGL.reinicia('fala'); }
   m.classList.remove('mel-aguarda'); melVisivel(); melFala(MEL_OI, '<button class="mel-b" data-mel="novidades">Ver novidades</button>', 8000, 'nenhum'); melUltGesto = Date.now(); }
@@ -8307,7 +8310,8 @@ document.addEventListener('click', e => { if (!e.target.closest('[data-medidas],
 { const _moM = mostrar; mostrar = function(t){ const r = _moM.apply(this, arguments); setTimeout(() => { melVisivel(); if (melOff) return;
     if (t === 'conta' && !conta.logada) melFala('Criando a sua conta, na próxima compra é só entrar e pagar.', '', 6000, 'aponta'); }, 400); return r; }; }
 { const _fsM = fecharSheet; fecharSheet = function(){ const r = _fsM.apply(this, arguments); setTimeout(melVisivel, 50); return r; }; }
-setInterval(() => { if (!melIniciou && sbCarregado !== undefined && (sbOn() ? sbCarregado : true) && $('#s-gestao')?.hidden !== false) melInicia(); else melVisivel(); }, 1000);
+setInterval(() => { if (!melIniciou && $('#s-gestao')?.hidden !== false) melInicia(); else melVisivel(); }, 1000);
+{ const comeca = () => { if (!melIniciou && $('#s-gestao')?.hidden !== false && !location.hash.includes('painel')) melInicia(); }; if (document.readyState !== 'loading') setTimeout(comeca, 0); else document.addEventListener('DOMContentLoaded', comeca); }
 
 { const st = document.createElement('style'); st.textContent = `
 .hero.mesmo-tam{aspect-ratio:1946/808;min-height:0!important;box-sizing:border-box}
