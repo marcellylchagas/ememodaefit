@@ -5272,7 +5272,7 @@ function abrirMiniCart(){
 { const _fs = fecharSheet; fecharSheet = function(){ $('#sheet').classList.remove('minicart','cupompop'); _fs(); }; }
 
 /* ----- pop-up do cupom da primeira compra (uma vez por visita) ----- */
-let popVisto = false; try { popVisto = sessionStorage.getItem('emePop')==='1'; } catch(e){}
+let popVisto = false; /* o quadro do cupom aparece toda vez que a loja abre ou é atualizada */
 function abrirPopCupom(){ const c = cupomPrimeira(); if (!c || popVisto) return; popVisto = true; try { sessionStorage.setItem('emePop','1'); } catch(e){}
   const sh = $('#sheet'); sh.classList.remove('prodpage','minicart'); sh.classList.add('cupompop');
   sh.innerHTML = `<button class="x pop-x" data-close aria-label="Fechar">×</button><div class="pop-in"><small>Boas-vindas à EME</small><h3>Ganhe <em>${c.valor}% OFF</em><br>na sua primeira compra</h3><p>Use o cupom abaixo em compras acima de ${brl(c.min)}.</p>
@@ -7045,7 +7045,7 @@ if (typeof retrato==='function' && sbOn()){
 .loja-mais{display:grid;justify-items:center;gap:8px;padding:18px 0 6px}
 .adm-mais{justify-content:space-between}`; document.head.appendChild(st); }
 /* ===== v38 · convite para baixar o app no celular (depois do quadro de boas-vindas) ===== */
-{ const fechadoEm = () => { try { return +localStorage.getItem('emeAppFechado') || 0; } catch(_){ return 0; } };
+{ const fechadoEm = () => 0; /* o lembrete do app aparece toda vez que a loja abre ou é atualizada (fora do app instalado) */
   const podeMostrar = () => matchMedia('(max-width:820px)').matches && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
   document.body.insertAdjacentHTML('beforeend', `<div class="app-conv" id="appConv" role="dialog" aria-label="Baixar o app da EME" hidden><img src="icone-192.png" alt="" width="44" height="44"><div><b>Baixe o app da EME</b><span>Compre mais rápido, direto da tela inicial do celular.</span></div><button class="btn sm" data-instalar data-appconv>Baixar</button><button class="app-x" data-appx aria-label="Fechar">×</button></div>`);
   const el = $('#appConv'); let mostrado = false;
@@ -8878,10 +8878,10 @@ html{overflow-y:scroll;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size
 { const _ep = entrarPainel; entrarPainel = async function(){ libsPainel(); return _ep.apply(this, arguments); }; }
 
 /* ===== v80 · Mel convida para tirar dúvidas depois das boas-vindas (uma vez por visita) ===== */
-{ let convidou = false; try { convidou = sessionStorage.getItem('emeMelConvite') === '1'; } catch(_){}
+{ let convidou = false;
   const tenta = () => { if (convidou || !melFalou) return setTimeout(tenta, 4000); const m = $('#mel'); const b = $('#melBalao');
     if (!m || m.hidden || m.classList.contains('mel-aguarda') || !b?.hidden || (typeof MC !== 'undefined' && MC.aberto)) return setTimeout(tenta, 4000);
-    convidou = true; try { sessionStorage.setItem('emeMelConvite', '1'); } catch(_){}
+    convidou = true;
     melFala('Clique em mim e me mande a sua dúvida. Também tenho dicas de look para o dia a dia e para a academia.', melMenu(), 9000, 'aponta'); };
   setTimeout(tenta, 15000); }
 
