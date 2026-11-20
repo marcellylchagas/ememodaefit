@@ -8706,7 +8706,8 @@ document.addEventListener('click', async e => { const b = e.target.closest('[dat
 
 /* ===== v68 · celular: a Mel fica no canto de baixo e os avisos sobem para logo abaixo do topo ===== */
 { const topo = () => { const t = document.querySelector('.top'); const y = t ? Math.max(0, Math.round(t.getBoundingClientRect().bottom)) : 0; document.documentElement.style.setProperty('--topo-loja', y + 'px'); };
-  addEventListener('scroll', topo, {passive:true}); addEventListener('resize', topo); setInterval(topo, 1000); topo();
+  let topoT = 0, topoV = ''; const topoR = () => { if (topoT) return; topoT = requestAnimationFrame(() => { topoT = 0; const t = document.querySelector('.top'); const y = (t ? Math.max(0, Math.round(t.getBoundingClientRect().bottom)) : 0) + 'px'; if (y !== topoV){ topoV = y; document.documentElement.style.setProperty('--topo-loja', y); } }); };
+  addEventListener('scroll', topoR, {passive:true}); addEventListener('resize', topoR); new MutationObserver(topoR).observe(document.body, {attributes:true, attributeFilter:['class']}); topoR();
   const st = document.createElement('style'); st.textContent = `
 @media (max-width:719px){
   .cookiebar{top:calc(var(--topo-loja, 64px) + 8px)!important;bottom:auto!important;left:10px!important;right:10px!important;max-width:none!important;z-index:40;padding:12px 14px;gap:8px}
@@ -8809,6 +8810,12 @@ function mcApaga(){ try { MC.msgs = []; sessionStorage.removeItem('emeMelChat');
 document.addEventListener('click', e => { if (e.target.closest('[data-sair], [data-sairpainel]')) mcApaga(); }, true);
 if (sbOn()) sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') mcApaga(); });
 addEventListener('pagehide', mcApaga);
+
+/* ===== v76 · celular: rodapé e Mel presos ao fundo da tela sem pular quando a barra do navegador mexe ===== */
+{ const st = document.createElement('style'); st.textContent = `
+html,body{height:auto!important;min-height:100%}
+html{overflow-y:scroll;-webkit-text-size-adjust:100%;text-size-adjust:100%}`;
+  document.head.appendChild(st); }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
