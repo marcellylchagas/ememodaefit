@@ -1779,7 +1779,7 @@ const ofertas = {
   relampago:{on:true, id:'lanna', pct:15, fim: Date.now() + 2*3600e3 + 14*60e3},
   bump:{on:true, id:'mavie', pct:10},
   upsell:{on:true, id:'lanna', pct:10},
-  brinde:{on:true, min:200, item:'Brinde surpresa (exemplo)'},
+  brinde:{on:true, min:200, item:'Brinde surpresa'},
   kit:{on:true, ids:['bianca','lanna'], pct:8},
   progressivo:{on:true, qtd:3, pct:5}
 };
@@ -2330,7 +2330,7 @@ function renderRecompensas(){
     + sw('pontos','Programa de pontos', `${rec.ptsPorReal} ponto por R$ 1 · ${rec.ptsCupom} pontos = cupom de ${brl(rec.valorCupom)}`)
     + sw('cashback','Cashback', `${rec.cashPct}% do valor das peças, para usar em ${rec.cashDias} dias`);
   const l = listaClientes();
-  $('#rankBody').innerHTML = l.sort((a,b)=>b.pontos-a.pontos).map(c=>`<tr><td>${esc(c.nome)}</td><td>${c.pontos}</td><td>${brl(c.cash)}</td><td>${c.cash?rec.cashDias+' dias':'—'}</td></tr>`).join('');
+  $('#rankBody').innerHTML = l.sort((a,b)=>b.pontos-a.pontos).map(c=>`<tr><td>${esc(c.nome)}</td><td>${c.pontos}</td><td>${brl(c.cash||0)}</td><td>${c.cash?rec.cashDias+' dias':'—'}</td></tr>`).join('');
 }
 
 /* ================= financeiro ================= */
@@ -6211,8 +6211,7 @@ if (sbOn()){ renderAnalytics = function(){
   const lista = (t, o) => { const l = Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6); return `<div class="panel"><div class="lbl" style="margin-top:0">${t}</div>${l.length ? l.map(([n,v])=>`<div class="vg-row"><span>${esc(n)}</span><b style="color:var(--ink)">${v}</b></div>`).join('') : '<p class="note" style="margin:0">Ainda sem dados neste período.</p>'}</div>`; };
   $('#g-analytics').innerHTML = `<div class="chips">${[[7,'7 dias'],[30,'30 dias'],[90,'90 dias']].map(([d,t])=>`<button class="chipbtn" aria-pressed="${d===per}" data-anap="${d}">${t}</button>`).join('')}</div>
     <div class="vg-kpis"><div><span>Vendas</span><b>${brl(tot)}</b><small>${per} dias</small></div><div><span>Pedidos pagos</span><b>${pagos.length}</b><small>${ps.length - pagos.length} aguardando</small></div><div><span>Ticket médio</span><b>${brl(pagos.length ? tot/pagos.length : 0)}</b><small>por pedido</small></div><div><span>Peças vendidas</span><b>${Object.values(cont).reduce((a,b)=>a+b,0)}</b><small>no período</small></div></div>
-    ${lista('Peças mais vendidas', cont)}${lista('Formas de pagamento', formas)}${lista('Formas de entrega', ents)}
-    <p class="note">Visitas e de onde vêm as clientes: em breve, ligando o Google Analytics ou o Netlify Analytics.</p>`; }; }
+    ${lista('Peças mais vendidas', cont)}${lista('Formas de pagamento', formas)}${lista('Formas de entrega', ents)}`; }; }
 
 /* ===== v26 · etiqueta oficial do Melhor Envio pelo painel (função "etiqueta" no Supabase) ===== */
 { const _pdb = pedDoBanco; pedDoBanco = function(r, it){ const o = _pdb(r, it);
@@ -6487,7 +6486,7 @@ if (sbOn()){
     g.querySelectorAll('.sec').forEach(s => { const t = s.querySelector('h2')?.textContent || '';
       if (/^Mensagens enviadas$/.test(t) && s.querySelector('span')?.textContent==='Simulação'){ s.hidden = true; const l = s.nextElementSibling; if (l && l.id==='autoLog') l.hidden = true; }
       /* simulador de Instagram e WhatsApp: esconde o título e tudo até a próxima seção */
-      if (/^Simular no Instagram e no WhatsApp$/.test(t)){ s.hidden = true; let n = s.nextElementSibling; while (n && !n.classList.contains('sec')){ n.hidden = true; n = n.nextElementSibling; } } });
+      if (/^Simular no Instagram e no WhatsApp/.test(t)){ s.hidden = true; let n = s.nextElementSibling; while (n && !n.classList.contains('sec')){ n.hidden = true; n = n.nextElementSibling; } } });
     /* pixels e catálogo: ainda não são instalados no site */
     g.querySelectorAll('#pxBox .integ').forEach(box => { if (box.dataset.breve) return; box.dataset.breve = '1';
       const tag = box.querySelector('.h .tag'); if (tag){ tag.className = 'tag warn'; tag.textContent = 'Em breve'; }
@@ -6810,7 +6809,7 @@ const EMOJI_CAT = [
   [/poliamida/i,'🧵'], [/short/i,'🩳'], [/legging|cal[çc]a/i,'👖'], [/macaqu|macac[ãa]o|body/i,'🩱'], [/regata|dry ?fit|top|cropped|suti[ãa]/i,'🎽'],
   [/blusa|camis|t-?shirt|bata/i,'👚'], [/vestido|saia/i,'👗'], [/jaqueta|casaco|moletom|blus[ãa]o|corta.?vento/i,'🧥'], [/meia/i,'🧦'], [/bon[ée]|viseira/i,'🧢'],
   [/t[êe]nis|cal[çc]ado/i,'👟'], [/bolsa|acess[óo]rio|mochila/i,'👜'], [/avuls|pe[çc]a/i,'🏷️'], [/conjunto/i,'✨'], [/fitness|academia|treino/i,'🏋️‍♀️']];
-const emojiCat = nome => (EMOJI_CAT.find(([r]) => r.test(nome||'')) || [0,'🏷️'])[1];
+const emojiCat = nome => '';
 
 { const _rcO = renderCategorias; renderCategorias = function(){ _rcO();
   if (catAba!=='cat') return; const painel = $('#g-categorias > .panel'); if (!painel) return;
@@ -7901,7 +7900,7 @@ cfg.atacado.on = false; cfg.senha.on = false;
 { const _csA = CONFIG.loja.set; CONFIG.loja.set = v => { _csA(v); cfg.atacado.on = false; cfg.senha.on = false; }; }
 function limpaConfig(){ const g = $('#g-config'); if (!g) return;
   g.querySelectorAll('.panel').forEach(pn => { const t = pn.querySelector('.lbl')?.textContent || '';
-    if (/Modo atacado|Preços com senha/i.test(t)) pn.innerHTML = `<div class="ent-h"><div><b>${/atacado/i.test(t) ? 'Modo atacado' : 'Preços com senha'}</b><span>${/atacado/i.test(t) ? 'Preço especial a partir de um número mínimo de peças.' : 'Esconder os preços da vitrine para quem não tem a senha.'}</span></div><span class="tag">Em breve</span></div>`; });
+    if (/Modo atacado|Preços com senha/i.test(t)) pn.innerHTML = `<div class="ent-h"><div><b>${/atacado/i.test(t) ? 'Modo atacado' : 'Preços com senha'}</b><span>${/atacado/i.test(t) ? 'Preço especial a partir de um número mínimo de peças.' : 'Esconder os preços da vitrine para quem não tem a senha.'}</span></div><span class="tag">Em breve</span></div>`; pn.hidden = true; });
   g.querySelectorAll('.example').forEach(x => x.remove()); }
 function limpaEquipe(){ const g = $('#g-equipe'); if (!g) return; const f = g.querySelector('#fEq'); if (f) f.outerHTML = `<div class="panel"><div class="ent-h"><div><b>Convidar outras pessoas</b><span>Dar acesso ao painel para quem trabalha com você, cada uma com o seu papel.</span></div><span class="tag">Em breve</span></div></div>`;
   g.querySelectorAll('.example').forEach(x => x.remove()); }
@@ -9001,6 +9000,43 @@ if (sbOn()){
 #shelves .shelf{grid-auto-columns:34%!important;gap:10px}
 @media (min-width:720px){#shelves .shelf{grid-auto-columns:190px!important;gap:14px}}
 #shelves .sec{margin-top:18px}`; document.head.appendChild(st); }
+
+/* ---------- v87: estoque salva de verdade, sem emojis e sem "em breve" no painel ---------- */
+{ const st = document.createElement('style'); st.textContent = `
+.cbola-img > span:empty,.cat-emo:empty{display:block;width:46%;height:46%;margin:auto;background:var(--muted);opacity:.55;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 6a2 2 0 1 1 2 2c-.8.3-2 1-2 2v1M12 11 3 17.2c-.9.6-.5 1.8.6 1.8h16.8c1.1 0 1.5-1.2.6-1.8L12 11z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 6a2 2 0 1 1 2 2c-.8.3-2 1-2 2v1M12 11 3 17.2c-.9.6-.5 1.8.6 1.8h16.8c1.1 0 1.5-1.2.6-1.8L12 11z'/%3E%3C/svg%3E") center/contain no-repeat}
+.cbola-img > span:empty{width:42%;height:42%}
+/* opções que a loja não usa: não aparecem no painel */
+#g-ofertas label.switch:has(input[data-ck="selos"]),#g-ofertas label.switch:has(input[data-ck="rapido"]){display:none!important}`;
+  document.head.appendChild(st); }
+if (sbOn()){
+  /* estoque: mudar só a quantidade de uma cor/tamanho agora vai para o banco */
+  const _sv = salvarAgora; salvarAgora = async function(){
+    let mudV = [], saiV = [];
+    try { if (sbAdmin && fotoAnt && fotoAnt.vars){ const ag = retrato(), A = fotoAnt;
+        Object.keys(ag.vars).forEach(k => { if (ag.vars[k] !== A.vars[k] && A.prods[k.split('|')[0]] === ag.prods[k.split('|')[0]]) mudV.push(JSON.parse(ag.vars[k])); });
+        saiV = Object.keys(A.vars).filter(k => !ag.vars[k] && ag.prods[k.split('|')[0]] && A.prods[k.split('|')[0]] === ag.prods[k.split('|')[0]]); } } catch(_){}
+    const r = await _sv.apply(this, arguments);
+    try {
+      if (mudV.length){ const {error} = await sb.from('variacoes').upsert(mudV, {onConflict:'produto_id,cor,tamanho'}); if (error) throw error; }
+      for (const k of saiV){ const [pid, cor, tam] = k.split('|'); await sb.from('variacoes').delete().eq('produto_id', pid).eq('cor', cor).eq('tamanho', tam); }
+    } catch(e){ console.error('estoque', e); toast('Não consegui salvar o estoque agora. Vou tentar de novo.'); if (fotoAnt) fotoAnt.vars = {}; }
+    return r; };
+  /* piloto automático: só aparece o que funciona de verdade */
+  const _rpA = renderPiloto; renderPiloto = function(){ _rpA(); const box = $('#g-automatico'); if (!box) return;
+    box.querySelectorAll('.switch').forEach(el => { if (/em breve|Precisa do WhatsApp|Precisa do envio/i.test(el.textContent)) el.hidden = true; });
+    box.querySelectorAll('.panel').forEach(pn => { if (pn.querySelector('.switch') && ![...pn.querySelectorAll('.switch')].some(l => !l.hidden)) pn.hidden = true; }); };
+  /* mensagens automáticas: tira o simulador */
+  const _ra2 = renderGestao; renderGestao = function(){ const r = _ra2.apply(this, arguments); const g = $('#autoCustom'); if (!g) return r;
+    g.querySelectorAll('.sec').forEach(sc => { if (/^Simular/.test(sc.querySelector('h2')?.textContent || '')){ sc.hidden = true; let n = sc.nextElementSibling; while (n && !n.classList.contains('sec')){ n.hidden = true; n = n.nextElementSibling; } } }); return r; };
+  /* ofertas: tira o "(exemplo)" do brinde, mesmo se já estiver salvo */
+  { const _os = CONFIG.ofertas.set; CONFIG.ofertas.set = v => { _os(v); if (ofertas.brinde && /\(exemplo\)/i.test(ofertas.brinde.item || '')) ofertas.brinde.item = ofertas.brinde.item.replace(/\s*\(exemplo\)/i, ''); }; }
+  /* WhatsApp: tira o aviso "envio automático: em breve" e a fila que dependia dele */
+  const _rw3 = renderWhats; renderWhats = function(){ _rw3(); const box = $('#g-whatsapp'); if (!box) return;
+    box.querySelectorAll('.wa-con').forEach(el => el.hidden = true);
+    [...box.children].forEach(el => { if (el.id !== 'melWaBox' && /em breve|Evolution|fila|limite/i.test(el.textContent) && !el.querySelector('#melWaBox')) el.hidden = true; }); };
+}
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
