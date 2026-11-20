@@ -8180,20 +8180,28 @@ function MelVideo(box, base){
   const esconde = document.createElement('div'); esconde.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none;clip-path:inset(50%)'; document.body.appendChild(esconde);
   const V = {};
   const pega = n => { if (V[n]) return V[n]; const el = document.createElement('video'); el.muted = true; el.defaultMuted = true; el.playsInline = true; el.setAttribute('playsinline',''); el.setAttribute('muted',''); el.preload = 'auto'; el.crossOrigin = 'anonymous';
-    el.src = (base || '') + CLIPS[n]; esconde.appendChild(el); return V[n] = {el, tex: novaTex(), pronto:false, n}; };
+    el.src = (base || '') + CLIPS[n]; esconde.appendChild(el);
+    /* avisa quando o vídeo realmente tem um quadro novo pronto (evita desenhar quadro vazio, que fazia a Mel piscar) */
+    if (el.requestVideoFrameCallback){ const cb = () => { novoQuadro = true; el.requestVideoFrameCallback(cb); }; el.requestVideoFrameCallback(cb); }
+    return V[n] = {el, tex: novaTex(), pronto:false, n}; };
+  var novoQuadro = true; const temRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
   let BRI = 0, FASE = 0, atual = null, antes = null, fade = 1, fila = null, rodando = true, raf = 0, ultimaTroca = 0;
   const parada = pega('parada'); parada.el.loop = true;
   parada.el.addEventListener('canplay', () => { parada.pronto = true; if (!atual){ atual = parada; parada.el.play().catch(() => {}); } }, {once:true});
   parada.el.load(); parada.el.play().catch(() => {});
-  { const f0 = pega('fala'); f0.el.addEventListener('canplaythrough', () => { f0.pronto = true; }, {once:true}); f0.el.load(); }
+  { const f0 = pega('fala'); f0.el.addEventListener('canplaythrough', () => { f0.pronto = true; }, {once:true}); f0.el.load();
+    /* o aceno vem logo depois das boas-vindas: já deixa pronto */
+    if (CLIPS.acena){ const a0 = pega('acena'); a0.el.addEventListener('canplaythrough', () => { a0.pronto = true; }, {once:true}); f0.el.addEventListener('canplaythrough', () => a0.el.load(), {once:true}); } }
   /* os outros vídeos carregam depois, sem atrasar a loja */
   setTimeout(() => Object.keys(CLIPS).forEach(n => { if (n === 'parada' || n === 'fala') return; const c = pega(n); if (c.pronto || c.el.readyState >= 2 || c === atual) return; c.el.addEventListener('canplaythrough', () => { c.pronto = true; }, {once:true}); c.el.load(); }), 9000);
   function troca(n){ const c = pega(n); if (!c.pronto && c.el.readyState < 3) return false; if (atual === c) return true;
     antes = atual; atual = c; fade = 0; ultimaTroca = performance.now(); c.el.currentTime = 0; c.el.loop = n === 'parada';
     c.el.play().catch(() => {}); try { api.aoComecar?.(n); } catch(_){}
-    if (n !== 'parada') c.el.onended = () => { const d = MEL_SEM[api.depois] || api.depois; api.depois = null; troca(d && d !== n ? d : 'parada'); }; return true; }
-  function desenha(c, o){ if (!c || c.el.readyState < 2) return; gl.bindTexture(gl.TEXTURE_2D, c.tex);
-    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c.el); } catch(_){ return; }
+    if (n !== 'parada') c.el.onended = () => { const d = MEL_SEM[api.depois] || api.depois; api.depois = null; if (!troca(d && d !== n ? d : 'parada')) troca('parada'); }; return true; }
+  function desenha(c, o){ if (!c) return; gl.bindTexture(gl.TEXTURE_2D, c.tex);
+    /* sem quadro novo pronto: usa o último quadro bom que já está na textura (nunca desenha vazio) */
+    if (c.el.readyState >= 2){ try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c.el); c.temQuadro = true; } catch(_){} }
+    if (!c.temQuadro) return;
     gl.uniform1f(uO, o); gl.uniform1f(uRV, RV[c.n] || .87); gl.uniform1f(uGW, BRI); gl.uniform1f(uPH, FASE); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
   /* desenha só quando o vídeo muda de quadro (24 por segundo), sem medir a tela a cada quadro: deixa o celular leve */
   let RR = box.getBoundingClientRect(); try { new ResizeObserver(() => { RR = box.getBoundingClientRect(); }).observe(box); } catch(_){ addEventListener('resize', () => { RR = box.getBoundingClientRect(); }); }
@@ -8201,8 +8209,9 @@ function MelVideo(box, base){
   function quadro(){ if (!rodando) return; raf = requestAnimationFrame(quadro);
     const r = RR; if (!r.width || document.hidden) return;
     const melEl = box.closest('.mel'); if (melEl && (melEl.hidden || melEl.classList.contains('mel-aguarda') || melEl.classList.contains('mel-off'))) return;
-    if (!antes && atual && atual === ultC && atual.el.currentTime === ultT && cv.width === ultW && api.ok) return;
-    if (atual){ ultC = atual; ultT = atual.el.currentTime; }
+    const mudou = temRVFC ? novoQuadro : (atual && atual.el.currentTime !== ultT);
+    if (!antes && atual && atual === ultC && !mudou && cv.width === ultW && api.ok) return;
+    novoQuadro = false; if (atual){ ultC = atual; ultT = atual.el.currentTime; }
     const dpr = Math.min(matchMedia('(max-width:719px)').matches ? 1.5 : 2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; } ultW = cv.width;
     if (!atual) return; if (!api.ok){ api.ok = true; box.classList.add('gl-ok'); }
     /* troca de look com um brilho rápido: o brilho sobe, o look troca no meio e o brilho some (~0,5 s) */
@@ -8234,7 +8243,31 @@ const melFrases = () => { const c = typeof cupomPrimeira === 'function' ? cupomP
   'Na dúvida do tamanho, a tabela de medidas fica na página de cada peça.',
   'Gostou de alguma? Toca no coração que ela fica guardada para depois.',
   'Se precisar de ajuda, é só chamar a gente no WhatsApp, lá em cima.',
-  'Os conjuntos são ótimos para quem quer chegar no treino já combinando.'];
+  'Os conjuntos são ótimos para quem quer chegar no treino já combinando.',
+  'Clique em mim e me mande a sua dúvida. Eu te ajudo a escolher.',
+  /* dicas de look: dia a dia */
+  'Legging com tênis branco e uma camisa de botão aberta por cima vira look de passeio na hora.',
+  'Top de academia com uma jaqueta jeans ou blazer leve fica ótimo para o café depois do treino.',
+  'Macacão fitness com um casaquinho amarrado na cintura resolve o dia inteiro com conforto.',
+  'Short de treino combina com camiseta mais larga e tênis para um look esportivo do dia a dia.',
+  'Legging de cor neutra (preta, grafite ou nude) combina com quase tudo do seu guarda-roupa.',
+  'Cropped com legging de cintura alta valoriza a silhueta e fica lindo para sair também.',
+  'Quer um visual mais arrumadinho? Legging escura com tricô ou moletom comprido por cima.',
+  'Look monocromático, com top e legging da mesma cor, alonga a silhueta e é fácil de montar.',
+  'Uma bolsa transversal pequena e um boné deixam o conjunto de academia pronto para a rua.',
+  /* dicas de look: academia */
+  'Para treino de perna, a legging de cintura alta dá firmeza e não desce no agachamento.',
+  'Em treinos de impacto, como corrida e pular corda, prefira top de alta sustentação.',
+  'Tecidos que secam rápido ajudam a não ficar com a roupa pesada de suor no treino.',
+  'Na musculação, peças com compressão dão mais firmeza e conforto durante o movimento.',
+  'Yoga e pilates pedem peças que acompanhem o corpo, sem apertar nem marcar demais.',
+  'Faça o teste do agachamento no provador: se não ficar transparente, a legging está aprovada.',
+  'Conjuntos combinando deixam você pronta para o treino sem perder tempo pensando no look.',
+  'Para treinar ao ar livre, cores claras ajudam com o calor e um casaquinho leve com o vento.',
+  /* cuidados com as peças */
+  'Lave as peças de treino do avesso e em água fria: o tecido e a cor duram muito mais.',
+  'Evite amaciante nas roupas de academia, ele atrapalha a respiração do tecido.',
+  'Seque as peças fitness à sombra, o sol forte desbota e cansa o elástico.'];
   if (c && c.cod) l.push(`Se for a sua primeira compra, usa o cupom ${c.cod}.`);
   if (isFinite(FRETE_GRATIS_MIN)) l.push(`O frete é grátis a partir de ${brl(FRETE_GRATIS_MIN)}.`);
   return l; };
@@ -8264,7 +8297,7 @@ function melFala(txt, acoes, ms, gesto){ const m = $('#mel'); if (!m || melOff |
   melFalaT = setTimeout(() => { $('#melBalao').hidden = true; m.classList.remove('falando'); }, ms || 6500); }
 /* parada: de vez em quando ela muda de posição sozinha, sem falar (como alguém esperando) */
 function melOcio(){ clearTimeout(melOcioT); melOcioT = setTimeout(() => { const quieta = $('#melBalao')?.hidden && Date.now() - melUltGesto > 20000;
-    if (!document.hidden && quieta && MELGL?.livre?.()){ if (Math.random() < .5) { MELGL.tocar('look'); melUltGesto = Date.now(); } }
+    if (!document.hidden && quieta && MELGL?.livre?.()){ if (Math.random() < .6) melFala(sorteia(melFrases()), melMenu(), 8000, 'look'); else { MELGL.tocar('look'); melUltGesto = Date.now(); } }
     melOcio(); }, 70000 + Math.random() * 50000); }
 function melOlha(){}
 var MEL_ATIVA = true;
@@ -8843,6 +8876,14 @@ html{overflow-y:scroll;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size
 { const _ari = abreRotaInicial; abreRotaInicial = function(){ if (/#painel/.test(location.hash)){ if (rotaFeita) return; rotaFeita = true; if ($('#veil').hidden && !sbAdmin) entrarPainel(); return; } return _ari.apply(this, arguments); }; }
 /* painel: prepara Excel, ZIP e PDF assim que a dona entra */
 { const _ep = entrarPainel; entrarPainel = async function(){ libsPainel(); return _ep.apply(this, arguments); }; }
+
+/* ===== v80 · Mel convida para tirar dúvidas depois das boas-vindas (uma vez por visita) ===== */
+{ let convidou = false; try { convidou = sessionStorage.getItem('emeMelConvite') === '1'; } catch(_){}
+  const tenta = () => { if (convidou || !melFalou) return setTimeout(tenta, 4000); const m = $('#mel'); const b = $('#melBalao');
+    if (!m || m.hidden || m.classList.contains('mel-aguarda') || !b?.hidden || (typeof MC !== 'undefined' && MC.aberto)) return setTimeout(tenta, 4000);
+    convidou = true; try { sessionStorage.setItem('emeMelConvite', '1'); } catch(_){}
+    melFala('Clique em mim e me mande a sua dúvida. Também tenho dicas de look para o dia a dia e para a academia.', melMenu(), 9000, 'aponta'); };
+  setTimeout(tenta, 15000); }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
