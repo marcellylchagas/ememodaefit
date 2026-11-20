@@ -9038,6 +9038,30 @@ if (sbOn()){
     [...box.children].forEach(el => { if (el.id !== 'melWaBox' && /em breve|Evolution|fila|limite/i.test(el.textContent) && !el.querySelector('#melWaBox')) el.hidden = true; }); };
 }
 
+/* ---------- v88: venda no balcão de verdade; sem crediário e sem recompensas no painel ---------- */
+{ const TIRA = ['crediario','recompensas'];
+  for (let i = GES.length - 1; i >= 0; i--) if (TIRA.includes(GES[i][0])) GES.splice(i, 1);
+  GRUPOS.forEach(g => { if (Array.isArray(g[1])) for (let i = g[1].length - 1; i >= 0; i--) if (TIRA.includes(g[1][i])) g[1].splice(i, 1); });
+  const st = document.createElement('style'); st.textContent = TIRA.map(k => `[data-ges="${k}"],[data-g="${k}"]`).join(',') + '{display:none!important}'; document.head.appendChild(st);
+  if (TIRA.includes(gesAtual)) gesAtual = 'inicio'; }
+if (sbOn()){ let vendendo = false;
+  pdvFinalizar = async function(){ if (vendendo || !pdv.itens.length) return; vendendo = true;
+    const t = pdvTot(), itens = pdv.itens.map(i => ({id:i.id, cor:i.cor, tam:i.tam, sku:i.sku, nome:i.nome.replace(/ · /g,' '), qtd:i.qtd, preco:+i.preco}));
+    const b = document.querySelector('[data-pdv="finalizar"]'); if (b){ b.disabled = true; b.textContent = 'Registrando a venda…'; }
+    try {
+      const {data, error} = await sb.rpc('venda_balcao', {dados: {itens, desconto: +t.d.toFixed(2), pagamento: pdv.pag, cliente: pdv.cliente}});
+      if (error) throw error;
+      const num = +data.num;
+      pdv.itens.forEach(i => { const e = prod(i.id).est[i.cor]; e[i.tam] = Math.max(0, (e[i.tam]||0) - i.qtd); movs.unshift({data:new Date(), peca:i.nome, origem:'Venda no balcão', mov:-i.qtd, ficou:e[i.tam]});
+        if (fotoAnt && fotoAnt.vars){ const p = prod(i.id); varsParaBanco(p).forEach(v => { const k = `${p.id}|${v.cor}|${v.tamanho}`; if (v.cor === i.cor && v.tamanho === i.tam) fotoAnt.vars[k] = JSON.stringify(v); }); } });
+      Object.assign(pdv, {itens:[], cliente:'', desc:0}); renderProdutos(); renderPDV();
+      toast(`Venda ${numPed(num)} registrada.`);
+      buscandoPeds = false; await atualizaPedidos(); kpis();
+      if (pedidos.some(p => p.num === num)) abrirCupom(num);
+    } catch(e){ toast(String(e && e.message || '').replace(/^.*?: /,'') || 'Não consegui registrar a venda. Tente de novo.'); renderPDV(); }
+    finally { vendendo = false; } };
+}
+
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
 
