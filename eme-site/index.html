@@ -6018,13 +6018,13 @@ document.addEventListener('submit', e => { if (e.target.id!=='fRev' || !sbOn()) 
     await sb.from('avaliacoes').insert({produto_id:a.prod, nome:a.nome || 'Cliente', nota:a.nota, texto:a.txt, foto:a.foto || null}); }, 50); }, true);
 
 /* ----- painel: login ----- */
-function telaLogin(msg=''){
+function telaLogin(msg='', emailAnt=''){
   const sh = $('#sheet'); sh.classList.remove('prodpage','minicart','quick'); sh.classList.add('cupompop','loginpop');
   sh.innerHTML = `<form class="pop-in" id="fPainelLogin" novalidate><small>Painel da loja</small><h3>Entrar no painel</h3>
-    <div class="field" style="width:100%;text-align:left"><label for="plEmail">E-mail</label><input id="plEmail" type="email" autocomplete="username"></div>
+    <div class="field" style="width:100%;text-align:left"><label for="plEmail">E-mail</label><input id="plEmail" type="email" autocomplete="username" value="${esc(emailAnt)}"></div>
     <div class="field" style="width:100%;text-align:left"><label for="plSenha">Senha</label><input id="plSenha" type="password" autocomplete="current-password"></div>
     ${msg?`<p class="err" style="margin:6px 0 0">${esc(msg)}</p>`:''}
-    <button class="btn full" type="submit" style="margin-top:10px">Entrar</button><button type="button" class="link" data-close>Voltar para a loja</button></form>`;
+    <button class="btn full" type="submit" style="margin-top:10px">Entrar</button><button type="button" class="link" data-plesqueci style="margin-top:8px">Esqueci minha senha</button><button type="button" class="link" data-close>Voltar para a loja</button></form>`;
   $('#veil').hidden = false; setTimeout(() => $('#plEmail')?.focus(), 50); }
 async function entrarPainel(){
   if (!sbOn()) return mostrar('gestao');
@@ -6037,7 +6037,13 @@ async function entrarPainel(){
 document.addEventListener('submit', async e => { if (e.target.id!=='fPainelLogin') return; e.preventDefault(); e.stopImmediatePropagation();
   const em = $('#plEmail').value.trim(), se = $('#plSenha').value; const b = e.target.querySelector('[type=submit]'); b.disabled = true; b.textContent = 'Entrando…';
   const {error} = await sb.auth.signInWithPassword({email:em, password:se});
-  if (error) return telaLogin('E-mail ou senha incorretos.');
+  if (error){ const m = String(error.message || '').toLowerCase();
+    const txt = /confirm/.test(m) ? 'Este e-mail ainda não foi confirmado. Abra o link que chegou no seu e-mail.'
+      : /rate|too many|429/.test(m) || error.status === 429 ? 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.'
+      : /fetch|network|failed/.test(m) ? 'Sem conexão com o servidor agora. Confira a internet e tente de novo.'
+      : /invalid/.test(m) ? 'E-mail ou senha incorretos. Se não lembrar a senha, toque em "Esqueci minha senha".'
+      : 'Não foi possível entrar: ' + (error.message || 'erro desconhecido');
+    return telaLogin(txt, em); }
   entrarPainel(); }, true);
 { const _m8 = mostrar; mostrar = function(n){ if (n==='gestao' && sbOn() && !sbAdmin){ entrarPainel(); return; } _m8(n); }; }
 { const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<button class="btn sm ghost sair-btn" data-sairpainel hidden>Sair</button>'); }
@@ -8712,6 +8718,14 @@ document.addEventListener('click', async e => { const b = e.target.closest('[dat
 .mel{transition:opacity .25s}
 body:has(#sheet.cupompop):has(#veil:not([hidden])) .mel{opacity:0!important;pointer-events:none!important}`;
   document.head.appendChild(st); }
+
+/* ===== v73 · painel: "Esqueci minha senha" no login ===== */
+document.addEventListener('click', async e => { if (!e.target.closest('[data-plesqueci]')) return; e.preventDefault();
+  const em = ($('#plEmail')?.value || '').trim();
+  if (!/^\S+@\S+\.\S+$/.test(em)) return telaLogin('Digite o seu e-mail acima e toque de novo em "Esqueci minha senha".', em);
+  try { const {error} = await sb.auth.resetPasswordForEmail(em, {redirectTo: location.origin + '/#nova-senha'});
+    telaLogin(error ? 'Não foi possível enviar agora: ' + error.message : `Se ${em} tiver acesso ao painel, enviamos um link para criar uma senha nova. Confira também o spam.`, em); }
+  catch(_){ telaLogin('Sem conexão com o servidor agora. Tente de novo.', em); } });
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
