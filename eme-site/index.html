@@ -1711,10 +1711,12 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 <button class="wa-fab" data-wa aria-label="Falar com a EME no WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l1.3-4A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/></svg></button>
 
 <script src="supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+/* bibliotecas pesadas do painel: só carregam quando alguém entra no painel (a loja abre bem mais leve) */
+var _libsP = null;
+function libsPainel(){ if (_libsP) return _libsP; const u = ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
+  _libsP = Promise.all(u.map(src => new Promise(ok => { const e = document.createElement('script'); e.src = src; e.async = true; e.onload = ok; e.onerror = ok; document.head.appendChild(e); }))); return _libsP; }
+if (/#painel/.test(location.hash)) libsPainel();
 /* ================= dados de exemplo ================= */
 const TAMANHOS = ['PP','P','M','G','GG','Único'];
 /* tamanhos que a peça usa (na ordem da loja) e a numeração de referência */
@@ -2944,7 +2946,7 @@ function pdfEtiqueta(d, papel, declara){
   }
   return doc;
 }
-async function imprimir(uso){
+async function imprimir(uso){ await libsPainel();
   const msg = $('#impMsg'), ix = +$('#impSel').value, i = impressoras[ix] || {papel:'A4', nome:'PDF'};
   if (!window.jspdf){ msg.textContent = 'O gerador de PDF não carregou. Recarregue a página e tente de novo.'; return; }
   const p = pedidos.find(x=>x.num===docAtual.num);
@@ -2954,7 +2956,7 @@ async function imprimir(uso){
   try { await downloadsFn.save({filename:nome, data:doc.output('blob')}); msg.textContent = `PDF salvo. Abra o arquivo e mande imprimir na ${i.nome}.`; }
   catch(e){ msg.textContent = e && e.code==='declined' ? 'Download cancelado.' : 'Não consegui salvar o PDF aqui.'; }
 }
-async function imprimirTeste(ix){
+async function imprimirTeste(ix){ await libsPainel();
   const i = impressoras[ix]; if (!window.jspdf || !downloadsFn){ toast('Para o teste, abra o app pelo claude.ai.'); return; }
   const { jsPDF } = window.jspdf; const term = i.tipo==='Térmica', W = i.papel==='58 mm'?58:80;
   const doc = new jsPDF({unit:'mm', format: term ? (i.papel.startsWith('Etiqueta') ? [100,150] : [W, 60]) : 'a4'});
@@ -3416,7 +3418,7 @@ function lerJSON(txt, nome){
   const arr = Array.isArray(d) ? d : (d.produtos || d.products || d.items || []);
   arr.forEach(o => addLinha({nome:o.nome||o.name||o.title, qtd:o.quantidade??o.qtd??o.estoque??o.stock, custo:o.custo??o.cost??o.preco??o.price, cor:o.cor||o.color, tam:o.tamanho||o.tam||o.size, desc:o.descricao||o.description, peso:o.peso??o.weight, origem:'Catálogo JSON'}));
 }
-async function lerArquivos(files){
+async function lerArquivos(files){ await libsPainel();
   imp = {linhas:[], fotos:[], ignorados:[], zerados:0, msg:''};
   for (const f of files){
     const ext = f.name.split('.').pop().toLowerCase();
@@ -4601,7 +4603,7 @@ function csvParaMatriz(txt){
   if (cur || row.length){ row.push(cur); out.push(row); }
   return out;
 }
-async function lerPlanilhaArquivo(f){
+async function lerPlanilhaArquivo(f){ await libsPainel();
   const ext = f.name.split('.').pop().toLowerCase();
   if (ext==='csv' || ext==='txt') return csvParaMatriz((await f.text()).replace(/^﻿/,''));
   if (!window.XLSX) throw new Error('xlsx');
@@ -4785,7 +4787,7 @@ document.addEventListener('click', e => {
   const t = e.target;
   const md = t.closest('[data-modelo]'); if (md){ const k = md.dataset.modelo;
     if (k==='csv') return baixar('modelo-produtos-eme.csv', modeloCSV(EXEMPLO));
-    if (!window.XLSX){ toast('O gerador de Excel não carregou. Use o modelo .csv.'); return; }
+    if (!window.XLSX){ toast('Preparando o Excel… toque de novo em 2 segundos.'); libsPainel(); return; }
     if (k==='xlsx') return baixar('modelo-produtos-eme.xlsx', xlsxDe(EXEMPLO));
     if (k==='export') return baixar('produtos-eme.xlsx', xlsxDe(catalogoComoLinhas())); }
   if (t.closest('[data-uniok]')) return confirmarUni();
@@ -4971,7 +4973,7 @@ document.addEventListener('click', e => {
   if (t.closest('[data-simrun]')){ rodarAuto(); toast('Regras verificadas.'); return renderPiloto(); }
   const fa = t.closest('[data-filaab]'); if (fa){ const f = filaImp[+fa.dataset.filaab]; docAtual = null; return f.tipo==='cupom' ? abrirCupom(f.num) : abrirEtiqueta(f.num); }
   const fo = t.closest('[data-filaok]'); if (fo){ filaImp.splice(+fo.dataset.filaok,1); return renderPiloto(); }
-  const bk = t.closest('[data-bkdl]'); if (bk){ if (!window.XLSX){ toast('O gerador de Excel não carregou.'); return; } const b = backups[+bk.dataset.bkdl]; return baixar(`backup-produtos-${b.t.toISOString().slice(0,10)}.xlsx`, xlsxDe(b.linhas)); }
+  const bk = t.closest('[data-bkdl]'); if (bk){ if (!window.XLSX){ toast('Preparando o Excel… toque de novo em 2 segundos.'); libsPainel(); return; } const b = backups[+bk.dataset.bkdl]; return baixar(`backup-produtos-${b.t.toISOString().slice(0,10)}.xlsx`, xlsxDe(b.linhas)); }
   const hf = t.closest('[data-hfil]'); if (hf){ histFiltro = hf.dataset.hfil; return renderPiloto(); }
   const pp = t.closest('[data-pixpago]'); if (pp){ const p = pedidos.find(x=>x.num===+pp.dataset.pixpago);
     if (!regraOn('pagoAuto')){ toast('A regra de atualizar o status está desligada. Use "Marcar como pago".'); return; }
@@ -5279,6 +5281,7 @@ function abrirPopCupom(){ const c = cupomPrimeira(); if (!c || popVisto) return;
 /* o quadro do cupom entra 1 segundo depois de abrir a loja (se os cupons ainda estiverem chegando do banco, espera mais um pouquinho) */
 { const t0Pop = Date.now(); const tentaPop = () => { if (popVisto) return; const pronto = typeof sbOn !== 'function' || !sbOn() || sbCarregado;
     if (!pronto && Date.now() - t0Pop < 8000) return setTimeout(tentaPop, 200);
+    if (/painel|nova-senha/.test(location.hash) || sbAdmin) return;
     if (telaAtual==='inicio' && $('#veil').hidden && !cart.length && !$('.app').classList.contains('painel')) abrirPopCupom(); };
   setTimeout(tentaPop, 1000); }
 
@@ -6088,7 +6091,8 @@ async function salvarAgora(){
   finally { salvando = false; if (pendente){ pendente = false; setTimeout(salvarAgora, 300); } } }
 function marcaSalvo(s){ const el = $('#sbSalvo'); if (!el) return; el.dataset.s = s; el.textContent = s==='ok' ? 'Tudo salvo' : s==='erro' ? 'Erro ao salvar · tentando de novo' : 'Salvando…'; }
 { const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<span class="sb-salvo" id="sbSalvo" hidden>Tudo salvo</span>'); }
-setInterval(() => { if (!sbAdmin || !fotoAnt) return; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 1500);
+var painelMexeu = true; ['input','change','click','drop','keyup'].forEach(ev => document.addEventListener(ev, () => { painelMexeu = true; }, {capture:true, passive:true}));
+setInterval(() => { if (!sbAdmin || !fotoAnt || !painelMexeu) return; painelMexeu = false; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 1500);
 window.addEventListener('beforeunload', e => { if (sbAdmin && fotoAnt && J(retrato()) !== J(fotoAnt)){ salvarAgora(); e.preventDefault(); e.returnValue = ''; } });
 { const _rg3 = renderGestao; renderGestao = function(){ _rg3(); const s = $('#sbSalvo'), b = $('[data-sairpainel]'); if (s) s.hidden = !sbAdmin; if (b) b.hidden = !sbAdmin; }; }
 
@@ -7042,7 +7046,7 @@ if (typeof retrato==='function' && sbOn()){
 .adm-mais{justify-content:space-between}`; document.head.appendChild(st); }
 /* ===== v38 · convite para baixar o app no celular (depois do quadro de boas-vindas) ===== */
 { const fechadoEm = () => { try { return +localStorage.getItem('emeAppFechado') || 0; } catch(_){ return 0; } };
-  const podeMostrar = () => matchMedia('(max-width:820px)').matches && !$('#cookieBar') && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
+  const podeMostrar = () => matchMedia('(max-width:820px)').matches && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
   document.body.insertAdjacentHTML('beforeend', `<div class="app-conv" id="appConv" role="dialog" aria-label="Baixar o app da EME" hidden><img src="icone-192.png" alt="" width="44" height="44"><div><b>Baixe o app da EME</b><span>Compre mais rápido, direto da tela inicial do celular.</span></div><button class="btn sm" data-instalar data-appconv>Baixar</button><button class="app-x" data-appx aria-label="Fechar">×</button></div>`);
   const el = $('#appConv'); let mostrado = false;
   const tenta = () => { if (mostrado || !podeMostrar()) return; mostrado = true; el.hidden = false; requestAnimationFrame(() => el.classList.add('on')); };
@@ -8697,7 +8701,7 @@ function campoCupAcad(){ const f = $('#cupForm'); if (!f || f.querySelector('#cA
   st.insertAdjacentHTML('afterend', `<div class="field"><label for="cAcad">Só para alunas de uma academia parceira <span class="note">(opcional)</span></label><select id="cAcad"><option value="">Para todas as clientes</option>${l.map(a => `<option>${esc(a.nome)}</option>`).join('')}</select><span class="hint">Com academia escolhida, só a cliente cadastrada nela consegue ver e usar o cupom. A Mel também só fala dele para ela.</span></div>`); }
 { const _rcA = renderCupons; renderCupons = function(){ _rcA.apply(this, arguments); campoCupAcad();
   document.querySelectorAll('#cupList .cup').forEach(el => { const cod = el.querySelector('.code')?.textContent; const c = cupons.find(x => x.cod === cod); const fa = el.querySelector('.facts'); if (c && c.acad && fa && !el.querySelector('.cup-acad')) fa.insertAdjacentHTML('afterbegin', `<span class="cup-acad">Só alunas <b>${esc(c.acad)}</b></span>`); }); }; }
-setInterval(campoCupAcad, 1500);
+setInterval(() => { if (sbAdmin || document.querySelector('.app.painel')) campoCupAcad(); }, 1500);
 
 /* loja: confere no banco os cupons criados no painel (o de academia só volta para a cliente certa) */
 async function buscaCupom(cod){ cod = String(cod || '').trim().toUpperCase(); if (!cod || !sbOn() || (typeof sbAdmin !== 'undefined' && sbAdmin)) return;
@@ -8823,17 +8827,21 @@ html,body{height:auto!important;min-height:100%}
 html{overflow-y:scroll;-webkit-text-size-adjust:100%;text-size-adjust:100%}`;
   document.head.appendChild(st); }
 
-/* ===== v77 · celular: sem efeitos pesados nas camadas fixas (rodapé e Mel), que faziam a tela pular e travar ===== */
-{ const st = document.createElement('style'); st.textContent = `
-@media (max-width:820px){
-  nav, .app > nav, .bnav, .tabbar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-  .mel-cv, .mel-img, #mel .mel-mov{filter:none!important}
-  #mel, #mel .mel-boneca, #mel canvas{transform:translateZ(0);backface-visibility:hidden}
-}`;
-  document.head.appendChild(st);
-  /* rodapé com fundo sólido no lugar do desfoque */
-  const nv = [...document.querySelectorAll('nav')].find(n => getComputedStyle(n).position === 'fixed');
-  if (nv && matchMedia('(max-width:820px)').matches){ const bg = getComputedStyle(nv).backgroundColor; if (/rgba\(.*,\s*0?\.\d+\)$/.test(bg)) nv.style.background = 'var(--surface, #fff)'; } }
+/* ===== v78 · banner: troca sem a página mudar de altura (era isso que fazia o rodapé e a Mel pularem no celular) ===== */
+{ const fotos = new Set(); const preCarrega = () => (ap.banners || []).filter(b => b.on && b.img).forEach(b => { if (fotos.has(b.img)) return; fotos.add(b.img); const i = new Image(); i.decoding = 'async'; i.src = b.img; });
+  let alturaMax = 0;
+  const _rbF = renderBanner; renderBanner = function(){ const box = $('#bannerBox'); preCarrega();
+    if (box){ const h = box.offsetHeight; if (h > alturaMax) alturaMax = h; if (alturaMax) box.style.minHeight = alturaMax + 'px'; }
+    _rbF.apply(this, arguments);
+    if (box){ box.querySelectorAll('img').forEach(im => { if (!im.complete) im.addEventListener('load', () => { const h2 = box.offsetHeight; if (h2 > alturaMax){ alturaMax = h2; box.style.minHeight = h2 + 'px'; } }, {once:true}); }); } };
+  addEventListener('resize', () => { alturaMax = 0; const b = $('#bannerBox'); if (b) b.style.minHeight = ''; }); }
+/* celular: com o aviso de cookies na tela, o lembrete do app aparece logo abaixo dele (sem ficar por cima) */
+{ const st = document.createElement('style'); st.textContent = `@media (max-width:719px){ body:has(#cookieBar) .app-conv{top:calc(var(--topo-loja, 64px) + 8px + var(--ck-h, 128px))!important} }`; document.head.appendChild(st);
+  const mede = () => { const c = $('#cookieBar'); if (c) document.documentElement.style.setProperty('--ck-h', (c.offsetHeight + 8) + 'px'); }; setTimeout(mede, 300); setTimeout(mede, 1500); addEventListener('resize', mede); }
+/* abrindo direto no endereço do painel: não volta para a loja nem fecha o login */
+{ const _ari = abreRotaInicial; abreRotaInicial = function(){ if (/#painel/.test(location.hash)){ if (rotaFeita) return; rotaFeita = true; if ($('#veil').hidden && !sbAdmin) entrarPainel(); return; } return _ari.apply(this, arguments); }; }
+/* painel: prepara Excel, ZIP e PDF assim que a dona entra */
+{ const _ep = entrarPainel; entrarPainel = async function(){ libsPainel(); return _ep.apply(this, arguments); }; }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
