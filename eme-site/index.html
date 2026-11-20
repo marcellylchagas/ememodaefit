@@ -8183,7 +8183,7 @@ function MelVideo(box, base){
   parada.el.load(); parada.el.play().catch(() => {});
   { const f0 = pega('fala'); f0.el.addEventListener('canplaythrough', () => { f0.pronto = true; }, {once:true}); f0.el.load(); }
   /* os outros vídeos carregam depois, sem atrasar a loja */
-  setTimeout(() => Object.keys(CLIPS).forEach(n => { if (n === 'parada' || n === 'fala') return; const c = pega(n); if (c.pronto || c.el.readyState >= 2 || c === atual) return; c.el.addEventListener('canplaythrough', () => { c.pronto = true; }, {once:true}); c.el.load(); }), 2500);
+  setTimeout(() => Object.keys(CLIPS).forEach(n => { if (n === 'parada' || n === 'fala') return; const c = pega(n); if (c.pronto || c.el.readyState >= 2 || c === atual) return; c.el.addEventListener('canplaythrough', () => { c.pronto = true; }, {once:true}); c.el.load(); }), 9000);
   function troca(n){ const c = pega(n); if (!c.pronto && c.el.readyState < 3) return false; if (atual === c) return true;
     antes = atual; atual = c; fade = 0; ultimaTroca = performance.now(); c.el.currentTime = 0; c.el.loop = n === 'parada';
     c.el.play().catch(() => {}); try { api.aoComecar?.(n); } catch(_){}
@@ -8191,9 +8191,15 @@ function MelVideo(box, base){
   function desenha(c, o){ if (!c || c.el.readyState < 2) return; gl.bindTexture(gl.TEXTURE_2D, c.tex);
     try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c.el); } catch(_){ return; }
     gl.uniform1f(uO, o); gl.uniform1f(uRV, RV[c.n] || .87); gl.uniform1f(uGW, BRI); gl.uniform1f(uPH, FASE); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
+  /* desenha só quando o vídeo muda de quadro (24 por segundo), sem medir a tela a cada quadro: deixa o celular leve */
+  let RR = box.getBoundingClientRect(); try { new ResizeObserver(() => { RR = box.getBoundingClientRect(); }).observe(box); } catch(_){ addEventListener('resize', () => { RR = box.getBoundingClientRect(); }); }
+  let ultT = -1, ultC = null, ultW = 0;
   function quadro(){ if (!rodando) return; raf = requestAnimationFrame(quadro);
-    const r = box.getBoundingClientRect(); if (!r.width || document.hidden) return;
-    const dpr = Math.min(matchMedia('(max-width:719px)').matches ? 1.5 : 2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+    const r = RR; if (!r.width || document.hidden) return;
+    const melEl = box.closest('.mel'); if (melEl && (melEl.hidden || melEl.classList.contains('mel-aguarda') || melEl.classList.contains('mel-off'))) return;
+    if (!antes && atual && atual === ultC && atual.el.currentTime === ultT && cv.width === ultW && api.ok) return;
+    if (atual){ ultC = atual; ultT = atual.el.currentTime; }
+    const dpr = Math.min(matchMedia('(max-width:719px)').matches ? 1.5 : 2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; } ultW = cv.width;
     if (!atual) return; if (!api.ok){ api.ok = true; box.classList.add('gl-ok'); }
     /* troca de look com um brilho rápido: o brilho sobe, o look troca no meio e o brilho some (~0,5 s) */
     const tt = antes ? Math.min(1, (performance.now() - ultimaTroca) / TROCA) : 1; fade = tt * tt * (3 - 2 * tt); let fa = Math.max(0, (tt - .35) / .65); fa = 1 - fa * fa * (3 - 2 * fa); BRI = 0; FASE = 0;
@@ -8816,6 +8822,18 @@ addEventListener('pagehide', mcApaga);
 html,body{height:auto!important;min-height:100%}
 html{overflow-y:scroll;-webkit-text-size-adjust:100%;text-size-adjust:100%}`;
   document.head.appendChild(st); }
+
+/* ===== v77 · celular: sem efeitos pesados nas camadas fixas (rodapé e Mel), que faziam a tela pular e travar ===== */
+{ const st = document.createElement('style'); st.textContent = `
+@media (max-width:820px){
+  nav, .app > nav, .bnav, .tabbar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .mel-cv, .mel-img, #mel .mel-mov{filter:none!important}
+  #mel, #mel .mel-boneca, #mel canvas{transform:translateZ(0);backface-visibility:hidden}
+}`;
+  document.head.appendChild(st);
+  /* rodapé com fundo sólido no lugar do desfoque */
+  const nv = [...document.querySelectorAll('nav')].find(n => getComputedStyle(n).position === 'fixed');
+  if (nv && matchMedia('(max-width:820px)').matches){ const bg = getComputedStyle(nv).backgroundColor; if (/rgba\(.*,\s*0?\.\d+\)$/.test(bg)) nv.style.background = 'var(--surface, #fff)'; } }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
