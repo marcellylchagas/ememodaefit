@@ -2647,7 +2647,7 @@ function renderAparencia(){
           <button class="btn sm ghost" data-bon="${i}">${b.on?'Pausar':'Ativar'}</button><button class="btn sm ghost" data-bup="${i}" aria-label="Subir banner">↑</button><button class="btn sm ghost" data-bdel="${i}">Excluir</button></div></div>`).join('')}
       <button class="btn sm" style="margin-top:10px" data-bnovo>Novo banner</button>
       <p class="example">Tamanho recomendado: 1950 × 810 pixels, a mesma proporção dos banners atuais.</p></div>
-    <div class="panel"><div class="lbl" style="margin-top:0">Informativos · faixa abaixo do banner (${ap.infos.length}/8)</div>
+    <div class="panel"><div class="lbl" style="margin-top:0">Faixa preta no topo da loja · avisos (${ap.infos.length}/8)</div>
       ${ap.infos.map((t,i)=>`<div class="ship"><span>${esc(t)}</span><button class="link" data-idel="${i}">Remover</button></div>`).join('')}
       ${ap.infos.length<8?`<form id="fInfo" class="field" novalidate><label for="infoNovo">Novo informativo</label><div class="inrow"><input id="infoNovo"><button class="btn sm" type="submit">Adicionar</button></div></form>`:''}</div>
     <div class="panel"><div class="lbl" style="margin-top:0">Prateleiras da página inicial</div>
@@ -6329,6 +6329,11 @@ async function chamaPg(body){
   if (error){ let m = 'Não conseguimos falar com o Mercado Pago agora. Tente de novo em instantes.'; try { const j = await error.context.json(); if (j && j.erro) m = j.erro; } catch(e){} throw new Error(m); }
   if (!data || data.erro) throw new Error((data && data.erro) || 'Resposta vazia do Mercado Pago');
   return data; }
+/* mensagens do Mercado Pago em inglês viram explicações em português */
+{ const _cp = chamaPg; chamaPg = async function(body){ try { return await _cp(body); } catch(e){ const m = String(e && e.message || '');
+    if (/financial identity/i.test(m)) throw new Error('O Mercado Pago não gerou o Pix com estes dados (CPF e e-mail). Confira os dados ou pague com cartão. Se você é da loja e está testando, use os dados de outra pessoa: o Mercado Pago não deixa a própria conta pagar a si mesma.');
+    if (/^[\x00-\x7F]+$/.test(m) && m.length) throw new Error('O Mercado Pago não conseguiu concluir agora. Tente de novo em instantes ou escolha outra forma de pagamento.');
+    throw e; } }; }
 
 /* ----- etapa de pagamento: escolhe a forma; o pagamento em si vem na tela seguinte ----- */
 { const _tpMP = telaPagamento; telaPagamento = function(){ const h = _tpMP(); if (!MP.on) return h;
@@ -6403,7 +6408,9 @@ async function mpCartao(o){
 { const _tprMP = telaPronto; telaPronto = function(){ const o = ultimo; if (!MP.on || !o || !o.mp) return _tprMP();
   const m = o.mp, ok = SVG('<path d="M5 12l5 5 9-10"/>');
   const sair = `<div class="row2" style="margin-top:16px"><button class="btn ghost" data-go="loja">Continuar comprando</button><button class="btn" data-go="conta">Ver meus pedidos</button></div>`;
-  const trocar = [m.tipo!=='pix' ? '<button class="link" data-mp-troca="pix">Pagar com Pix</button>' : '', m.tipo!=='credito' && !m.cupomPix ? '<button class="link" data-mp-troca="credito">Pagar com cartão de crédito</button>' : '', m.tipo!=='debito' && !m.cupomPix ? '<button class="link" data-mp-troca="debito">Pagar com débito</button>' : ''].filter(Boolean).join(' · ');
+  const ICP = {pix:'<path d="M7 7l5-5 5 5-5 5zM7 17l5 5 5-5-5-5zM2 12l5-5M22 12l-5-5M2 12l5 5M22 12l-5 5"/>', credito:'<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/>', debito:'<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M15 15h3"/>'};
+  const opT = [m.tipo!=='pix' ? ['pix','Pix','Aprovação na hora'] : null, m.tipo!=='credito' && !m.cupomPix ? ['credito','Cartão de crédito','Em até 3×'] : null, m.tipo!=='debito' && !m.cupomPix ? ['debito','Cartão de débito','À vista'] : null].filter(Boolean);
+  const trocar = opT.length ? `<div class="mp-outras"><span class="mp-outras-t">Prefere pagar de outro jeito?</span><div class="mp-outras-l">${opT.map(([k,n,d]) => `<button type="button" class="mp-op" data-mp-troca="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[k]}</svg><span><b>${n}</b><small>${d}</small></span></button>`).join('')}</div></div>` : '';
   const erro = m.erro ? `<div class="err">${esc(m.erro)}</div>` : '';
   if (m.st==='aprovado') return `<div class="panel done"><div class="ck">${ok}</div><h3>Pagamento aprovado!</h3><p class="note">Pedido ${numPed(o.num)} confirmado · ${brl(o.total)}. Você recebe as atualizações do envio por aqui e em Minha conta.</p>${sair}</div>`;
   if (m.st==='analise') return `<div class="panel done"><h3>Pagamento em análise</h3><p class="note">O Mercado Pago está analisando o pagamento do pedido ${numPed(o.num)}. Isso costuma levar poucos minutos e esta tela atualiza sozinha. Você também acompanha em Minha conta.</p>${sair}</div>`;
@@ -6415,8 +6422,8 @@ async function mpCartao(o){
       <div class="field"><label for="mpCopia">Pix copia e cola</label><textarea id="mpCopia" readonly rows="3">${esc(m.pix.copia_e_cola)}</textarea></div>
       <button class="btn full" data-mp-copia>Copiar código Pix</button>
       <p class="note mp-espera"><span class="dot"></span>Aguardando o pagamento. Esta tela confirma sozinha assim que o Pix cair.</p>
-      ${trocar ? `<p class="note">Prefere outra forma? ${trocar}</p>` : ''}</div>`;
-  if (m.tipo==='pix') return `<div class="panel done"><h3>Pedido ${numPed(o.num)} · falta pagar</h3><p class="note">Total ${brl(o.total)}.</p>${erro}<button class="btn full" data-mp-pix>Gerar o Pix de novo</button>${trocar ? `<p class="note" style="margin-top:10px">Ou: ${trocar}</p>` : ''}</div>`;
+      ${trocar}</div>`;
+  if (m.tipo==='pix') return `<div class="panel done"><h3>Pedido ${numPed(o.num)} · falta pagar</h3><p class="note">Total ${brl(o.total)}.</p>${erro}<button class="btn full" data-mp-pix>Gerar o Pix de novo</button>${trocar}</div>`;
   return `<div class="panel mp-card"><h3 class="co-h">Pagamento · ${MP_NOMES[m.tipo]}</h3><p class="note" style="margin:2px 0 10px">Pedido ${numPed(o.num)} · total ${brl(o.total)}</p>${erro}
       <div id="mpBrick"><p class="note">Carregando o pagamento seguro…</p></div>
       ${trocar ? `<p class="note" style="margin-top:10px">Prefere outra forma? ${trocar}</p>` : ''}</div>`; }; }
@@ -7487,9 +7494,9 @@ async function carregaLojaComTentativas(){
     catch(e){ console.error('Supabase', e); if (sbCarregado) return; lojaFalhou = true; marcaCarregando(); await new Promise(r => setTimeout(r, espera)); } } }
 document.addEventListener('click', e => { if (e.target.closest('[data-lojatenta]')){ lojaFalhou = false; marcaCarregando(); carregaLojaComTentativas(); } });
 
-/* 4) a sacola fica guardada no aparelho (até 14 dias), mesmo fechando o site */
+/* 4) a sacola fica guardada por até 24 horas, mesmo fechando o site */
 var sacolaAnt = null;
-function restauraSacola(){ try { const s = JSON.parse(localStorage.getItem('emeSacola') || 'null'); if (!s || !Array.isArray(s.itens) || s.t < Date.now() - 14*864e5) return;
+function restauraSacola(){ try { const s = JSON.parse(localStorage.getItem('emeSacola') || 'null'); if (!s || !Array.isArray(s.itens) || s.t < Date.now() - 864e5) return;
     if (cart.length) return;
     s.itens.forEach(i => { const p = prod(i.id); if (!p || p.status!=='Publicado' || !(p.est[i.cor] && i.tam in p.est[i.cor])) return; cart.push({id:i.id, cor:i.cor, tam:i.tam, qtd:Math.max(1, Math.min(+i.qtd||1, 10))}); });
     sacolaAnt = JSON.stringify(cart); atualizaContador(); } catch(_){} }
@@ -8519,7 +8526,7 @@ CONFIG.crm = {pub:false, get:() => ({colunas, man:funilMan, tags:Object.fromEntr
     if (co.nome.split(/\s+/).length < 2) return erro(1, 'Digite o seu nome completo.');
     if (!/^\S+@\S+\.\S+$/.test(co.email)) return erro(1, 'Digite um e-mail válido.');
     if (co.whats.replace(/\D/g,'').length < 10) return erro(1, 'Digite o WhatsApp com DDD.');
-    if ((co.tel || '').replace(/\D/g,'').length < 10) return erro(1, 'Digite o telefone com DDD.');
+    { const tl = (co.tel || '').replace(/\D/g,''); if (tl && tl.length < 10) return erro(1, 'Digite o telefone com DDD, ou deixe em branco.'); }
     if (!cpfValido(co.cpf)) return erro(1, 'Confira o CPF: ele precisa ter 11 números válidos.');
     if (conta.logada && !conta.cpf) conta.cpf = co.cpf;
     if (soCep(co.cep).length !== 8) return erro(2, 'Digite o seu CEP com 8 números.');
@@ -8913,6 +8920,77 @@ if (sbOn()){ const _rw2 = renderWhats; let melWa = null, melWaConv = [];
     if (error){ b.disabled = false; toast('Não consegui devolver. Tente de novo.'); return; }
     toast('A Mel volta a atender essa cliente'); carrega(); });
   setInterval(() => { if (sbAdmin && !document.hidden) carrega(); }, 60000);
+}
+
+/* ---------- v84: a faixa preta do topo e o "Mais vendidos" seguem o painel ---------- */
+{ /* 1) faixa preta no topo: mostra os avisos que você escreve em Aparência (se a lista estiver vazia, usa os automáticos) */
+  const _at = avisosTopo; avisosTopo = function(){ const l = (ap.infos || []).map(t => String(t || '').trim()).filter(Boolean); return l.length ? l : _at(); };
+  const _cs = CONFIG.aparencia.set; CONFIG.aparencia.set = v => { _cs(v); try { anIdx = 0; renderAnnc(); } catch(e){} };
+  const _ra = renderAparencia; renderAparencia = function(){ _ra(); try { renderAnnc(); } catch(e){} };
+}
+{ /* 2) "Mais vendidos": a cliente não vê os pedidos, então a loja pergunta ao banco quais peças mais venderam */
+  let MV = null, mvPer = 0, mvBusca = 0;
+  const buscaMV = async () => { if (!sbOn() || !sb || !ap.maisVendidos.on) return; const per = ap.maisVendidos.per || 30; if (mvPer === per && Date.now() - mvBusca < 300000) return;
+    mvPer = per; mvBusca = Date.now();
+    try { const {data, error} = await sb.rpc('mais_vendidos', {dias: per}); if (error) throw error; MV = (data || []).map(r => String(r.produto_id)); renderPrateleiras(); } catch(e){ MV = null; } };
+  const _mv = maisVendidos; maisVendidos = function(){ if (sbAdmin && Array.isArray(pedidos) && pedidos.some(p => !p.exemplo)) return _mv();
+    if (MV) return MV.map(id => prod(id)).filter(p => p && p.status === 'Publicado'); buscaMV(); return []; };
+  const _rp = renderPrateleiras; renderPrateleiras = function(){ _rp(); if (ap.maisVendidos.on && !MV) buscaMV(); };
+  /* as prateleiras (carrosséis) ficam logo abaixo do banner, onde a cliente vê */
+  const sh = document.getElementById('shelves'), ref = document.querySelector('#s-inicio > .benef') || document.getElementById('motivaBar');
+  if (sh && ref) ref.after(sh);
+}
+
+/* ---------- v85: sacola por 24 horas no banco, sacolas abandonadas, pagamento e Mel ---------- */
+{ const st = document.createElement('style'); st.textContent = `
+.mp-outras{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);text-align:left}
+.mp-outras-t{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.mp-outras-l{display:grid;gap:8px}
+.mp-op{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.mp-op:hover,.mp-op:focus-visible{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.mp-op svg{width:22px;height:22px;flex:none;color:var(--accent)}
+.mp-op span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mp-op b{font-size:14px;font-weight:600}
+.mp-op small{font-size:12px;color:var(--muted)}
+@media (min-width:560px){.mp-outras-l{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}}
+body:has(#veil:not([hidden])):has(#sheet.minicart) #mel{visibility:hidden!important;pointer-events:none!important}
+.sab{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:12px}
+.sab>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;font-size:14px}
+.sab>summary::-webkit-details-marker{display:none}
+.sab .sab-b{padding:0 14px 12px}
+.sab .sab-i{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}
+.sab .sab-i small{display:block;color:var(--muted);font-size:12px;margin-top:2px}`;
+  document.head.appendChild(st); }
+if (sbOn()){
+  let disp = ''; try { disp = localStorage.getItem('emeDisp') || ''; if (!disp){ disp = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)).replace(/[^A-Za-z0-9-]/g,''); localStorage.setItem('emeDisp', disp); } } catch(_){}
+  const itensSac = () => cart.filter(i => !i.bump && i.preco == null).map(i => ({id:i.id, cor:i.cor, tam:i.tam, qtd:i.qtd}));
+  let ultEnv = null, tEnv = null;
+  const enviaSac = () => { clearTimeout(tEnv); tEnv = setTimeout(async () => { if (sacolaAnt === null || sbAdmin) return;
+    const itens = itensSac(), quem = {email: (co.email || conta.email || '').trim(), nome: (co.nome || conta.nome || '').trim(), whats: (co.whats || conta.whats || '').trim()};
+    const j = JSON.stringify([itens, quem]); if (j === ultEnv) return; ultEnv = j;
+    try { await sb.rpc('salvar_sacola', {aparelho: disp, itens, email: quem.email || null, nome: quem.nome || null, whatsapp: quem.whats || null, total: itens.length ? +subCarrinho().toFixed(2) : 0}); } catch(_){ ultEnv = null; } }, 1500); };
+  setInterval(enviaSac, 3000);
+  /* traz a sacola guardada (de outro aparelho ou de antes), sem apagar o que já está na sacola */
+  const trazSac = async () => { if (sbAdmin) return; try { const {data} = await sb.rpc('minha_sacola', {aparelho: disp}); const l = Array.isArray(data) ? data : [];
+      let mudou = false; l.forEach(i => { const p = prod(i.id); if (!p || p.status !== 'Publicado' || !(p.est[i.cor] && i.tam in p.est[i.cor])) return;
+        if (cart.some(c => c.id === i.id && c.cor === i.cor && c.tam === i.tam)) return; cart.push({id:i.id, cor:i.cor, tam:i.tam, qtd:Math.max(1, Math.min(+i.qtd || 1, 10))}); mudou = true; });
+      if (mudou){ atualizaContador(); if (telaAtual === 'sacola') renderCheckout(); } } catch(_){} };
+  { const vs = setInterval(() => { if (!sbCarregado || sacolaAnt === null) return; clearInterval(vs); trazSac(); }, 400); }
+  { const _cc2 = carregarConta; carregarConta = async function(){ const r = await _cc2.apply(this, arguments); if (conta.logada){ ultEnv = null; await trazSac(); enviaSac(); } return r; }; }
+
+  /* painel › Pedidos: sacolas abandonadas (guardadas por 24 horas) */
+  let SAB = null, sabT = 0;
+  const carregaSab = async () => { try { const {data, error} = await sb.from('sacolas').select('*').order('atualizado', {ascending:false}).limit(60); if (error) throw error; SAB = data || []; } catch(e){ SAB = []; } sabT = Date.now(); if (gesAtual === 'pedidos') renderPedidos(); };
+  const tempo = d => { const m = Math.round((Date.now() - new Date(d).getTime())/60000); return m < 60 ? `há ${Math.max(1,m)} min` : `há ${Math.round(m/60)} h`; };
+  const _rpSab = renderPedidos; renderPedidos = function(){ _rpSab.apply(this, arguments); if (!sbAdmin) return;
+    if (!SAB || Date.now() - sabT > 120000){ if (!SAB) SAB = []; carregaSab(); }
+    const box = $('#g-pedidos'); if (!box) return; box.querySelector('.sab')?.remove();
+    const l = (SAB || []).filter(x => Date.now() - new Date(x.atualizado).getTime() > 30*60000);
+    const nomeP = i => { const p = prod(i.id); return `${p ? p.n : 'Peça'} · ${i.cor} · ${i.tam}${i.qtd > 1 ? ' ×' + i.qtd : ''}`; };
+    box.insertAdjacentHTML('afterbegin', `<details class="sab" ${l.length ? 'open' : ''}><summary><span>Sacolas abandonadas (${l.length})</span><small class="note" style="margin:0;font-weight:500">ficam aqui por 24 horas</small></summary><div class="sab-b">
+      ${l.length ? l.map(x => { const quem = x.nome || x.email || (x.whatsapp ? 'WhatsApp ' + x.whatsapp : 'Cliente sem cadastro'); const w = String(x.whatsapp || '').replace(/\D/g,'');
+        return `<div class="sab-i"><div><b>${esc(quem)}</b> · ${brl(+x.total || 0)}<small>${esc((x.itens || []).map(nomeP).join(' / '))}</small><small>${tempo(x.atualizado)}${x.email && x.nome ? ' · ' + esc(x.email) : ''}</small></div>${w.length >= 10 ? `<a class="btn sm ghost" target="_blank" rel="noopener" href="https://wa.me/${w.length <= 11 ? '55' + w : w}?text=${encodeURIComponent(`Oi${x.nome ? ', ' + String(x.nome).split(' ')[0] : ''}! Vi que você deixou peças na sacola da EME. Posso te ajudar a finalizar?`)}">WhatsApp</a>` : ''}</div>`; }).join('')
+        : '<p class="note" style="margin:0">Nenhuma sacola parada há mais de 30 minutos.</p>'}</div></details>`); };
 }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
