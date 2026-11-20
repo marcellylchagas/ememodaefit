@@ -8885,6 +8885,36 @@ html{overflow-y:scroll;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size
     melFala('Clique em mim e me mande a sua dúvida. Também tenho dicas de look para o dia a dia e para a academia.', melMenu(), 9000, 'aponta'); };
   setTimeout(tenta, 15000); }
 
+/* ---------- v82: Mel no WhatsApp (painel › Conexão do WhatsApp) ---------- */
+if (sbOn()){ const _rw2 = renderWhats; let melWa = null, melWaConv = [];
+  const waLink = t => 'https://wa.me/' + String(t).replace(/\D/g,'');
+  const melWaHTML = () => { const pre = melWaConv.filter(c => c.precisa_voce), out = melWaConv.filter(c => !c.precisa_voce).slice(0,8);
+    const linha = (c, voce) => { const ult = (c.msgs||[]).filter(m => m.role==='user').slice(-1)[0];
+      return `<div class="vg-row" style="align-items:flex-start;gap:10px"><span style="min-width:0"><b style="color:var(--ink)">${esc(c.nome || '+' + c.telefone)}</b><br><small class="note" style="margin:0">${esc(voce ? (c.motivo || 'Pediu para falar com você') : (ult ? ult.content.slice(0,90) : ''))}</small></span>
+        <span style="display:flex;gap:6px;flex:none"><a class="btn ghost" style="padding:6px 10px" href="${waLink(c.telefone)}" target="_blank" rel="noopener">Abrir</a>${voce || (c.humano_ate && new Date(c.humano_ate) > new Date()) ? `<button class="btn" style="padding:6px 10px" data-meldevolve="${esc(c.telefone)}">Devolver para a Mel</button>` : ''}</span></div>`; };
+    return `<div class="panel" id="melWaBox" style="margin-bottom:12px"><div class="lbl" style="margin-top:0">Mel no WhatsApp</div>
+      <label class="switch"><span class="d"><b>Mel atendendo no WhatsApp</b><span>Ela responde, mostra as peças e os cupons, e te chama quando a cliente pede você ou tem problema com pedido</span></span><input type="checkbox" id="melWaOn" ${melWa?.on ? 'checked' : ''} ${melWa ? '' : 'disabled'}></label>
+      <p class="note" style="margin:8px 0 0">Quando você responde uma cliente pelo app do celular, a Mel fica quieta nessa conversa por 12 horas.</p>
+      <div class="lbl">Precisam de você ${pre.length ? `(${pre.length})` : ''}</div>${pre.length ? pre.map(c => linha(c, true)).join('') : '<p class="note" style="margin:0">Nenhuma conversa esperando você.</p>'}
+      ${out.length ? `<div class="lbl">Últimas conversas da Mel</div>${out.map(c => linha(c, false)).join('')}` : ''}</div>`; };
+  const pinta = () => { const box = $('#g-whatsapp'); if (!box) return; const v = box.querySelector('#melWaBox'); if (v) v.outerHTML = melWaHTML(); else box.insertAdjacentHTML('afterbegin', melWaHTML()); };
+  const carrega = async () => { try {
+      const [c, l] = await Promise.all([sb.from('config').select('valor').eq('chave','mel_whatsapp').maybeSingle(), sb.from('wa_conversas').select('*').order('atualizado', {ascending:false}).limit(40)]);
+      melWa = c.data?.valor || {on:false}; melWaConv = l.data || []; } catch(e){ melWa = melWa || {on:false}; }
+    const n = melWaConv.filter(c => c.precisa_voce).length; document.querySelectorAll('[data-wacnt]').forEach(b => { b.textContent = n; b.hidden = !n; });
+    if (gesAtual==='whatsapp') pinta(); };
+  renderWhats = function(){ _rw2(); pinta(); carrega(); };
+  document.addEventListener('change', async e => { if (e.target.id !== 'melWaOn') return; const on = e.target.checked; e.target.disabled = true;
+    const {error} = await sb.from('config').upsert({chave:'mel_whatsapp', valor:{...(melWa||{}), on}, publica:false}); e.target.disabled = false;
+    if (error){ e.target.checked = !on; toast('Não consegui salvar. Tente de novo.'); return; }
+    melWa = {...(melWa||{}), on}; toast(on ? 'Mel ligada no WhatsApp' : 'Mel desligada no WhatsApp'); });
+  document.addEventListener('click', async e => { const b = e.target.closest('[data-meldevolve]'); if (!b) return; b.disabled = true;
+    const {error} = await sb.from('wa_conversas').update({precisa_voce:false, humano_ate:null, motivo:null}).eq('telefone', b.dataset.meldevolve);
+    if (error){ b.disabled = false; toast('Não consegui devolver. Tente de novo.'); return; }
+    toast('A Mel volta a atender essa cliente'); carrega(); });
+  setInterval(() => { if (sbAdmin && !document.hidden) carrega(); }, 60000);
+}
+
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
 
