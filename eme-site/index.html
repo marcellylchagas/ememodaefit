@@ -7771,7 +7771,7 @@ const leAcademia = id => { const s = $('#'+id); if (!s) return null; return s.va
 document.addEventListener('change', e => { if (e.target.matches('[data-acadsel]')){ const o = $('#'+e.target.id+'Outra'); if (o){ o.hidden = e.target.value !== '__outra'; if (!o.hidden) o.focus(); } } });
 { const _rcA = renderConta; renderConta = function(){ _rcA.apply(this, arguments);
   if (conta.logada){ const f = $('#fDados'); if (f && !f.querySelector('.acad-f')){ const cpf = $('#dCpf')?.closest('.field'); (cpf || f.querySelector('.lbl'))?.insertAdjacentHTML(cpf ? 'afterend' : 'beforebegin', campoAcademiaHTML('dAcad', conta.academia)); } }
-  else { const f = $('#fLogin'); if (f && !f.querySelector('.acad-f')){ const sub = f.querySelector('[data-modo="criar"]'); const alvo = sub?.closest('.row2, .bar, div') || sub; alvo?.insertAdjacentHTML('beforebegin', `<details class="acad-cria"><summary>Vai criar a sua conta? Conte onde você treina</summary>${campoAcademiaHTML('lgAcad', localStorage.getItem?.('emeAcadPend') || '')}</details>`); } } }; }
+ }; }
 document.addEventListener('submit', e => { if (e.target.id === 'fDados'){ const v = leAcademia('dAcad'); if (v !== null) conta.academia = v; }
   if (e.target.id === 'fLogin' && e.submitter?.dataset.modo === 'criar'){ const v = leAcademia('lgAcad'); if (v){ conta.academiaPend = v; try { localStorage.setItem('emeAcadPend', v); } catch(_){} } } }, true);
 /* depois de criar a conta: a academia escolhida vai para a ficha */
@@ -8735,6 +8735,80 @@ document.addEventListener('click', async e => { if (!e.target.closest('[data-ple
 @media (max-width:719px){ #mel .mel-balao{right:calc(100% - 28px);bottom:150px;max-width:min(200px, calc(100vw - 150px))} }
 #mel.mel[hidden], #mel.mel.mel-off .mel-balao{display:none}`;
   document.head.appendChild(st); }
+
+/* ===== v75 · criar conta com o cadastro completo (dados, endereço com CEP e academia) ===== */
+const soDig = v => String(v || '').replace(/\D/g, '');
+const fmtCpfC = v => soDig(v).slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+const fmtTelC = v => { const d = soDig(v).slice(0, 11); return d.length > 10 ? d.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3') : d.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').replace(/-$/, ''); };
+var cadNovo = null;
+function formCriarHTML(){ const c = cadNovo || {}; const v = k => esc(c[k] || '');
+  const campo = (id, rot, extra = '', opc = false) => `<div class="field"><label for="${id}">${rot}${opc ? ' <span class="opc">(opcional)</span>' : ' <span class="obg"></span>'}</label><input id="${id}" ${extra}></div>`;
+  return `<form class="panel" id="fCriar" novalidate><h3 style="font-size:16px">Criar a sua conta</h3>
+    <p class="note" style="margin:-4px 0 10px">Preencha uma vez e as próximas compras ficam bem mais rápidas.</p>
+    ${campo('cNome','Nome completo',`autocomplete="name" value="${v('nome')}"`)}
+    ${campo('cEmail','E-mail',`type="email" autocomplete="email" value="${v('email')}"`)}
+    ${campo('cSenha','Senha','type="password" autocomplete="new-password" placeholder="Mínimo de 6 caracteres"')}
+    <div class="row2">${campo('cCpf','CPF',`inputmode="numeric" placeholder="000.000.000-00" value="${v('cpf')}"`)}${campo('cTel','Telefone',`type="tel" inputmode="numeric" placeholder="(00) 0000-0000" value="${v('tel')}"`)}</div>
+    ${campo('cWhats','WhatsApp',`type="tel" inputmode="numeric" placeholder="(00) 00000-0000" value="${v('whats')}"`)}
+    <div class="lbl" style="margin-top:6px">Endereço</div>
+    <div class="row2">${campo('cCep','CEP',`inputmode="numeric" placeholder="00000-000" value="${v('cep')}"`)}${campo('cUf','Estado (UF)',`maxlength="2" value="${v('uf')}"`)}</div>
+    ${campo('cRua','Rua',`autocomplete="address-line1" value="${v('rua')}"`)}
+    <div class="row2">${campo('cNum','Número',`value="${v('num')}"`)}${campo('cComp','Complemento',`value="${v('comp')}"`, true)}</div>
+    <div class="row2">${campo('cBairro','Bairro',`value="${v('bairro')}"`)}${campo('cCidade','Cidade',`value="${v('cidade')}"`)}</div>
+    ${campoAcademiaHTML('cAcad', c.academia || '').replace('<span class="opc">(opcional)</span>', '<span class="obg"></span>').replace('<option value="">Não treino em academia</option>', `<option value="" disabled ${c.academia ? '' : 'selected'}>Selecione</option><option value="__nao" ${c.academia === 'Não treino em academia' ? 'selected' : ''}>Não treino em academia</option>`)}
+    ${conta.err ? `<div class="err">${esc(conta.err)}</div>` : ''}${conta.msg ? `<div class="ok-msg" style="margin-top:8px;color:#1f7a4a;font-size:13px;line-height:1.45">${esc(conta.msg)}</div>` : ''}
+    <div class="row2" style="margin-top:14px"><button class="btn ghost" type="button" data-voltaentrar>Já tenho conta</button><button class="btn" type="submit">Criar conta</button></div></form>`; }
+{ const _rcC = renderConta; renderConta = function(){ _rcC.apply(this, arguments); if (conta.logada) return;
+    if (conta.criando){ const f = $('#fLogin'); if (f) f.outerHTML = formCriarHTML(); return; }
+    const b = document.querySelector('#fLogin [data-modo="criar"]'); if (b){ b.type = 'button'; b.removeAttribute('data-modo'); b.setAttribute('data-abrecriar', ''); } }; }
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-abrecriar]')){ e.preventDefault(); e.stopImmediatePropagation(); const em = ($('#lgEmail')?.value || '').trim(); cadNovo = {...(cadNovo || {}), email: em || cadNovo?.email || ''}; conta.criando = true; conta.err = ''; conta.msg = ''; renderConta(); setTimeout(() => $('#cNome')?.focus(), 30); }
+  if (e.target.closest('[data-voltaentrar]')){ e.preventDefault(); conta.criando = false; conta.err = ''; conta.msg = ''; renderConta(); } }, true);
+document.addEventListener('input', e => { const t = e.target; if (!t.closest('#fCriar')) return;
+  if (t.id === 'cCpf') t.value = fmtCpfC(t.value); if (t.id === 'cTel' || t.id === 'cWhats') t.value = fmtTelC(t.value);
+  if (t.id === 'cCep'){ t.value = soDig(t.value).slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'); if (soDig(t.value).length === 8) buscaCepCad(soDig(t.value)); }
+  if (t.id === 'cUf') t.value = t.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+async function buscaCepCad(c){ try { const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 6000); const r = await fetch(`https://viacep.com.br/ws/${c}/json/`, {signal: ctrl.signal}); clearTimeout(to); const d = await r.json(); if (d.erro) return;
+  const p = (id, val) => { const el = $('#'+id); if (el && val && !el.value) el.value = val; }; p('cRua', d.logradouro); p('cBairro', d.bairro); p('cCidade', d.localidade); p('cUf', d.uf); if ($('#cRua')?.value) $('#cNum')?.focus(); } catch(_){} }
+function leCad(){ const g = id => ($('#'+id)?.value || '').trim();
+  return {nome: g('cNome'), email: g('cEmail'), cpf: g('cCpf'), tel: g('cTel'), whats: g('cWhats'), cep: g('cCep'), rua: g('cRua'), num: g('cNum'), comp: g('cComp'), bairro: g('cBairro'), cidade: g('cCidade'), uf: g('cUf'), academia: (() => { const s = $('#cAcad'); if (!s) return ''; return s.value === '__outra' ? g('cAcadOutra') : s.value === '__nao' ? 'Não treino em academia' : s.value; })(), acadOk: !!$('#cAcad') && !!$('#cAcad').value && ($('#cAcad').value !== '__outra' || !!g('cAcadOutra')) }; }
+function aplicaCad(p){ if (!p) return false; let mudou = false; const set = (k, v) => { if (v && !conta[k]){ conta[k] = v; mudou = true; } };
+  if (p.nome && (!conta.nome || conta.nome === conta.email || conta.nome === String(conta.email || '').split('@')[0])){ conta.nome = p.nome; mudou = true; } set('cpf', soDig(p.cpf)); set('tel', p.tel); set('whats', p.whats); if (p.academia && p.academia !== 'Não treino em academia') set('academia', p.academia);
+  if (p.rua && !(conta.ends || []).length){ conta.ends = [{cep: p.cep, rua: p.rua, num: p.num, comp: p.comp || '', bairro: p.bairro, cidade: p.cidade, uf: p.uf}]; mudou = true; }
+  if (mudou){ if (!co.nome) co.nome = conta.nome; if (!co.whats) co.whats = conta.whats; if (!co.cpf) co.cpf = conta.cpf; }
+  return mudou; }
+document.addEventListener('submit', async e => { if (e.target.id !== 'fCriar') return; e.preventDefault(); e.stopImmediatePropagation();
+  const p = leCad(); cadNovo = p; conta.err = ''; conta.msg = ''; const senha = $('#cSenha')?.value || '';
+  const falta = [];
+  if (p.nome.split(/\s+/).length < 2) falta.push('nome completo'); if (!/^\S+@\S+\.\S+$/.test(p.email)) falta.push('e-mail'); if (senha.length < 6) falta.push('senha com 6 ou mais caracteres');
+  if (!(typeof cpfValido === 'function' ? cpfValido(p.cpf) : soDig(p.cpf).length === 11)) falta.push('CPF válido');
+  if (soDig(p.tel).length < 10) falta.push('telefone'); if (soDig(p.whats).length < 10) falta.push('WhatsApp');
+  if (soDig(p.cep).length !== 8) falta.push('CEP'); ['rua','num','bairro','cidade'].forEach(k => { if (!p[k]) falta.push({rua:'rua', num:'número', bairro:'bairro', cidade:'cidade'}[k]); }); if (p.uf.length !== 2) falta.push('estado (UF)');
+  if (!p.acadOk) falta.push('academia');
+  const erroCad = m => { const fm = $('#fCriar'); if (!fm) return; let el = fm.querySelector('.err'); if (!el){ fm.querySelector('.row2:last-of-type')?.insertAdjacentHTML('beforebegin', '<div class="err"></div>'); el = fm.querySelector('.err'); } el.textContent = m; fm.querySelectorAll('button').forEach(b => b.disabled = false); el.scrollIntoView({block:'center', behavior:'smooth'}); };
+  if (falta.length){ erroCad('Falta preencher: ' + falta.join(', ') + '.'); return; }
+  e.target.querySelectorAll('button').forEach(b => b.disabled = true);
+  const perfil = {...p}; delete perfil.acadOk;
+  try { localStorage.setItem('emePerfilPend', JSON.stringify(perfil)); } catch(_){}
+  if (!sbOn()){ conta.criando = false; conta.logada = true; conta.email = p.email; aplicaCad(perfil); renderConta(); toast('Conta criada.'); return; }
+  const {data, error} = await sb.auth.signUp({email: p.email, password: senha, options: {data: {nome: p.nome, perfil}, emailRedirectTo: location.origin + '/#conta'}});
+  if (error){ erroCad(/registered|exists/i.test(error.message) ? 'Já existe uma conta com esse e-mail. Toque em "Já tenho conta" para entrar.' : 'Não foi possível criar a conta agora. Tente de novo.'); return; }
+  if (!data.session){ conta.criando = false; conta.email = p.email; conta.msg = `Quase lá! Enviamos um e-mail para ${p.email}. Toque no link dele para ativar a sua conta e depois entre aqui. Os seus dados já ficam guardados.`; renderConta(); return; }
+  conta.criando = false; await carregarConta(); toast('Conta criada. Bem-vinda à EME!'); renderConta(); }, true);
+/* ao entrar: completa a ficha com o cadastro feito na criação da conta (vale em qualquer aparelho) */
+{ const _cc = carregarConta; carregarConta = async function(){ await _cc.apply(this, arguments); if (!conta.logada || !sbOn()) return;
+    let p = null; try { const {data:{session}} = await sb.auth.getSession(); p = session?.user?.user_metadata?.perfil || null; } catch(_){}
+    if (!p){ try { const l = JSON.parse(localStorage.getItem('emePerfilPend') || 'null'); if (l && normNome(l.email || '') === normNome(conta.email || '')) p = l; } catch(_){} }
+    if (p && aplicaCad(p)){ if (telaAtual === 'conta') renderConta(); }
+    try { localStorage.removeItem('emePerfilPend'); } catch(_){} }; }
+
+/* ===== v75 · conversa com a Mel some ao fechar a conversa, ao sair da conta e ao fechar a página ===== */
+function mcApaga(){ try { MC.msgs = []; sessionStorage.removeItem('emeMelChat'); localStorage.removeItem('emeMelChat'); } catch(_){}
+  const l = document.querySelector('#mcLista'); if (l) l.innerHTML = ''; }
+{ const _mf = melChatFecha; melChatFecha = function(){ _mf.apply(this, arguments); mcApaga(); }; }
+document.addEventListener('click', e => { if (e.target.closest('[data-sair], [data-sairpainel]')) mcApaga(); }, true);
+if (sbOn()) sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') mcApaga(); });
+addEventListener('pagehide', mcApaga);
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
