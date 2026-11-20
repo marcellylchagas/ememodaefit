@@ -8193,7 +8193,7 @@ function MelVideo(box, base){
     gl.uniform1f(uO, o); gl.uniform1f(uRV, RV[c.n] || .87); gl.uniform1f(uGW, BRI); gl.uniform1f(uPH, FASE); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
   function quadro(){ if (!rodando) return; raf = requestAnimationFrame(quadro);
     const r = box.getBoundingClientRect(); if (!r.width || document.hidden) return;
-    const dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+    const dpr = Math.min(matchMedia('(max-width:719px)').matches ? 1.5 : 2, devicePixelRatio || 1), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
     if (!atual) return; if (!api.ok){ api.ok = true; box.classList.add('gl-ok'); }
     /* troca de look com um brilho rápido: o brilho sobe, o look troca no meio e o brilho some (~0,5 s) */
     const tt = antes ? Math.min(1, (performance.now() - ultimaTroca) / TROCA) : 1; fade = tt * tt * (3 - 2 * tt); let fa = Math.max(0, (tt - .35) / .65); fa = 1 - fa * fa * (3 - 2 * fa); BRI = 0; FASE = 0;
@@ -8726,6 +8726,15 @@ document.addEventListener('click', async e => { if (!e.target.closest('[data-ple
   try { const {error} = await sb.auth.resetPasswordForEmail(em, {redirectTo: location.origin + '/#nova-senha'});
     telaLogin(error ? 'Não foi possível enviar agora: ' + error.message : `Se ${em} tiver acesso ao painel, enviamos um link para criar uma senha nova. Confira também o spam.`, em); }
   catch(_){ telaLogin('Sem conexão com o servidor agora. Tente de novo.', em); } });
+
+/* ===== v74 · Mel firme no lugar: o balão não empurra nem mexe nela (celular e computador) ===== */
+{ const st = document.createElement('style'); st.textContent = `
+#mel.mel{display:block}
+#mel .mel-boneca{position:relative}
+#mel .mel-balao{position:absolute!important;right:calc(100% - 34px);bottom:230px;margin:0!important;width:max-content;max-width:220px;align-self:auto}
+@media (max-width:719px){ #mel .mel-balao{right:calc(100% - 28px);bottom:150px;max-width:min(200px, calc(100vw - 150px))} }
+#mel.mel[hidden], #mel.mel.mel-off .mel-balao{display:none}`;
+  document.head.appendChild(st); }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
