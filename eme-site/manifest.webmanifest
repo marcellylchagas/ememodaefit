@@ -19,5 +19,12 @@
    "type": "image/png",
    "purpose": "any maskable"
   }
+ ],
+ "id": "/",
+ "related_applications": [
+  {
+   "platform": "webapp",
+   "url": "https://ememodaefit.pages.dev/manifest.webmanifest"
+  }
  ]
 }

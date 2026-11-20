@@ -5462,7 +5462,7 @@ document.addEventListener('change', e => { if (e.target.id==='cfSite'){ const v 
 /* ----- aviso de cookies (LGPD) ----- */
 let cookieOk = null; try { cookieOk = localStorage.getItem('emeCookies'); } catch(e){}
 function avisoCookies(){
-  if (cookieOk) return; if (document.getElementById('cookieBar')) return;
+  if (document.getElementById('cookieBar')) return;
   document.body.insertAdjacentHTML('beforeend', `<div class="cookiebar" id="cookieBar" role="dialog" aria-label="Aviso de cookies"><p>Usamos cookies para a loja funcionar, lembrar a sua sacola e, com a sua permissão, medir visitas e anúncios. Saiba mais na <button class="link" data-cookieinfo>Política de privacidade</button>.</p>
     <div class="ck-b"><button class="btn sm ghost" data-cookie="essenciais">Só os essenciais</button><button class="btn sm" data-cookie="todos">Aceitar todos</button></div></div>`); }
 document.addEventListener('click', e => {
@@ -5487,7 +5487,10 @@ function metaTela(n){ const B = 'EME Moda & Fit';
 let pedidoInstalar = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; });
 const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const jaInstalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const jaInstalado = () => { const app = matchMedia('(display-mode: standalone)').matches || navigator.standalone; let marcado = false;
+  try { if (app) localStorage.setItem('emeAppInstalado', '1'); marcado = localStorage.getItem('emeAppInstalado') === '1'; } catch(_){} return app || marcado; };
+window.addEventListener('appinstalled', () => { try { localStorage.setItem('emeAppInstalado', '1'); } catch(_){} document.querySelector('.app-conv')?.remove(); });
+if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(l => { if (l && l.length){ try { localStorage.setItem('emeAppInstalado', '1'); } catch(_){} document.querySelector('.app-conv')?.remove(); } }).catch(() => {});
 { const col = document.querySelector('.sfoot .sf-in > div:nth-child(3)'); if (col) col.insertAdjacentHTML('beforeend', '<button data-instalar><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg>Instalar o app da loja</button>'); }
 document.addEventListener('click', async e => { if (!e.target.closest('[data-instalar]')) return;
   if (jaInstalado()){ toast('O app da loja já está instalado neste aparelho.'); return; }
@@ -8992,6 +8995,12 @@ if (sbOn()){
         return `<div class="sab-i"><div><b>${esc(quem)}</b> · ${brl(+x.total || 0)}<small>${esc((x.itens || []).map(nomeP).join(' / '))}</small><small>${tempo(x.atualizado)}${x.email && x.nome ? ' · ' + esc(x.email) : ''}</small></div>${w.length >= 10 ? `<a class="btn sm ghost" target="_blank" rel="noopener" href="https://wa.me/${w.length <= 11 ? '55' + w : w}?text=${encodeURIComponent(`Oi${x.nome ? ', ' + String(x.nome).split(' ')[0] : ''}! Vi que você deixou peças na sacola da EME. Posso te ajudar a finalizar?`)}">WhatsApp</a>` : ''}</div>`; }).join('')
         : '<p class="note" style="margin:0">Nenhuma sacola parada há mais de 30 minutos.</p>'}</div></details>`); };
 }
+
+/* ---------- v86: carrosséis da página inicial menores ---------- */
+{ const st = document.createElement('style'); st.textContent = `
+#shelves .shelf{grid-auto-columns:34%!important;gap:10px}
+@media (min-width:720px){#shelves .shelf{grid-auto-columns:190px!important;gap:14px}}
+#shelves .sec{margin-top:18px}`; document.head.appendChild(st); }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
