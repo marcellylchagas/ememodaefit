@@ -8824,7 +8824,8 @@ addEventListener('pagehide', mcApaga);
 /* ===== v76 · celular: rodapé e Mel presos ao fundo da tela sem pular quando a barra do navegador mexe ===== */
 { const st = document.createElement('style'); st.textContent = `
 html,body{height:auto!important;min-height:100%}
-html{overflow-y:scroll;-webkit-text-size-adjust:100%;text-size-adjust:100%}`;
+html{overflow-y:scroll;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+#bannerBox,#motivaBar,.motiva{overflow:hidden;overflow:clip;max-width:100%}`;
   document.head.appendChild(st); }
 
 /* ===== v78 · banner: troca sem a página mudar de altura (era isso que fazia o rodapé e a Mel pularem no celular) ===== */
