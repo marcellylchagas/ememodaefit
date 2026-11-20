@@ -8132,7 +8132,7 @@ if (sbOn()) REGRAS.forEach(r => { if (r.k === 'enviaAuto' || r.k === 'entregaAut
 /* ---------- 4) a Mel: avatar animada que conversa com a cliente ---------- */
 /* Mel em vídeo: os vídeos dela (com o fundo já tirado) tocam num canvas transparente e trocam conforme o que a cliente faz */
 function MelVideo(box, base){
-  const MEL_SEM = {acena:'parada', look:'parada'} /* acenar e olhar ficaram com a boca torta: ela fica parada sorrindo no lugar */, CLIPS = {parada:'mel-1.mp4', acena:'mel-2.mp4', aponta:'mel-3.mp4', comemora:'mel-4.mp4', pensa:'mel-5.mp4', look:'mel-7.mp4', coracao:'mel-8.mp4', fala:'mel-9.mp4'};
+  const MEL_SEM = {} /* todos os gestos começam e terminam na mesma pose */, CLIPS = {parada:'mel-p.mp4', look:'mel-o.mp4', fala:'mel-f.mp4', acena:'mel-a.mp4', coracao:'mel-c.mp4', pensa:'mel-k.mp4', aponta:'mel-t.mp4', comemora:'mel-m.mp4'};
   const api = {ok:false, tocar(){}, fala(){}, pula(){}, festa(){}, olha(){}, parar(){}};
   const cv = document.createElement('canvas'); cv.className = 'mel-cv'; cv.setAttribute('aria-hidden','true');
   cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block'; box.appendChild(cv);
@@ -8164,7 +8164,7 @@ function MelVideo(box, base){
   gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return api; gl.useProgram(pr);
   const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
   const aP = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
-  const uO = gl.getUniformLocation(pr, 'o'), uCA = gl.getUniformLocation(pr, 'cA'), uCB = gl.getUniformLocation(pr, 'cB'), uTA = gl.getUniformLocation(pr, 'tA'), uTB = gl.getUniformLocation(pr, 'tB'), uRV = gl.getUniformLocation(pr, 'rv'), uGW = gl.getUniformLocation(pr, 'gw'), uPH = gl.getUniformLocation(pr, 'ph'), TROCA = 420, RV = {parada:0.867, acena:0.929, aponta:0.686, comemora:0.827, pensa:0.843, look:0.957, coracao:0.914, fala:0.984};
+  const uO = gl.getUniformLocation(pr, 'o'), uCA = gl.getUniformLocation(pr, 'cA'), uCB = gl.getUniformLocation(pr, 'cB'), uTA = gl.getUniformLocation(pr, 'tA'), uTB = gl.getUniformLocation(pr, 'tB'), uRV = gl.getUniformLocation(pr, 'rv'), uGW = gl.getUniformLocation(pr, 'gw'), uPH = gl.getUniformLocation(pr, 'ph'), TROCA = 420, RV = {parada:0.925, look:0.878, fala:0.886, acena:0.929, coracao:0.914, pensa:0.929, aponta:0.933, comemora:0.929};
   let COR = {a:null, b:null}; const poeCor = () => { gl.uniform3fv(uCA, COR.a || [0,0,0]); gl.uniform3fv(uCB, COR.b || [0,0,0]); gl.uniform1f(uTA, COR.a ? 1 : 0); gl.uniform1f(uTB, COR.b ? 1 : 0); }; poeCor(); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   const novaTex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE)); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); return t; };
   const esconde = document.createElement('div'); esconde.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none;clip-path:inset(50%)'; document.body.appendChild(esconde);
@@ -8211,7 +8211,7 @@ function MelVideo(box, base){
 }
 
 var MELGL = null;
-const MEL_SVG = `<span class="mel-sombra"></span><span class="mel-mov"><img class="mel-img" src="mel.webp" alt="Mel, assistente da EME" width="228" height="640" decoding="async"></span>`;
+const MEL_SVG = `<span class="mel-sombra"></span><span class="mel-mov"><img class="mel-img" src="mel-v2.webp" alt="Mel, assistente da EME" width="228" height="640" decoding="async"></span>`;
 var melOff = false, melFalaT = null, melOcioT = null, melOlharT = null, melUltProd = null;
 const melFrases = () => { const c = typeof cupomPrimeira === 'function' ? cupomPrimeira() : null; const l = [
   'Já viu as peças que acabaram de chegar? Estão lindas.',
@@ -8236,7 +8236,7 @@ function melFraseProduto(p){ const l = [], cores = Object.keys(p.est || {}).filt
 function melMonta(){ if ($('#mel')) return; document.body.insertAdjacentHTML('beforeend', `<div class="mel ${melOff?'mel-off':''}" id="mel" aria-live="polite">
     <div class="mel-balao" id="melBalao" hidden><button class="mel-x" data-mel="fechabalao" aria-label="Fechar o balão">×</button><p id="melTxt"></p><div class="mel-acoes" id="melAcoes"></div></div>
     <button class="mel-boneca" data-mel="toque" aria-label="Mel, assistente da loja">${MEL_SVG}</button></div>`); }
-function melLigaGL(){ if (MELGL) return; const mv = $('#mel .mel-mov'); if (!mv || typeof MelVideo !== 'function') return; const src = $('#mel .mel-img').getAttribute('src') || ''; MELGL = MelVideo(mv, src.startsWith('data:') ? '' : src.replace(/mel\.webp$/, '')); }
+function melLigaGL(){ if (MELGL) return; const mv = $('#mel .mel-mov'); if (!mv || typeof MelVideo !== 'function') return; const src = $('#mel .mel-img').getAttribute('src') || ''; MELGL = MelVideo(mv, src.startsWith('data:') ? '' : src.replace(/mel(-v2)?\.webp$/, '')); }
 function melVisivel(){ const m = $('#mel'); if (!m) return; const painel = !$('#s-gestao').hidden || document.querySelector('.app.painel');
   const sacola = telaAtual === 'sacola' && innerWidth < 720; m.hidden = !!painel || sacola;
   m.classList.toggle('no-produto', !$('#veil').hidden && !!pd); }
@@ -8293,7 +8293,7 @@ function melOiMudo(){ const m = $('#mel'); if (!m || melFalou) return; melFalou 
 var melDestravada = false;
 function melDestrava(){ if (melDestravada || melFalou || !melVoz || !melVoz.src) return; melDestravada = true;
   try { melVoz.muted = true; const t = melVoz.play(); const fim = () => { if (melFalou) return; melVoz.pause(); melVoz.currentTime = 0; melVoz.muted = false; }; if (t && t.then) t.then(fim).catch(() => { melVoz.muted = false; melDestravada = false; }); else fim(); } catch(_){ melDestravada = false; } }
-const melVoz = (() => { try { const a = new Audio(); a.preload = 'auto'; a.src = (document.querySelector('#mel .mel-img')?.getAttribute('src') || 'mel.webp').startsWith('data:') ? '' : 'mel-voz.m4a'; return a; } catch(_){ return null; } })();
+const melVoz = (() => { try { const a = new Audio(); a.preload = 'auto'; a.src = (document.querySelector('#mel .mel-img')?.getAttribute('src') || 'mel.webp').startsWith('data:') ? '' : 'mel-voz-2.m4a'; return a; } catch(_){ return null; } })();
 document.addEventListener('click', e => { const b = e.target.closest('[data-mel="som-removido"]'); if (!b || melFalou) return; e.stopImmediatePropagation(); melFalou = true;
   if (melVoz && melVoz.src){ melVoz.currentTime = 0; melVoz.play().catch(() => {}); }
   if (MELGL){ MELGL.depois = 'acena'; MELGL.reinicia('fala'); }
@@ -8597,7 +8597,7 @@ function mcContexto(){ const p = pd && prod(pd.id);
     nome: conta && conta.logada ? (conta.nome || '').split(' ')[0] : (co.nome || '').split(' ')[0]}; }
 function mcMonta(){ if ($('#melChat')) return;
   document.body.insertAdjacentHTML('beforeend', `<section class="mc" id="melChat" hidden role="dialog" aria-label="Conversa com a Mel">
-    <header class="mc-h"><span class="mc-av"><img src="mel.webp" alt=""></span><div><b>Mel</b><span>Atendimento da EME</span></div><button class="mc-x" data-mcfecha aria-label="Fechar a conversa">×</button></header>
+    <header class="mc-h"><span class="mc-av"><img src="mel-v2.webp" alt=""></span><div><b>Mel</b><span>Atendimento da EME</span></div><button class="mc-x" data-mcfecha aria-label="Fechar a conversa">×</button></header>
     <div class="mc-l" id="mcLista" aria-live="polite"></div>
     <div class="mc-chips" id="mcChips"></div>
     <form class="mc-f" id="mcForm" autocomplete="off"><input id="mcIn" maxlength="500" placeholder="Escreva para a Mel…" aria-label="Mensagem para a Mel"><button type="submit" aria-label="Enviar">${SVG('<path d="M4 12l16-8-6 16-2-7z"/>')}</button></form>
