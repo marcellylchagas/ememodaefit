@@ -3129,6 +3129,8 @@ function renderVisao(){
 /* ================= horário e WhatsApp ================= */
 const CHECKOUT_WA = true;
 const WHATS = '(24) 99971-9744', WHATS_LINK = 'https://wa.me/5524999719744';
+/* mensagem que já vem escrita quando a cliente abre o WhatsApp da loja */
+const WHATS_MSG = 'Olá! Vim pelo site da EME Moda & Fit e gostaria de tirar uma dúvida.', WHATS_LINK_MSG = `${WHATS_LINK}?text=${encodeURIComponent(WHATS_MSG)}`;
 const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 function agoraSP(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); }
 function statusLoja(){
@@ -3150,7 +3152,7 @@ function abrirWhats(){
   $('#sheet').innerHTML = `<div class="grab"></div><div class="head"><h3 id="pdTitle" style="font-size:20px">Fale com a EME</h3><button class="x" data-close aria-label="Fechar">×</button></div>
     <div class="closed ${s.aberta?'open':''}"><span class="dotc"></span><div><b>${s.aberta?'Aberto agora':'Fechado no momento'}</b>${esc(s.txt)} · seg. a sex., 10h às 18h</div></div>
     <div class="panel"><div class="lbl" style="margin-top:0">WhatsApp</div><div style="font-family:var(--display);font-size:22px;font-weight:700;user-select:all">${WHATS}</div>
-    <div class="row2" style="margin-top:12px"><button class="btn ghost" data-copywa>Copiar número</button><a class="btn" href="${WHATS_LINK}" target="_blank" rel="noopener">Abrir conversa</a></div>
+    <div class="row2" style="margin-top:12px"><button class="btn ghost" data-copywa>Copiar número</button><a class="btn" href="${WHATS_LINK_MSG}" target="_blank" rel="noopener">Abrir conversa</a></div>
     <p class="note" style="margin:10px 0 0">Se a conversa não abrir, copie o número e chame no WhatsApp.</p></div>`;
   $('#veil').hidden = false;
 }
@@ -8363,7 +8365,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-mel]
   if (a === 'toque') return melFala(sorteia(['Oi! Posso te ajudar?', 'Tô aqui. Quer uma dica?', 'Oi! Procurando alguma peça?']), melMenu(), 9000, 'acena');
   if (a === 'novidades'){ $('#melBalao').hidden = true; vitrine = 'produtos'; catAtual = 'Todos'; renderCats(); renderProdutos(); mostrar('loja'); setTimeout(() => melFala('Essas são todas as peças. Toca em uma para ver de pertinho.', '', 6000, 'aponta'), 700); return; }
   if (a === 'cupom'){ const c = typeof cupomPrimeira === 'function' ? cupomPrimeira() : null; if (c){ try { navigator.clipboard?.writeText(c.cod); } catch(_){} melFala(`Copiei o cupom ${c.cod} para você. É só colar na sacola.`, '', 6500, 'coracao'); } else melFala('Agora não tem cupom de primeira compra, mas fica de olho nas ofertas.', '', 6000, 'pensa'); return; }
-  if (a === 'whats'){ window.open(WHATS_LINK, '_blank', 'noopener'); return; }
+  if (a === 'whats'){ window.open(WHATS_LINK_MSG, '_blank', 'noopener'); return; }
   if (a === 'dica') return melFala(sorteia(melFrases()), melMenu(), 9000, sorteia(['look','pensa','aponta'])); });
 const melMenu = () => (typeof mcLigado === 'function' && mcLigado() ? '<button class="mel-b" data-mel="conversa">Conversar com a Mel</button>' : '') + '<button class="mel-b ghost" data-mel="novidades">Ver novidades</button><button class="mel-b ghost" data-mel="cupom">Cupom</button><button class="mel-b ghost" data-mel="whats">WhatsApp</button><button class="mel-b ghost" data-mel="dica">Outra dica</button>';
 /* ela reage ao que a cliente faz */
