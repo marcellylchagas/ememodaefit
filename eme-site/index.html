@@ -8923,7 +8923,6 @@ if (sbOn()){ const _rw2 = renderWhats; let melWa = null, melWaConv = [];
     const {error} = await sb.from('wa_conversas').update({precisa_voce:false, humano_ate:null, motivo:null}).eq('telefone', b.dataset.meldevolve);
     if (error){ b.disabled = false; toast('Não consegui devolver. Tente de novo.'); return; }
     toast('A Mel volta a atender essa cliente'); carrega(); });
-  setInterval(() => { if (sbAdmin && !document.hidden) carrega(); }, 60000);
 }
 
 /* ---------- v84: a faixa preta do topo e o "Mais vendidos" seguem o painel ---------- */
@@ -9041,7 +9040,7 @@ if (sbOn()){
 }
 
 /* ---------- v88: venda no balcão de verdade; sem crediário e sem recompensas no painel ---------- */
-{ const TIRA = ['crediario','recompensas'];
+{ const TIRA = ['crediario','recompensas','whatsapp','atendimento','marketing'];
   for (let i = GES.length - 1; i >= 0; i--) if (TIRA.includes(GES[i][0])) GES.splice(i, 1);
   GRUPOS.forEach(g => { if (Array.isArray(g[1])) for (let i = g[1].length - 1; i >= 0; i--) if (TIRA.includes(g[1][i])) g[1].splice(i, 1); });
   const st = document.createElement('style'); st.textContent = TIRA.map(k => `[data-ges="${k}"],[data-g="${k}"]`).join(',') + '{display:none!important}'; document.head.appendChild(st);
