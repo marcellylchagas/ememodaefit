@@ -9181,6 +9181,108 @@ if (sbOn()){
   if (typeof PICO === 'object' && !PICO['Histórico']) PICO['Histórico'] = '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>';
 }
 
+
+/* ===== v95 · Exportar produtos para o UpSeller (planilha "Importar Variantes") ===== */
+{
+  ACOES.produtos.unshift(['Exportar para o UpSeller', 'upseller', 'ghost']);
+  const UPS_CAB = ["SPU*\n(Obrigatório, 1-200 caracteres e limite de números, letras e caracteres especiais)","SKU*\n(Obrigatório, 1-200 caracteres e limite de números, letras e caracteres especiais)","Título*\n(Obrigatório, 1-500 caracteres)","Apelido do Produto\n(1-500 caracteres)","Usar apelido como título da NFe","Categoria principal\n(Campos em branco ou inválidos não atualizarão a categoria do produto.)","Categoria secundária\n(Selecione uma categoria principal primeiro.)","Variantes1*\n(Obrigatório, 1-14 caracteres)","Valor da Variante1*\n(Obrigatório, 1-30 caracteres)","Variantes2\n(limite 1-14 caracteres)","Valor da Variante2\n(limite 1-30 caracteres)","Variantes3\n(limite 1-14 caracteres)","Valor da Variante3\n(limite 1-30 caracteres)","Variantes4\n(limite 1-14 caracteres)","Valor da Variante4\n(limite 1-30 caracteres)","Variantes5\n(limite 1-14 caracteres)","Valor da Variante5\n(limite 1-30 caracteres)","Preço de varejo\n(limite 0-999999999)","Custo de Compra\n(limite 0-999999999)","Quantidade\n(limite 0-999999999, Se não for preenchido, não será registrado na Lista de Estoque)","N° do Estante\n(Apenas estantes existentes, serão filtrados se o estante selecionado estiver cheio ou ficará cheio após a importação)","Código de Barras\n(Limite de 8 a 14 caracteres, separe vários códigos de barras com vírgulas)","Apelido de SKU\n（Limite a letras, números e caracteres especiais; separe vários apelidos de SKU com vírgulas; máximo de 20 entradas）","Imagem\n(Link da imagem, apenas suporta imagens nos formatos JPG, JPEG, PNG, com tamanho máximo de 2MB. Para múltiplas imagens, use \"|\" para separá-las, no máximo 15 imagens.)","Peso (g)\n(limite 1-999999)","Comprimento (cm)\n(limite 1-999999)","Largura (cm)\n(limite 1-999999)","Altura (cm)\n(limite 1-999999)","NCM\n(limite 8 dígitos)","CEST\n(limite 7 dígitos)","Unidade\n(Selecionar UN/KG/Par)","Origem\n(Selecionar 0/1/2/3/4/5/6/7/8)","Link do Fornecedor"];
+
+  /* --- xlsx mínimo (zip sem compressão) --- */
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(arquivos){
+    const enc = new TextEncoder(), partes = [], central = []; let off = 0;
+    for (const [nome, txt] of arquivos){
+      const n = enc.encode(nome), d = enc.encode(txt), c = crc32(d);
+      const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+      h.setUint32(14, c, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, n.length, true);
+      partes.push(new Uint8Array(h.buffer), n, d);
+      const ce = new DataView(new ArrayBuffer(46)); ce.setUint32(0, 0x02014b50, true); ce.setUint16(4, 20, true); ce.setUint16(6, 20, true); ce.setUint16(8, 0x0800, true);
+      ce.setUint32(16, c, true); ce.setUint32(20, d.length, true); ce.setUint32(24, d.length, true); ce.setUint16(28, n.length, true); ce.setUint32(42, off, true);
+      central.push(new Uint8Array(ce.buffer), n); off += 30 + n.length + d.length; }
+    const tam = central.reduce((a, x) => a + x.length, 0);
+    const fim = new DataView(new ArrayBuffer(22)); fim.setUint32(0, 0x06054b50, true); fim.setUint16(8, arquivos.length, true); fim.setUint16(10, arquivos.length, true);
+    fim.setUint32(12, tam, true); fim.setUint32(16, off, true);
+    return new Blob([...partes, ...central, new Uint8Array(fim.buffer)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); }
+  const xesc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const col = i => { let s = ''; i++; while (i){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  function planilha(linhas, aba){
+    const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>` +
+      linhas.map((l, r) => `<row r="${r+1}">` + l.map((v, c) => v === '' || v == null ? '' : (typeof v === 'number'
+        ? `<c r="${col(c)}${r+1}"><v>${v}</v></c>` : `<c r="${col(c)}${r+1}" t="inlineStr"><is><t xml:space="preserve">${xesc(v)}</t></is></c>`)).join('') + '</row>').join('') +
+      `</sheetData></worksheet>`;
+    return zip([
+      ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`],
+      ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+      ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xesc(aba)}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+      ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`],
+      ['xl/worksheets/sheet1.xml', sheet]]); }
+
+  /* --- fotos: o UpSeller só aceita JPG/PNG; as fotos .webp viram .jpg no Storage da loja --- */
+  const hashTxt = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + s.length.toString(36); };
+  async function fotoJpg(url){
+    if (/\.(jpe?g|png)(\?|$)/i.test(url)) return url;
+    const nome = `upseller/${hashTxt(url)}.jpg`, pub = sb.storage.from('produtos').getPublicUrl(nome).data.publicUrl;
+    try { const r = await fetch(pub, {method:'HEAD', cache:'no-store'}); if (r.ok) return pub; } catch {}
+    const b = await (await fetch(url)).blob(); const img = await createImageBitmap(b);
+    const k = Math.min(1, 1200 / Math.max(img.width, img.height)); const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+    const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0, cv.width, cv.height);
+    const jpg = await new Promise((ok, falha) => cv.toBlob(x => x ? ok(x) : falha(new Error('imagem')), 'image/jpeg', .85));
+    const {error} = await sb.storage.from('produtos').upload(nome, jpg, {contentType:'image/jpeg', upsert:false});
+    if (error && !/exist|duplicate/i.test(error.message || '')) throw error;
+    return pub; }
+
+  const limpa = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const num = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? '' : +v;
+  let exportando = false;
+  async function exportarUpSeller(btn){
+    if (exportando) return;
+    if (!(sb && sbOn() && sbAdmin)) return toast('Entre no painel para exportar.');
+    exportando = true; const txt0 = btn ? btn.textContent : ''; const msg = t => { if (btn) btn.textContent = t; };
+    try {
+      msg('Lendo produtos…');
+      const lerTudo = async (tab, sel) => { const out = []; for (let de = 0; ; de += 1000){ const {data, error} = await sb.from(tab).select(sel).order('id').range(de, de + 999); if (error) throw error; out.push(...data); if (data.length < 1000) break; } return out; };
+      const prods = (await lerTudo('produtos', '*')).filter(p => p.status === 'Publicado');
+      const vars = await lerTudo('variacoes', '*');
+      const porProd = {}; vars.forEach(v => (porProd[v.produto_id] ??= []).push(v));
+      const fotos = [...new Set(prods.flatMap(p => (p.imagens || []).slice(0, 15).map(String)))];
+      const mapa = {}; let feitas = 0, falhas = 0;
+      const fila = fotos.slice();
+      await Promise.all(Array.from({length: 4}, async () => { while (fila.length){ const u = fila.shift();
+        try { mapa[u] = await fotoJpg(u); } catch (e) { falhas++; console.warn('foto', u, e); }
+        msg(`Preparando fotos ${++feitas}/${fotos.length}…`); } }));
+      const linhas = [UPS_CAB]; let semVar = 0, skus = 0; const usados = new Set();
+      for (const p of prods){
+        const vs = (porProd[p.id] || []).sort((a, b) => a.id - b.id);
+        if (!vs.length){ semVar++; continue; }
+        const spu = limpa(p.sku || p.id, 200);
+        const preco = (p.preco_promo && +p.preco_promo < +p.preco) ? +p.preco_promo : num(p.preco);
+        const imgs = (p.imagens || []).slice(0, 15).map(u => mapa[String(u)]).filter(Boolean).join('|');
+        for (const v of vs){
+          let sku = limpa(v.sku || `${spu}-${v.cor || ''}-${v.tamanho || ''}`, 200).replace(/\s+/g, '-');
+          while (usados.has(sku)) sku += '-' + v.id; usados.add(sku);
+          const ean = /^\d{8,14}$/.test(String(v.ean || '')) ? String(v.ean) : '';
+          const temCor = limpa(v.cor, 30), temTam = limpa(v.tamanho, 30);
+          const [n1, v1, n2, v2] = temCor ? ['Cor', temCor, temTam ? 'Tamanho' : '', temTam] : ['Tamanho', temTam || 'Único', '', ''];
+          linhas.push([spu, sku, limpa(p.nome, 500), '', '', '', '', n1, v1, n2, v2, '', '', '', '', '', '',
+            preco, num(p.custo), Math.max(0, parseInt(v.estoque) || 0), '', ean, '', imgs,
+            num(p.peso_g) || '', num(p.comprimento_cm) || '', num(p.largura_cm) || '', num(p.altura_cm) || '', '', '', 'UN', '', '']);
+          skus++; } }
+      const arq = planilha(linhas, 'Importação_Variante_Planilha_V2');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(arq);
+      a.download = `EME-UpSeller-${new Date().toISOString().slice(0, 10)}.xlsx`; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      try { window.registraAcao?.('Painel', `Planilha do UpSeller exportada: ${prods.length - semVar} produtos, ${skus} variações`); } catch {}
+      toast(`Planilha pronta: ${prods.length - semVar} produtos e ${skus} variações.${falhas ? ` ${falhas} foto(s) não puderam ser convertidas.` : ''}${semVar ? ` ${semVar} produto(s) sem variação ficaram de fora.` : ''}`);
+    } catch (e) { console.error('upseller', e); toast('Não deu para gerar a planilha agora. Tente de novo.'); }
+    finally { exportando = false; msg(txt0); } }
+  window.exportarUpSeller = exportarUpSeller;
+  document.addEventListener('click', e => { const b = e.target.closest('[data-pact]'); if (!b || gesAtual !== 'produtos') return;
+    const it = ACOES.produtos[+b.dataset.pact]; if (!it || it[1] !== 'upseller') return;
+    e.stopImmediatePropagation(); e.preventDefault(); exportarUpSeller(b); }, true);
+}
+
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
 
