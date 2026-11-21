@@ -1731,11 +1731,11 @@ const TAMANHOS = ['PP','P','M','G','GG','Único'];
 /* tamanhos que a peça usa (na ordem da loja) e a numeração de referência */
 const tamsUsados = p => TAMANHOS.filter(s => Object.values((p && p.est) || {}).some(o => o && o[s] !== undefined));
 const tamsDe = p => { const l = tamsUsados(p); return l.length ? l : ['P','M','G']; };
-const NUM_TAM = {PP:'34', P:'36/38', M:'40/42', G:'44/46', GG:'48/50', 'Único':'36 ao 42'};
+const NUM_TAM = {PP:'34', P:'34/36', M:'38/40', G:'42/44', GG:'46', 'Único':'36 ao 42'};
 const CM_TAM = {PP:['78–82','60–64','84–88'], P:['83–88','65–70','89–94'], M:['89–96','71–78','95–102'], G:['97–104','79–86','103–110'], GG:['105–112','87–94','111–118'], 'Único':['83–96','65–78','89–102']};
 const tamSku = s => s==='Único' ? 'UN' : s;
 const medidasCurto = p => tamsDe(p).map(s => s==='Único' ? 'Único: veste do 36 ao 42' : `${s} ${NUM_TAM[s]}`).join(' · ');
-const tabelaMedidasHTML = p => `<table class="narrow" style="min-width:0"><thead><tr><th>Tamanho</th><th>Numeração</th><th>Busto</th><th>Cintura</th><th>Quadril</th></tr></thead><tbody>${(p ? tamsDe(p) : TAMANHOS).map(s => `<tr><td>${s}</td><td>${NUM_TAM[s]}</td><td>${CM_TAM[s][0]}</td><td>${CM_TAM[s][1]}</td><td>${CM_TAM[s][2]}</td></tr>`).join('')}</tbody></table><p class="note" style="margin:6px 0 0">Medidas do corpo em cm, de referência. Podem variar conforme o tecido e a modelagem de cada peça.</p>`;
+const tabelaMedidasHTML = p => `<table class="narrow" style="min-width:0"><thead><tr><th>Tamanho</th><th>Numeração</th></tr></thead><tbody>${(p ? tamsDe(p) : ['P','M','G','GG']).map(s => `<tr><td>${s}</td><td>${NUM_TAM[s]}</td></tr>`).join('')}</tbody></table><p class="note" style="margin:6px 0 0">Tabela de tamanhos da fabricante: P 34/36, M 38/40, G 42/44 e GG 46.</p>`;
 const PRODUTOS = [
   {id:'bianca', n:'Conjunto Bianca', c:'Moda Fitness › Conjuntos', preco:126, custo:90, est:{Preto:{P:3,M:4,G:2}, 'Verde Militar':{P:1,M:2,G:0}}},
   {id:'lanna', n:'Blusa Lanna', c:'Moda Fitness › Blusas e Regatas', preco:70, custo:50, est:{Marrom:{P:7,M:5,G:3}}},
@@ -4173,7 +4173,7 @@ let conversas = [
 let convAtual = null, convFiltro = 'Abertas', convCanal = 'Todos', iaAuto = false, iaPensando = false;
 function contextoLoja(){
   const pub = PRODUTOS.filter(p=>p.status==='Publicado').slice(0,40).map(p => `${p.n} (${p.c}) ${brl(precoAtual(p))} · ${Object.keys(p.est).map(c=>`${c}: ${TAMANHOS.filter(s=>p.est[c][s]>0).join('/')||'esgotado'}`).join('; ')}`).join('\n');
-  return `Loja EME Moda & Fit (moda fitness feminina), Volta Redonda/RJ. Atendimento: ${horarioTxt()}. Tamanhos PP (34), P (36/38), M (40/42), G (44/46), GG (48/50) e Único (veste do 36 ao 42).
+  return `Loja EME Moda & Fit (moda fitness feminina), Volta Redonda/RJ. Atendimento: ${horarioTxt()}. Tamanhos P (34/36), M (38/40), G (42/44) e GG (46).
 Frete: Melhor Envio para todo o Brasil, motoboy 99/Uber em Volta Redonda, retirada no local. Frete grátis a partir de R$ 250. Cupom EME05: 5% na primeira compra acima de R$ 50.
 Pagamento: Pix sem acréscimo, cartão em até 3x com a taxa repassada, e débito. Troca por tamanho ou modelo em até 30 dias corridos, peça sem uso e com etiqueta.
 Produtos e estoque:\n${pub}`;
@@ -4558,7 +4558,7 @@ document.addEventListener('click', e => { if (e.target.closest('#sheet .crumbs b
 /* =====================================================================
    v11 · planilha única da loja, imagens, medidas, códigos e descrição com IA
    ===================================================================== */
-const TAM_TXT = 'Tamanhos: PP (34), P (36/38), M (40/42), G (44/46) e GG (48/50). Tamanho Único veste do 36 ao 42.';
+const TAM_TXT = 'Tamanhos: P (34/36), M (38/40), G (42/44) e GG (46).';
 const TAM_TXT_ANTIGO = 'Tamanhos: P (34/36), M (38/40) e G (42/44). GG veste como G e PP como P.';
 const semTam = d => String(d||'').replace(TAM_TXT,'').replace(TAM_TXT_ANTIGO,'').replace(/\n{3,}/g,'\n\n').trim();
 const descComTam = p => `${semTam(p.desc || descMontada(p))}\n\n${TAM_TXT}`;
@@ -5430,7 +5430,7 @@ document.addEventListener('click', e => {
 /* ================= v16: revisão completa ================= */
 /* ----- novas páginas: dúvidas frequentes e entrega ----- */
 POLITICAS.faq = {t:'Dúvidas frequentes', txt:`# Como escolho o tamanho?
-Trabalhamos com os tamanhos PP (34), P (36/38), M (40/42), G (44/46) e GG (48/50). As peças de Tamanho Único têm tecido com elasticidade e vestem do 36 ao 42. Cada peça mostra os tamanhos disponíveis e a tabela de medidas na página do produto. As medidas são de referência e podem variar conforme a modelagem.
+Trabalhamos com os tamanhos P (34/36), M (38/40), G (42/44) e GG (46), conforme a tabela da fabricante. Cada peça mostra os tamanhos disponíveis e a tabela de medidas na página do produto. As medidas são de referência e podem variar conforme a modelagem.
 # Quais são as formas de pagamento?
 - Pix, sem acréscimo;
 - Cartão de crédito em até 3x, com a taxa do cartão repassada;
