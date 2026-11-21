@@ -3639,7 +3639,7 @@ document.addEventListener('click', e => {
     if (p.st===1 && p.pend){ cliente.pontos += p.pend.pts; cliente.cash += p.pend.cash; p.pend=null; }
     if (p.st===1 && nf.auto) emitirNF(p.num, true);
     if (p.st===3) disparar('avaliacao', p.cliente);
-    kpis(); toast(`Pedido marcado como ${STATUS[p.st].toLowerCase()}. Mensagem enviada pelo WhatsApp (simulação).`); return renderPedidos(); }
+    kpis(); toast(`Pedido marcado como ${STATUS[p.st].toLowerCase()}. A cliente vê a atualização em Minha conta.`); return renderPedidos(); }
   const pv = t.closest('[data-pixv]'); if (pv){ const p = pedidos.find(x=>x.num===+pv.dataset.pixv); p.vencido = true; disparar('pix', p.cliente); toast('Recuperação de Pix enviada (simulação).'); return renderPedidos(); }
   const cst = t.closest('[data-cst]'); if (cst){ const c = cupons[+cst.dataset.cst]; c.status = c.status==='Ativo'?'Pausado':'Ativo'; return renderCupons(); }
   const ccp = t.closest('[data-ccp]'); if (ccp) return copiar(cupons[+ccp.dataset.ccp].cod, 'Código copiado.');
@@ -9017,7 +9017,7 @@ if (sbOn()){
   /* estoque: mudar só a quantidade de uma cor/tamanho agora vai para o banco */
   const _sv = salvarAgora; salvarAgora = async function(){
     let mudV = [], saiV = [];
-    try { if (sbAdmin && fotoAnt && fotoAnt.vars){ const ag = retrato(), A = fotoAnt;
+    try { if (sbAdmin && fotoAnt && fotoAnt.vars){ { const z = document.createElement('i'); z.hidden = true; document.body.appendChild(z); z.dispatchEvent(new Event('input', {bubbles:true})); z.remove(); } const ag = retrato(), A = fotoAnt;
         Object.keys(ag.vars).forEach(k => { if (ag.vars[k] !== A.vars[k] && A.prods[k.split('|')[0]] === ag.prods[k.split('|')[0]]) mudV.push(JSON.parse(ag.vars[k])); });
         saiV = Object.keys(A.vars).filter(k => !ag.vars[k] && ag.prods[k.split('|')[0]] && A.prods[k.split('|')[0]] === ag.prods[k.split('|')[0]]); } } catch(_){}
     const r = await _sv.apply(this, arguments);
@@ -9100,6 +9100,33 @@ if (sbOn()){
 .as-f{display:flex;gap:8px;align-items:flex-end}
 .as-f textarea{flex:1;resize:vertical;min-height:44px;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}`;
   document.head.appendChild(st);
+}
+
+/* ---------- v93: reembolso de verdade pelo Mercado Pago; carrosséis na primeira visita ---------- */
+if (sbOn()){
+  /* painel › Pedidos › Reembolsar / Cancelar: devolve o dinheiro pelo Mercado Pago e as peças ao estoque */
+  document.addEventListener('click', async e => { const ok = e.target.closest('[data-reembok]'); if (!ok || !sbAdmin) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const n = +ok.dataset.reembok, p = pedidos.find(x => x.num === n); if (!p) return;
+    ok.disabled = true; ok.textContent = 'Aguarde…';
+    try {
+      const {data, error} = await sb.functions.invoke('pagamento', {body:{acao:'estornar', num:n, devolver_estoque:true}});
+      let msg = data?.erro; if (error){ try { msg = (await error.context?.json?.())?.erro; } catch(_){} }
+      if (!data?.ok) throw new Error(msg || 'Não deu para concluir. Tente de novo.');
+      reembConfirma = null;
+      const fim = data.estornado ? `Pedido ${numPed(n)} reembolsado: ${brl(data.valor)} devolvido pelo Mercado Pago. As peças voltaram ao estoque.`
+        : data.sem_mp && p.st >= 1 ? `Pedido ${numPed(n)} cancelado e peças de volta ao estoque. Este pedido não foi pago pelo Mercado Pago: devolva o valor à cliente por fora.`
+        : `Pedido ${numPed(n)} cancelado. As peças voltaram ao estoque.`;
+      registra('Pedidos', fim);
+      if (typeof refrescaPedidosAgora === 'function') await refrescaPedidosAgora(); else { buscandoPeds = false; await atualizaPedidos(); }
+      kpis(); renderProdutos(); toast(fim);
+    } catch(err){ reembConfirma = null; toast(err.message || 'Não deu para concluir.'); }
+    renderPedidos(); }, true);
+  /* carrosséis da página inicial aparecem já na primeira visita (depois de carregar os produtos) */
+  const _scP = sbCarregar; sbCarregar = async function(){ const r = await _scP.apply(this, arguments); try { renderPrateleiras(); } catch(_){} return r; };
+  /* Pagamento e integrações: pixels e catálogo não estão ligados ao site, então não aparecem */
+  { const st = document.createElement('style'); st.textContent = '#pxBox{display:none!important}'; document.head.appendChild(st); }
+  { let n = 0; const vp = setInterval(() => { if (sbCarregado && PRODUTOS.length){ clearInterval(vp); try { renderPrateleiras(); } catch(_){} } else if (++n > 120) clearInterval(vp); }, 250); }
 }
 
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
