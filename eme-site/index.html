@@ -9129,6 +9129,58 @@ if (sbOn()){
   { let n = 0; const vp = setInterval(() => { if (sbCarregado && PRODUTOS.length){ clearInterval(vp); try { renderPrateleiras(); } catch(_){} } else if (++n > 120) clearInterval(vp); }, 250); }
 }
 
+/* ---------- v94: histórico de ações no banco (o essencial das clientes + tudo da loja) e aba Histórico ---------- */
+if (sbOn()){
+  const acao = (tipo, txt, ref, det) => { try { sb.rpc('registrar_acao', {tipo, acao: String(txt).slice(0, 300), ref: ref == null ? null : String(ref), detalhe: det || null}).then(() => {}, () => {}); } catch(_){} };
+  window.registraAcao = acao;
+  /* conta: entrar, sair e criar conta (loja e clientes) */
+  let entrouAgora = 0, painelAgora = 0;
+  document.addEventListener('submit', e => { const id = e.target.id; if (id === 'fLogin') entrouAgora = Date.now(); if (id === 'fPainelLogin') painelAgora = Date.now(); }, true);
+  sb.auth.onAuthStateChange((ev, ses) => {
+    if (ev === 'SIGNED_IN' && (Date.now() - entrouAgora < 30000 || Date.now() - painelAgora < 30000)){ const pn = Date.now() - painelAgora < 30000; entrouAgora = painelAgora = 0;
+      setTimeout(() => acao(pn ? 'Painel' : 'Conta', pn ? 'Entrou no painel' : 'Cliente entrou na conta'), 1500); }
+    if (ev === 'SIGNED_OUT') acao(sbAdmin ? 'Painel' : 'Conta', sbAdmin ? 'Saiu do painel' : 'Cliente saiu da conta');
+    if (ev === 'PASSWORD_RECOVERY') acao('Conta', 'Pediu para redefinir a senha');
+  });
+  /* cupom aplicado ou recusado na sacola */
+  document.addEventListener('click', e => { if (!e.target.closest('[data-cup]') || sbAdmin) return; const cod = ($('#cupIn')?.value || '').trim().toUpperCase(); if (!cod) return;
+    setTimeout(() => { if (co.cupom && co.cupom.cod === cod) acao('Cupom', `Cupom ${cod} aplicado na sacola`, cod); else acao('Cupom', `Cupom ${cod} recusado: ${co.cupMsg || 'não aceito'}`, cod); }, 2500); }, true);
+  /* pagamento pelo Mercado Pago: Pix gerado, cartão aprovado/recusado, erros */
+  { const _cpA = chamaPg; chamaPg = async function(body){ const n = body && body.num, tipo = body && body.acao;
+      try { const r = await _cpA.apply(this, arguments);
+        if (tipo === 'pix') acao('Pagamento', `Pedido #${n}: Pix gerado`, n);
+        else if (tipo === 'cartao') acao('Pagamento', `Pedido #${n}: cartão ${r.status === 'approved' ? 'aprovado' : r.status === 'rejected' ? 'recusado (' + (r.detalhe || '') + ')' : 'em análise'}`, n);
+        return r; }
+      catch(err){ if (tipo === 'pix' || tipo === 'cartao') acao('Pagamento', `Pedido #${n}: erro no ${tipo === 'pix' ? 'Pix' : 'cartão'} · ${String(err.message || '').slice(0, 160)}`, n); throw err; } }; }
+
+  /* painel › Relatórios › Histórico */
+  if (!GES.some(g => g[0] === 'historico')) GES.push(['historico', 'Histórico']);
+  { const g = GRUPOS.find(x => x[0] === 'Relatórios'); if (g && !g[1].includes('historico')) g[1].push('historico'); }
+  if (!document.getElementById('g-historico')) document.getElementById('gesMain')?.insertAdjacentHTML('beforeend', '<div data-g="historico" id="g-historico" hidden></div>');
+  const H = {lista:[], carregando:false, erro:'', per:7, quem:'', tipo:'', busca:'', limite:200};
+  const TIPOS = ['Pedidos','Pagamento','Estoque','Produtos','Categorias','Cupons','Cupom','Sacola','Conta','Avaliações','Configurações','Painel'];
+  const QUEM = {loja:'Você (loja)', cliente:'Cliente', visitante:'Visitante', sistema:'Sistema'};
+  const carrega = async () => { H.carregando = true; H.erro = ''; pinta();
+    try { let q = sb.from('acoes').select('*').gte('criado', new Date(Date.now() - H.per * 864e5).toISOString()).order('criado', {ascending:false}).limit(H.limite);
+      if (H.quem) q = q.eq('quem', H.quem); if (H.tipo) q = q.eq('tipo', H.tipo); if (H.busca) q = q.ilike('acao', `%${H.busca}%`);
+      const {data, error} = await q; if (error) throw error; H.lista = data || []; }
+    catch(e){ H.erro = 'Não consegui carregar o histórico. Confira se a Parte 21 do banco foi instalada.'; H.lista = []; }
+    H.carregando = false; pinta(); };
+  const pinta = () => { const box = $('#g-historico'); if (!box || gesAtual !== 'historico') return;
+    const dt = d => new Date(d).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+    box.innerHTML = `<div class="panel"><div class="lbl" style="margin-top:0">Histórico de ações</div><p class="note" style="margin:0 0 10px">Tudo o que acontece na loja e no painel, com data, hora e quem fez. Guardado por 12 meses.</p>
+      <div class="chips">${[[1,'Hoje'],[7,'7 dias'],[30,'30 dias'],[365,'12 meses']].map(([d,t]) => `<button class="chipbtn" aria-pressed="${H.per===d}" data-hper="${d}">${t}</button>`).join('')}</div>
+      <div class="row2" style="margin-top:8px"><div class="field" style="margin-top:0"><label for="hQuem">Quem fez</label><select id="hQuem"><option value="">Todos</option>${Object.entries(QUEM).map(([k,v]) => `<option value="${k}" ${H.quem===k?'selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="field" style="margin-top:0"><label for="hTipo">Assunto</label><select id="hTipo"><option value="">Todos</option>${TIPOS.map(t => `<option ${H.tipo===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
+      <form id="fHist" class="field" novalidate><label for="hBusca">Buscar</label><div class="inrow"><input id="hBusca" value="${esc(H.busca)}" placeholder="Ex.: #1050, cupom, Legging"><button class="btn sm" type="submit">Buscar</button></div></form></div>
+      <div class="panel">${H.carregando ? '<p class="note" style="margin:0">Carregando…</p>' : H.erro ? `<div class="err">${esc(H.erro)}</div>` : H.lista.length ? H.lista.map(a => `<div class="vg-row" style="align-items:flex-start;gap:10px"><span style="min-width:0"><b style="color:var(--ink)">${esc(a.acao)}</b><br><small class="note" style="margin:0">${esc(QUEM[a.quem] || a.quem)}${a.autor ? ' · ' + esc(a.autor) : ''} · ${esc(a.tipo)}</small></span><small class="note" style="margin:0;white-space:nowrap">${dt(a.criado)}</small></div>`).join('') + (H.lista.length >= H.limite ? `<button class="btn sm ghost" style="margin-top:10px" data-hmais>Ver mais</button>` : '') : '<p class="note" style="margin:0">Nenhuma ação nesse período.</p>'}</div>`; };
+  const _rgH = renderGestao; renderGestao = function(){ const r = _rgH.apply(this, arguments); if (gesAtual === 'historico' && sbAdmin){ pinta(); if (!H.carregando && !H._ok){ H._ok = true; carrega(); } } else H._ok = false; return r; };
+  document.addEventListener('click', e => { const p = e.target.closest('[data-hper]'); if (p){ H.per = +p.dataset.hper; return carrega(); } if (e.target.closest('[data-hmais]')){ H.limite += 200; return carrega(); } });
+  document.addEventListener('change', e => { if (e.target.id === 'hQuem'){ H.quem = e.target.value; carrega(); } if (e.target.id === 'hTipo'){ H.tipo = e.target.value; carrega(); } });
+  document.addEventListener('submit', e => { if (e.target.id !== 'fHist') return; e.preventDefault(); e.stopImmediatePropagation(); H.busca = ($('#hBusca')?.value || '').trim(); carrega(); }, true);
+  if (typeof PICO === 'object' && !PICO['Histórico']) PICO['Histórico'] = '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>';
+}
+
 /* ===== versão pública: só a loja (o painel volta com o Supabase) ===== */
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
 
