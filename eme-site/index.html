@@ -9555,6 +9555,24 @@ body.sac-on #coTimer:empty{display:none}
   const _moP = mostrar; mostrar = function(n){ const r = _moP.apply(this, arguments); if (n !== 'gestao' && visto) H.classList.remove('modo-painel'); return r; };
   document.addEventListener('click', e => { const v = e.target.closest('#sheet [data-close]'); if (!v || !document.getElementById('fPainelLogin') || !H.classList.contains('modo-painel')) return;
     setTimeout(() => { if (!document.querySelector('.app.painel')){ H.classList.remove('modo-painel'); if (/painel/.test(location.hash)) history.replaceState(null, '', location.pathname.replace(/^\/painel\/?/, '/')); } }, 80); }); }
+
+/* v123 · painel aberto em mais de um lugar (computador e celular): uma configuração salva em um aparece no outro,
+   e o painel antigo não apaga mais a mudança feita no outro */
+{ let ligado = false;
+  const liga = () => { if (ligado || !sbOn() || !sbAdmin || !fotoAnt || !sb.channel) return; ligado = true;
+    try { sb.channel('painel-cfg-' + Math.random().toString(36).slice(2, 8)).on('postgres_changes', {event:'*', schema:'public', table:'config'}, pl => { try {
+      const row = pl.new || {}, k = row.chave; if (!k || !CONFIG[k] || !fotoAnt || !fotoAnt.conf) return;
+      const agora = J(CONFIG[k].get()), base = fotoAnt.conf[k], chegou = J(row.valor); if (chegou === base) return;
+      if (agora !== base) return; /* tem mudança local ainda não salva: a sua vale */
+      CONFIG[k].set(row.valor); fotoAnt.conf[k] = J(CONFIG[k].get());
+      if (k === 'aparencia'){ aplicaTema?.(); renderBanner?.(); } if (k === 'entrega') aplicaEntrega?.();
+      if (!$('#s-gestao').hidden) renderGestao(); } catch(e){ console.error('sync config', e); } }).subscribe(); } catch(e){ console.error('painel ao vivo', e); } };
+  setInterval(liga, 2000);
+  /* ao voltar para a aba depois de um tempo, confere o que mudou no banco */
+  document.addEventListener('visibilitychange', async () => { if (document.hidden || !sbAdmin || !fotoAnt || !sbOn()) return;
+    try { const {data} = await sb.from('config').select('chave,valor'); (data || []).forEach(row => { const k = row.chave; if (!CONFIG[k] || !fotoAnt.conf) return;
+      const agora = J(CONFIG[k].get()), base = fotoAnt.conf[k], chegou = J(row.valor); if (chegou === base || agora !== base) return;
+      CONFIG[k].set(row.valor); fotoAnt.conf[k] = J(CONFIG[k].get()); }); if (!$('#s-gestao').hidden) renderGestao(); } catch(_){} }); }
 </script>
 
 </body>
