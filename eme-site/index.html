@@ -4090,6 +4090,7 @@ function precoRegra(custo){
   if (regra.acab==='90') v = Math.floor(v) + 0.90; else if (regra.acab==='99') v = Math.floor(v) + 0.99; else if (regra.acab==='int') v = Math.round(v);
   return +v.toFixed(2);
 }
+function precoCom(r, c){ const bak = JSON.parse(JSON.stringify(regra)); Object.assign(regra, JSON.parse(JSON.stringify(r))); const v = precoRegra(c); Object.assign(regra, bak); return v; }
 const regraTxt = () => regra.modo==='fixo' ? (regra.escrita==='%' ? `custo + ${regra.margem}%` : `custo × ${regra.margem}`) : 'tabela por faixa de custo';
 function renderPrecificacao(){
   const manuais = PRODUTOS.filter(p => p.precoManual).length;
@@ -4105,12 +4106,12 @@ function renderPrecificacao(){
       <button class="btn full" style="margin-top:12px" type="submit">Salvar regra</button></form>
     <div class="panel"><div class="lbl" style="margin-top:0">Prévia</div>${[10,50,200].map(c=>`<div class="ship"><span>Custo ${brl(c)}</span><b>${brl(precoRegra(c))} <span class="note">margem ${brl(precoRegra(c)-c)}</span></b></div>`).join('')}</div>
     <div class="panel"><div class="lbl" style="margin-top:0">Atualizar os preços da loja</div>
-      <p class="note" style="margin:0">Mudar a regra não muda os produtos que já existem. ${manuais} produto${manuais===1?'':'s'} com preço digitado à mão.</p>
+      <p class="note" style="margin:0">${(() => { const seg = PRODUTOS.filter(p => p.custo > 0 && Math.abs((+p.preco||0) - precoRegra(p.custo)) < 0.011).length, fora = PRODUTOS.length - seg; return `Ao salvar a regra, os produtos que seguem a regra mudam de preço sozinhos e tudo é salvo no Supabase. Hoje ${seg} produto${seg===1?' segue':'s seguem'} a regra e ${fora} ${fora===1?'está':'estão'} com outro preço (não ${fora===1?'muda':'mudam'} sozinho${fora===1?'':'s'}). Para aplicar a regra em todos, use os botões abaixo.`; })()}</p>
       <div class="row2" style="margin-top:12px"><button class="btn ghost" data-rgapl="regra">Só os preços da regra</button><button class="btn ghost" data-rgapl="todos">Todos os preços</button></div>
       ${rgConfirma?`<div class="confirm" role="alert"><span>Trocar também os ${manuais} preços digitados à mão?</span><button class="btn sm" style="background:var(--bad);color:var(--surface)" data-rgok>Trocar todos</button><button class="btn sm ghost" data-rgno>Cancelar</button></div>`:''}</div>`;
 }
 let rgConfirma = false;
-function aplicarRegra(todos){ let n = 0; PRODUTOS.forEach(p => { if ((todos || !p.precoManual) && p.custo>0){ p.preco = precoRegra(p.custo); if (todos) p.precoManual = false; n++; } }); renderProdutos(); toast(`${n} preço${n===1?'':'s'} atualizado${n===1?'':'s'}.`); }
+function aplicarRegra(todos){ let n = 0; PRODUTOS.forEach(p => { if ((todos || !p.precoManual || Math.abs((+p.preco||0) - precoRegra(p.custo||0)) < 0.011) && p.custo>0){ p.preco = +precoRegra(p.custo).toFixed(2); if (todos) p.precoManual = false; n++; } }); renderProdutos(); marcaSalvo('salvando'); Promise.resolve(typeof salvarAgora === 'function' ? salvarAgora() : null).then(() => toast(`${n} preço${n===1?'':'s'} atualizado${n===1?'':'s'} e salvo${n===1?'':'s'} no Supabase.`)); }
 
 /* ---------- avise-me quando chegar ---------- */
 let avisos = [];
@@ -4522,7 +4523,12 @@ document.addEventListener('submit', e => {
   if (f.id==='fRev'){ const tx = v('rvTxt'); if (!tx){ toast('Escreva um comentário.'); return; } avaliacoes.push({prod:pd.id, nome:conta.nome || conta.email, nota:+$('#rvNota').value, txt:tx, ok:false}); toast('Avaliação enviada. A loja aprova antes de publicar.'); return renderSheet(); }
   if (f.id==='fCol'){ const n = v('colNome'); if (!n){ toast('Digite o nome da nova coluna.'); return; } if (colunas.some(c=>c.n===n)){ toast('Já existe uma coluna com esse nome.'); return; } colunas.push({n, auto:''}); return renderFunil(); }
   if (f.id==='fHor'){ cfg.horario.forEach((h,i) => { const de = $(`[data-hde="${i}"]`), at = $(`[data-hate="${i}"]`); if (de) h.de = de.value; if (at) h.ate = at.value; }); cfg.aviso = $('#cfAviso').checked; cfg.avisoMsg = v('cfAvisoMsg'); renderHorario(); toast('Horário salvo.'); return renderConfig(); }
-  if (f.id==='fRegra'){ leRegra(); toast('Regra salva. Use "Atualizar os preços" para aplicar nos produtos.'); return renderPrecificacao(); }
+  if (f.id==='fRegra'){ const antes = JSON.parse(JSON.stringify(regra)); leRegra();
+    /* os produtos que seguem a regra (preço = custo pela regra antiga) mudam de preço sozinhos; preço digitado à mão não muda */
+    let n = 0; PRODUTOS.forEach(p => { if (!(p.custo > 0)) return; if (Math.abs((+p.preco||0) - precoCom(antes, p.custo)) < 0.011){ const nv = +precoRegra(p.custo).toFixed(2); if (Math.abs(nv - p.preco) >= 0.01){ p.preco = nv; p.precoManual = false; n++; } } });
+    renderProdutos(); renderPrecificacao(); marcaSalvo('salvando');
+    Promise.resolve(typeof salvarAgora === 'function' ? salvarAgora() : null).then(() => toast(n ? `Regra salva no Supabase e ${n} preço${n===1?'':'s'} atualizado${n===1?'':'s'} na loja.` : 'Regra salva no Supabase. Nenhum produto seguia a regra anterior, então os preços não mudaram.'));
+    return; }
   if (f.id==='fTok'){ const nome = v('tokNome'), es = [...document.querySelectorAll('[data-tokesc]:checked')].map(i=>i.dataset.tokesc), err = $('#tokErr');
     const m = !nome ? 'Dê um nome ao token.' : !es.length ? 'Marque pelo menos um escopo.' : ''; err.hidden = !m; err.textContent = m; if (m) return;
     const tok = 'eme_sk_' + aleat(24); apiS.tokens.push({nome, esc:es, pref:tok.slice(0,14), data:agora()}); apiS.novoToken = tok; return renderAPI(); }
