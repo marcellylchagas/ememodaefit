@@ -1411,7 +1411,7 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 <div class="app">
   <header class="top">
     <div class="tl">
-      <button class="brand" data-go="inicio" aria-label="EME Moda &amp; Fit, página inicial"><img src="logo.png" alt=""><span><b>EME Moda &amp; Fit</b><small>@ememodaefit</small></span></button>
+      <button class="brand" data-go="inicio" aria-label="EME Moda &amp; Fit, página inicial"><img src="logo.png?v=104" alt=""><span><b>EME Moda &amp; Fit</b><small>@ememodaefit</small></span></button>
       <nav class="storenav" aria-label="Seções da loja"><button data-snav="produtos">Produtos</button><button data-snav="avaliacoes">Avaliações</button><button data-snav="sobre">Sobre</button></nav>
       <div class="r">
         <button class="bagbtn" data-gosearch aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
@@ -1422,7 +1422,7 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
     </div>
     <div class="tp">
       <button class="bagbtn menu-btn" data-menu aria-label="Abrir menu do painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-      <span class="brand"><img src="logo.png" alt=""><span><b>EME Moda &amp; Fit</b><small>Painel da loja</small></span></span>
+      <span class="brand"><img src="logo.png?v=104" alt=""><span><b>EME Moda &amp; Fit</b><small>Painel da loja</small></span></span>
       <div class="r"><button class="btn sm visit" data-go="inicio">Visitar loja ↗</button></div>
     </div>
   </header>
@@ -1740,6 +1740,8 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 
 <script src="supabase.js"></script>
 <script>
+function vImg(u){ u = String(u||''); return /^banner-[a-z]+\.jpg$/i.test(u) ? u + '?v=104' : u; }
+
 /* bibliotecas pesadas do painel: só carregam quando alguém entra no painel (a loja abre bem mais leve) */
 var _libsP = null;
 function libsPainel(){ if (_libsP) return _libsP; const u = ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
@@ -2633,7 +2635,7 @@ function renderBanner(){
   if (!bs.length){ $('#bannerBox').innerHTML = ''; return; }
   bIdx = bIdx % bs.length; const b = bs[bIdx];
   const bAnim = (bLast!==null && bLast!==bIdx) ? (bDir<0 ? ' slide from-l' : ' slide') : ''; bLast = bIdx; bDir = 1;
-  $('#bannerBox').innerHTML = `<div class="hero${bAnim}${b.img?' has-img':''}" ${b.img?`style="background-image:linear-gradient(90deg,var(--dark) 30%,transparent),url('${b.img}');background-size:cover;background-position:center"`:''}>
+  $('#bannerBox').innerHTML = `<div class="hero${bAnim}${b.img?' has-img':''}" ${b.img?`style="background-image:linear-gradient(90deg,var(--dark) 30%,transparent),url('${vImg(b.img)}');background-size:cover;background-position:center"`:''}>
       <span class="mark" aria-hidden="true">EME</span><span class="eyebrow">EME Moda &amp; Fit · ${bIdx+1}/${bs.length}</span>
       <h1>${esc(b.tit)}</h1>${b.sub?`<p>${esc(b.sub)}</p>`:''}
       <div class="row"><button class="btn" data-blink="${esc(b.link)}">${esc(b.btn||'Ver')}</button>${bIdx===0?'<button class="btn ghost" data-go="conta">Meus pedidos</button>':''}</div>
@@ -2667,7 +2669,7 @@ function renderAparencia(){
       ${sw('poucas','Mostrar quando restam poucas unidades','A cliente vê "Restam 2" em cada variação', ap.poucas)}</div>
     <div class="panel"><div class="lbl" style="margin-top:0">Banners · carrossel de destaque</div>
       ${ap.banners.map((b,i)=>`<div class="cup"><div class="h"><b>${i+1}. ${esc(b.tit)}</b><span class="tag ${b.on?'ok':'warn'}">${b.on?'Ativo':'Pausado'}</span></div>
-        ${b.img?`<img src="${b.img}" alt="Imagem do banner ${i+1}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px">`:''}
+        ${b.img?`<img src="${vImg(b.img)}" alt="Imagem do banner ${i+1}" style="width:100%;max-height:120px;object-fit:cover;border-radius:12px">`:''}
         <div class="field" style="margin-top:0"><label for="bTit${i}">Título</label><input id="bTit${i}" data-btit="${i}" value="${esc(b.tit)}"></div>
         <div class="field" style="margin-top:4px"><label for="bSub${i}">Texto</label><input id="bSub${i}" data-bsub="${i}" value="${esc(b.sub)}"></div>
         <div class="row2"><div class="field" style="margin-top:4px"><label for="bBtn${i}">Botão</label><input id="bBtn${i}" data-bbtn="${i}" value="${esc(b.btn)}"></div>
@@ -5243,7 +5245,7 @@ function marcaPnav(){ document.querySelectorAll('.pnav [data-ges]').forEach(b =>
 { const _rb = renderBanner; renderBanner = function(){ _rb(); const bs = ap.banners.filter(b=>b.on); if (!bs.length) return; const b = bs[bIdx % bs.length]; if (!b.arte) return;
   const h = $('#bannerBox .hero'); if (!h) return; const dots = h.querySelector('.dots');
   h.classList.add('arte'); h.classList.remove('has-img'); h.removeAttribute('style');
-  h.innerHTML = `<button class="arte-img" data-blink="${esc(b.link)}" aria-label="${esc(b.alt||b.tit)}"><img src="${esc(b.img)}" alt="${esc(b.alt||b.tit)}"></button>`;
+  h.innerHTML = `<button class="arte-img" data-blink="${esc(b.link)}" aria-label="${esc(b.alt||b.tit)}"><img src="${esc(vImg(b.img))}" alt="${esc(b.alt||b.tit)}"></button>`;
   if (dots) h.appendChild(dots); }; }
 
 /* ================= v14: vitrine profissional + gatilhos de conversão ================= */
@@ -5273,7 +5275,7 @@ setInterval(() => { anIdx++; renderAnnc(); }, 4500);
 
 /* ----- cabeçalho com assinatura da marca ----- */
 { const top = $('.top'); top.insertAdjacentHTML('afterbegin', '<div class="annc" id="annc" role="region" aria-label="Avisos da loja"></div>');
-  const br = $('.top .tl .brand'); br.innerHTML = '<img class="logo-eme" src="logo.png" alt="EME Moda &amp; Fit">'; }
+  const br = $('.top .tl .brand'); br.innerHTML = '<img class="logo-eme" src="logo.png?v=104" alt="EME Moda &amp; Fit">'; }
 
 /* ----- card: compra rápida por tamanho + urgência real ----- */
 { const _c3 = cardHTML; cardHTML = function(p, o={}){ let h = _c3(p, o); if (o.mini || precoTravado()) return h;
@@ -5330,7 +5332,7 @@ function abrirPopCupom(){ const c = cupomPrimeira(); if (!c || popVisto) return;
   /* rodapé da loja */
   const f = document.createElement('footer'); f.className = 'sfoot'; f.innerHTML = `
     <div class="sf-in">
-      <div class="sf-brand"><img class="logo-eme" src="logo.png" alt="EME Moda &amp; Fit"><p>Moda fitness feminina para vestir a sua melhor versão.</p></div>
+      <div class="sf-brand"><img class="logo-eme" src="logo.png?v=104" alt="EME Moda &amp; Fit"><p>Moda fitness feminina para vestir a sua melhor versão.</p></div>
       <div><h4>Institucional</h4><button data-info="sobre">Sobre nós</button><button data-info="troca">Trocas e devoluções</button><button data-info="termos">Termos de uso</button><button data-info="privacidade">Política de privacidade</button></div>
       <div><h4>Atendimento</h4><button data-wa>${ICO(I_WA)}(24) 99242-9055</button><span>Segunda a sexta, das 10h às 18h</span><button data-go="conta">Meus pedidos</button></div>
       <div><h4>Pagamento e segurança</h4><span>${ICO(I_CARD)}Pix e cartão de crédito</span><span>${ICO(I_SHIELD)}Compra segura</span><span>${ICO(I_TRUCK)}Entrega para todo o Brasil</span></div>
@@ -5565,7 +5567,7 @@ const S_MENU = '<path d="M4 7h16M4 12h16M4 17h10"/>', S_SEARCH = '<circle cx="11
   document.body.insertAdjacentHTML('beforeend', `<div class="sdrawer-veil" id="sDrawerVeil" hidden></div><aside class="sdrawer" id="sDrawer" aria-label="Menu da loja" aria-hidden="true"></aside>`); }
 function renderDrawer(){
   const tops = topsVis();
-  $('#sDrawer').innerHTML = `<div class="sd-h"><img class="logo-eme" src="logo.png" alt="EME Moda &amp; Fit"><button class="x" data-sclose aria-label="Fechar menu">${SVG(S_X)}</button></div>
+  $('#sDrawer').innerHTML = `<div class="sd-h"><img class="logo-eme" src="logo.png?v=104" alt="EME Moda &amp; Fit"><button class="x" data-sclose aria-label="Fechar menu">${SVG(S_X)}</button></div>
     <nav class="sd-nav">
       <button data-snav="produtos" data-sclose>Todos os produtos ${SVG(S_CHEV)}</button>
       ${tops.map(c => { const subs = subsVis(c); return `<details class="sd-cat"><summary>${esc(c.nome)}</summary><button data-blink="cat:${esc(catPath(c))}" data-sclose>Ver tudo de ${esc(c.nome)}</button>${subs.map(s=>`<button data-blink="cat:${esc(catPath(s))}" data-sclose>${esc(s.nome)}<span>${pubDe(s).length}</span></button>`).join('')}</details>`; }).join('')}
@@ -5683,7 +5685,7 @@ document.addEventListener('keydown', e => { if (e.key==='Escape'){ fechaDrawer()
 { const _m7 = mostrar; mostrar = function(n){ fechaDrawer(); fechaFiltros(); if (n!=='loja' && !busca) $('#s-loja').classList.remove('buscando'); _m7(n); }; }
 
 /* painel: marca igual à da loja */
-{ const b = $('.top .tp .brand'); if (b) b.innerHTML = '<img class="logo-eme" src="logo.png" alt="EME Moda &amp; Fit"><span class="ptag">Painel</span>'; }
+{ const b = $('.top .tp .brand'); if (b) b.innerHTML = '<img class="logo-eme" src="logo.png?v=104" alt="EME Moda &amp; Fit"><span class="ptag">Painel</span>'; }
 
 /* ================= v20: compra finalizada pelo WhatsApp ================= */
 let waPedidoUrl = '';
