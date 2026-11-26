@@ -1450,6 +1450,7 @@ a.btn{text-decoration:none!important}
 #emeSplash i{display:block;width:140px;height:3px;border-radius:3px;background:#E3EEF8;overflow:hidden;position:relative}
 #emeSplash i::after{content:'';position:absolute;inset:0;width:40%;background:#2F6DA8;border-radius:3px;animation:spBar 1.1s ease-in-out infinite}
 #emeSplash.sai{opacity:0;visibility:hidden}
+html:not(.modo-painel) #emeSplash{display:none!important}
 @keyframes spIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes spBar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
 [data-screen]:not([hidden]){animation:telaIn .45s cubic-bezier(.2,.7,.2,1)}
@@ -1460,7 +1461,7 @@ a.btn{text-decoration:none!important}
 @media (prefers-reduced-motion:reduce){#emeSplash img,#emeSplash i::after,[data-screen]:not([hidden]),.card,.prod,.pcard{animation:none!important}}
 </style>
 <script>
-(function(){ var t0 = Date.now(), MIN = 900, MAX = 6000; function sai(){ var el = document.getElementById('emeSplash'); if (!el || el.classList.contains('sai')) return; el.classList.add('sai'); setTimeout(function(){ el.remove(); }, 600); }
+(function(){ if (!document.documentElement.classList.contains('modo-painel')){ var s0 = document.getElementById('emeSplash'); if (s0) s0.remove(); return; } var t0 = Date.now(), MIN = 900, MAX = 6000; function sai(){ var el = document.getElementById('emeSplash'); if (!el || el.classList.contains('sai')) return; el.classList.add('sai'); setTimeout(function(){ el.remove(); }, 600); }
   function ve(){ var mp = document.documentElement.classList.contains('modo-painel'); var pronto = mp ? (document.querySelector('.app.painel') || document.getElementById('fPainelLogin')) : window.__emePronto; if (pronto) { setTimeout(sai, mp ? 150 : Math.max(0, MIN - (Date.now() - t0))); return; } if (Date.now() - t0 > MAX) return sai(); setTimeout(ve, 120); }
   setTimeout(ve, 120); })();
 </script>
@@ -9580,11 +9581,12 @@ body.sac-on #coTimer:empty{display:none}
   const etiqueta = () => ultimo ? `Salvo no Supabase às ${hora(ultimo)}` : 'As mudanças também são salvas sozinhas';
   async function salvarTudo(btn){
     if (!sbOn() || !sbAdmin){ toast('Entre no painel para salvar.'); return; }
+    if (salvarTudo.rodando) return; salvarTudo.rodando = true; const sy = window.scrollY;
     const bts = document.querySelectorAll('[data-salvartudo]'); bts.forEach(b => { b.disabled = true; b.dataset.txt = b.dataset.txt || b.textContent; b.textContent = 'Salvando…'; });
     try {
       /* formulários de configuração abertos na tela também são gravados */
-      ['fHor','fRegra'].forEach(id => { const f = document.getElementById(id); if (f && f.offsetParent) f.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true})); });
-      document.dispatchEvent(new Event('click')); /* força a conferência completa */
+      /* v135: os formulários já se gravam sozinhos ao mudar; não reenvia nem simula clique (isso redesenhava a tela e fazia piscar) */
+      if (document.activeElement && document.activeElement.matches && document.activeElement.matches('input,select,textarea')) document.activeElement.blur();
       for (let i = 0; i < 60 && salvando; i++) await new Promise(r => setTimeout(r, 250));
       await salvarAgora(true); for (let i = 0; i < 60 && (salvando || pendente); i++) await new Promise(r => setTimeout(r, 250));
       /* confere no banco: cada configuração do painel precisa estar igual ao que está na tela */
@@ -9595,7 +9597,7 @@ body.sac-on #coTimer:empty{display:none}
       if (count !== PRODUTOS.length){ await salvarAgora(true); }
       fotoAnt = retrato(); ultimo = new Date(); marcaSalvo('ok'); toast(`Tudo salvo no Supabase às ${hora(ultimo)}. A loja já mostra as mudanças.`);
     } catch(e){ console.error('salvar tudo', e); marcaSalvo('erro'); toast('Não consegui salvar agora. Confira a internet e toque em Salvar de novo.'); }
-    finally { document.querySelectorAll('[data-salvartudo]').forEach(b => { b.disabled = false; b.textContent = b.dataset.txt || 'Salvar'; }); document.querySelectorAll('.salvar-info').forEach(x => x.textContent = etiqueta()); } }
+    finally { salvarTudo.rodando = false; if (Math.abs(window.scrollY - sy) > 4) window.scrollTo(0, sy); document.querySelectorAll('[data-salvartudo]').forEach(b => { b.disabled = false; b.textContent = b.dataset.txt || 'Salvar'; }); document.querySelectorAll('.salvar-info').forEach(x => x.textContent = etiqueta()); } }
   window.salvarTudo = salvarTudo;
   document.addEventListener('click', e => { const b = e.target.closest('[data-salvartudo]'); if (b){ e.preventDefault(); salvarTudo(b); } });
   /* topo do painel */
