@@ -10,15 +10,15 @@
 <meta property="og:title" content="EME Moda &amp; Fit · Moda Fitness">
 <meta property="og:description" content="Moda fitness feminina. Frete grátis acima de R$ 250 e 5% OFF na primeira compra.">
 <meta property="og:url" content="https://ememodaefit.pages.dev/">
-<meta property="og:image" content="https://ememodaefit.pages.dev/og-image.jpg">
-<meta property="og:image:secure_url" content="https://ememodaefit.pages.dev/og-image.jpg">
+<meta property="og:image" content="https://ememodaefit.pages.dev/og-image.jpg?v=3">
+<meta property="og:image:secure_url" content="https://ememodaefit.pages.dev/og-image.jpg?v=3">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="EME Moda &amp; Fit · Estilo, conforto e performance em um só lugar">
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://ememodaefit.pages.dev/og-image.jpg">
+<meta name="twitter:image" content="https://ememodaefit.pages.dev/og-image.jpg?v=3">
 <meta name="theme-color" content="#141113">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EME">
@@ -1424,6 +1424,28 @@ a.btn{text-decoration:none!important}
 </head>
 <body>
 
+<div id="emeSplash" aria-hidden="true"><img src="logo.png?v=104" alt=""><i></i></div>
+<style>
+#emeSplash{position:fixed;inset:0;z-index:5000;background:#FCF8F1;display:grid;place-content:center;justify-items:center;gap:22px;transition:opacity .5s ease,visibility .5s}
+#emeSplash img{width:min(220px,55vw);height:auto;animation:spIn .9s cubic-bezier(.2,.8,.2,1) both}
+#emeSplash i{display:block;width:140px;height:3px;border-radius:3px;background:#E3EEF8;overflow:hidden;position:relative}
+#emeSplash i::after{content:'';position:absolute;inset:0;width:40%;background:#2F6DA8;border-radius:3px;animation:spBar 1.1s ease-in-out infinite}
+#emeSplash.sai{opacity:0;visibility:hidden}
+@keyframes spIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes spBar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+[data-screen]:not([hidden]){animation:telaIn .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes telaIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card,.prod,.pcard{animation:cardIn .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.btn{transition:transform .15s ease,background .25s ease,box-shadow .25s ease}
+@media (prefers-reduced-motion:reduce){#emeSplash img,#emeSplash i::after,[data-screen]:not([hidden]),.card,.prod,.pcard{animation:none!important}}
+</style>
+<script src="supabase.js"></script>
+<script>
+(function(){ var t0 = Date.now(), MIN = 900, MAX = 6000; function sai(){ var el = document.getElementById('emeSplash'); if (!el || el.classList.contains('sai')) return; el.classList.add('sai'); setTimeout(function(){ el.remove(); }, 600); }
+  function ve(){ if (window.__emePronto) { setTimeout(sai, Math.max(0, MIN - (Date.now() - t0))); return; } if (Date.now() - t0 > MAX) return sai(); setTimeout(ve, 120); }
+  setTimeout(ve, 120); })();
+</script>
 <div class="app">
   <header class="top">
     <div class="tl">
@@ -1754,9 +1776,8 @@ a.btn{text-decoration:none!important}
 <div class="toast" id="toast" hidden role="status"></div>
 <button class="wa-fab" data-wa aria-label="Falar com a EME no WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l1.3-4A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/></svg></button>
 
-<script src="supabase.js"></script>
 <script>
-function vImg(u){ u = String(u||''); return /^banner-[a-z]+\.jpg$/i.test(u) ? u + '?v=104' : u; }
+function vImg(u){ u = String(u||''); return /^(banner|cat)-[a-z]+\.jpg$/i.test(u) ? u + '?v=116' : u; }
 
 /* bibliotecas pesadas do painel: só carregam quando alguém entra no painel (a loja abre bem mais leve) */
 var _libsP = null;
@@ -2107,7 +2128,7 @@ function renderCheckout(){
       <div><span>Subtotal</span><span>${brl(t.sub)}</span></div>
       ${t.auto.map(d=>`<div class="neg"><span>${esc(d.n)}</span><span>− ${brl(d.v)}</span></div>`).join('')}
       ${t.cup?`<div class="neg"><span>Cupom ${esc(co.cupom.cod)}</span><span>− ${brl(t.cup)}</span></div>`:''}
-      ${co.step>=2?`<div><span>Frete</span><span>${freteAtual()? (t.fr? brl(t.fr) : 'Grátis') : 'a escolher'}</span></div>`:''}
+      ${co.step>=2?`<div><span>Frete</span><span>${freteAtual()? (freteAtual().combinar ? 'A combinar' : t.fr? brl(t.fr) : 'Grátis') : 'a escolher'}</span></div>`:''}
       ${t.cash?`<div class="neg"><span>Cashback</span><span>− ${brl(t.cash)}</span></div>`:''}
       ${brinde?`<div class="neg"><span>${esc(ofertas.brinde.item)}</span><span>Brinde</span></div>`:''}
       ${co.step>=3 && t.acres?`<div><span>Taxa do cartão (${String(t.taxa).replace('.',',')}%)</span><span>${brl(t.acres)}</span></div>`:''}
@@ -2164,7 +2185,7 @@ function telaEntrega(){
     lista = ops.map(o => { const h = o.g!==grupo ? `<div class="group-t">${o.g}</div>` : ''; grupo = o.g;
       return h + `<label class="radio ${co.frete===o.id?'sel':''}"><input type="radio" name="frete" value="${o.id}" ${co.frete===o.id?'checked':''}>
         <span class="d"><b>${esc(o.n)} ${o.tag?`<span class="tag ok" style="margin-left:4px">${o.tag}</span>`:''}</b><span>${esc(o.prazo)}</span></span>
-        <span class="pr">${o.v? brl(o.v) : (o.orig? `<s class="note">${brl(o.orig)}</s><br>Grátis` : 'R$ 0,00')}</span></label>`; }).join('');
+        <span class="pr">${o.combinar ? 'A combinar' : o.v? brl(o.v) : (o.orig? `<s class="note">${brl(o.orig)}</s><br>Grátis` : 'R$ 0,00')}</span></label>`; }).join('');
   } else if (co.cep) lista = '<div class="err">Digite um CEP com 8 números.</div>';
   return `<div class="panel">
       <div class="field" style="margin-top:0"><label for="coCep">CEP de entrega</label>
@@ -2591,7 +2612,7 @@ let catEdit = null, catMsg = '';
 function renderCategorias(){
   const tree = (pai, d) => CATS.filter(c=>c.pai===pai).map(c => `
     <div class="ship" style="padding-left:${(d)*18}px"><div class="d" style="display:flex;gap:10px;align-items:center">
-      ${c.foto?`<img src="${c.foto}" alt="" style="width:40px;height:40px;border-radius:10px;object-fit:cover">`:`<span style="width:40px;height:40px;border-radius:10px;background:var(--rose);flex:0 0 auto"></span>`}
+      ${c.foto?`<img src="${vImg(c.foto)}" alt="" style="width:40px;height:40px;border-radius:10px;object-fit:cover">`:`<span style="width:40px;height:40px;border-radius:10px;background:var(--rose);flex:0 0 auto"></span>`}
       <span>${catEdit===c.id?`<input id="catRen" value="${esc(c.nome)}" aria-label="Novo nome" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--surface)"> <button class="btn sm" data-catsave="${c.id}">Salvar</button>`:`<b>${esc(c.nome)}</b>`}
       <span>Nível ${nivel(c)} · ${contaCat(c)} produto${contaCat(c)===1?'':'s'}${contaCat(c)?'':' · não aparece na loja'}</span></span></div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
@@ -3107,7 +3128,7 @@ function renderSheet(){
       <div id="pdFrete"></div>
       <details class="acc" open><summary>Descrição</summary><p style="white-space:pre-line">${esc(descComTam(p))}</p><p class="note">Evite contato com água quente e ferro de passar.</p></details>
       <details class="acc"><summary>Tabela de medidas</summary>${tabelaMedidasHTML(p)}</details>
-      <details class="acc"><summary>Entrega e troca</summary><p>Melhor Envio para todo o Brasil, motoboy 99/Uber em Volta Redonda e retirada no local (seg. a sex., 10h às 18h). Frete grátis a partir de R$ 250,00.</p><p>Troca por tamanho ou modelo em até 30 dias corridos após o recebimento, com a peça sem sinais de uso e com as etiquetas. <button class="link" data-info="troca">Ver política de troca</button></p></details>
+      <details class="acc"><summary>Entrega e troca</summary><p>Melhor Envio para todo o Brasil, motoboy e 99/Uber (valor combinado pelo WhatsApp) em Volta Redonda e retirada no local (seg. a sex., 10h às 18h). Frete grátis a partir de R$ 250,00.</p><p>Troca por tamanho ou modelo em até 30 dias corridos após o recebimento, com a peça sem sinais de uso e com as etiquetas. <button class="link" data-info="troca">Ver política de troca</button></p></details>
       <details class="acc"><summary>Avaliações (${revs.length})</summary>${revs.length ? revs.map(r=>`<div class="review"><span class="stars">${estrelas(r.nota)}</span> <b>${esc(r.nome)}</b><br>${esc(r.txt)}${r.foto?`<img class="rv-foto" src="${r.foto}" alt="Foto enviada por ${esc(r.nome)}">`:''}</div>`).join('') : '<p class="note">Ainda sem avaliações.</p>'}</details>
       ${(() => { const rel = PRODUTOS.filter(x => x.id!==p.id && x.status==='Publicado' && x.c===p.c).slice(0,4); return rel.length ? `<div class="sec"><h2 style="font-size:16px">Combina com</h2><span>${esc(p.c)}</span></div><div class="shelf">${rel.map(x=>cardHTML(x,{mini:true})).join('')}</div>` : ''; })()}
     </div>
@@ -3179,6 +3200,24 @@ const WHATS = '(24) 99242-9055', WHATS_LINK = 'https://wa.me/5524992429055';
 /* mensagem que já vem escrita quando a cliente abre o WhatsApp da loja */
 const WHATS_MSG = 'Olá! Vim pelo site da EME Moda & Fit e gostaria de tirar uma dúvida.', WHATS_LINK_MSG = `${WHATS_LINK}?text=${encodeURIComponent(WHATS_MSG)}`;
 const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+
+/* v116 · horário da loja: todos os textos (rodapé, FAQ, políticas, retirada, Mel) vêm do horário salvo no painel */
+const HORA_FMT = t => { const [h, m] = String(t||'').split(':'); return (+h) + 'h' + (m && m !== '00' ? m : ''); };
+function horarioDesc(){ const H = (typeof cfg !== 'undefined' && Array.isArray(cfg.horario)) ? cfg.horario : null; if (!H) return null;
+  const ab = [1,2,3,4,5,6,0].filter(i => H[i] && H[i].on); if (!ab.length) return {curta:'com horário a combinar', longa:'com horário a combinar', cap:'Horário a combinar'};
+  const NOM = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'], AB = ['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
+  const iguais = ab.every(i => H[i].de === H[ab[0]].de && H[i].ate === H[ab[0]].ate), hh = `${HORA_FMT(H[ab[0]].de)} às ${HORA_FMT(H[ab[0]].ate)}`;
+  const seq = ab.every((d, k) => k === 0 || [1,2,3,4,5,6,0].indexOf(d) === [1,2,3,4,5,6,0].indexOf(ab[k-1]) + 1);
+  if (!iguais) return {curta:'confira os horários', longa:'nos horários de atendimento', cap:'Confira os horários de atendimento'};
+  const dl = ab.length === 1 ? NOM[ab[0]] : seq ? `de ${NOM[ab[0]]} a ${NOM[ab[ab.length-1]]}` : ab.map(i => NOM[i]).join(', ');
+  const dc = ab.length === 1 ? AB[ab[0]] : seq ? `${AB[ab[0]]} a ${AB[ab[ab.length-1]]}` : ab.map(i => AB[i]).join(', ');
+  return {curta:`${dc}, ${hh}`, longa:`${dl}, das ${hh}`, cap:(dl.charAt(0).toUpperCase() + dl.slice(1)).replace(/^De /, '') .replace(/^(\w)/, c => c.toUpperCase()) + `, das ${hh}`}; }
+function trocaHorario(txt){ const d = horarioDesc(); if (!d || !txt) return txt;
+  return String(txt).replace(/de segunda a sexta, das 10h às 18h/g, d.longa).replace(/Segunda a sexta, das 10h às 18h/g, d.cap).replace(/seg\. a sex\., 10h às 18h/g, d.curta); }
+{ const fixa = root => { const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const ns = []; let n; while ((n = w.nextNode())) if (/10h às 18h/.test(n.nodeValue)) ns.push(n); ns.forEach(x => { const v = trocaHorario(x.nodeValue); if (v !== x.nodeValue) x.nodeValue = v; }); };
+  const go = () => { try { fixa(document.body); } catch(_){} };
+  new MutationObserver(ms => { if (ms.some(m => m.addedNodes.length || m.type === 'characterData')) go(); }).observe(document.documentElement, {childList:true, subtree:true, characterData:true});
+  document.addEventListener('DOMContentLoaded', go); setTimeout(go, 0); }
 function agoraSP(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); }
 function statusLoja(){
   const d = agoraSP(), dia = d.getDay(), h = d.getHours() + d.getMinutes()/60;
@@ -4213,7 +4252,7 @@ let convAtual = null, convFiltro = 'Abertas', convCanal = 'Todos', iaAuto = fals
 function contextoLoja(){
   const pub = PRODUTOS.filter(p=>p.status==='Publicado').slice(0,40).map(p => `${p.n} (${p.c}) ${brl(precoAtual(p))} · ${Object.keys(p.est).map(c=>`${c}: ${TAMANHOS.filter(s=>p.est[c][s]>0).join('/')||'esgotado'}`).join('; ')}`).join('\n');
   return `Loja EME Moda & Fit (moda fitness feminina), Volta Redonda/RJ. Atendimento: ${horarioTxt()}. Tamanhos P (34/36), M (38/40), G (42/44) e GG (46).
-Frete: Melhor Envio para todo o Brasil, motoboy 99/Uber em Volta Redonda, retirada no local. Frete grátis a partir de R$ 250. Cupom EME05: 5% na primeira compra acima de R$ 50.
+Frete: Melhor Envio para todo o Brasil, motoboy e 99/Uber (valor combinado pelo WhatsApp) em Volta Redonda, retirada no local. Frete grátis a partir de R$ 250. Cupom EME05: 5% na primeira compra acima de R$ 50.
 Pagamento: Pix sem acréscimo, cartão em até 3x com a taxa repassada, e débito. Troca por tamanho ou modelo em até 30 dias corridos, peça sem uso e com etiqueta.
 Produtos e estoque:\n${pub}`;
 }
@@ -5483,7 +5522,7 @@ Trabalhamos com os tamanhos P (34/36), M (38/40), G (42/44) e GG (46), conforme 
 # Tem desconto na primeira compra?
 Sim. Use o cupom EME05 e ganhe 5% de desconto na primeira compra, em pedidos acima de R$ 50,00.
 # Como funciona o frete?
-Enviamos para todo o Brasil pelo Melhor Envio (Correios e Jadlog). Em Volta Redonda também tem entrega por motoboy (99/Uber) e retirada no local, de segunda a sexta, das 10h às 18h. O frete é grátis nas compras a partir de R$ 250,00.
+Enviamos para todo o Brasil pelo Melhor Envio (Correios e Jadlog). Em Volta Redonda também tem entrega por motoboy, corrida por aplicativo 99/Uber (valor combinado pelo WhatsApp) e retirada no local, de segunda a sexta, das 10h às 18h. O frete é grátis nas compras a partir de R$ 250,00.
 # Quando o meu pedido é enviado?
 Cada peça mostra quantos dias leva para ser postada, e o prazo da transportadora aparece quando você calcula o frete. Assim que o pedido sai, você recebe o código de rastreio pelo WhatsApp.
 # Posso trocar uma peça?
@@ -5493,7 +5532,8 @@ Pelo WhatsApp (24) 99242-9055, de segunda a sexta, das 10h às 18h.`};
 POLITICAS.entrega = {t:'Entrega e frete', txt:`# Para onde enviamos
 Enviamos para todo o Brasil pelo Melhor Envio, com as transportadoras disponíveis para o seu CEP, como Correios (PAC e SEDEX) e Jadlog.
 # Opções em Volta Redonda (RJ)
-- Entrega por motoboy (99/Uber);
+- Entrega por motoboy;
+- Corrida por aplicativo 99/Uber, com o valor combinado pelo WhatsApp;
 - Retirada no local, de segunda a sexta, das 10h às 18h, com pagamento na hora (dinheiro, cartão ou Pix).
 # Frete grátis
 O frete é grátis nas compras a partir de R$ 250,00.
@@ -5666,7 +5706,7 @@ function abrirQuick(id, cor){
 { const _rh3 = renderHome; renderHome = function(){ _rh3();
   const box = $('#homeCats'); box.className = 'catbig';
   box.innerHTML = topsVis().map(c => { const ps = pubDe(c), capa = c.foto || (typeof imgAt==='function' && ps.map(p=>imgAt(p)).find(Boolean)), subs = subsVis(c);
-    if (c.foto) return `<div class="cb-item arte"><button class="cb-arte" data-blink="cat:${esc(catPath(c))}" aria-label="${esc(c.nome)}: ver todas as peças"><img src="${c.foto}" alt="${esc(c.nome)}"></button><button class="cb-ver" data-blink="cat:${esc(catPath(c))}">Ver tudo · ${ps.length} ${ps.length===1?'peça':'peças'} →</button>
+    if (c.foto) return `<div class="cb-item arte"><button class="cb-arte" data-blink="cat:${esc(catPath(c))}" aria-label="${esc(c.nome)}: ver todas as peças"><img src="${vImg(c.foto)}" alt="${esc(c.nome)}"></button><button class="cb-ver" data-blink="cat:${esc(catPath(c))}">Ver tudo · ${ps.length} ${ps.length===1?'peça':'peças'} →</button>
       ${subs.length?`<div class="cb-subs">${subs.map(x=>`<button data-blink="cat:${esc(catPath(x))}">${esc(x.nome)}</button>`).join('')}</div>`:''}</div>`;
     return `<div class="cb-item"><button class="cb-tile" data-blink="cat:${esc(catPath(c))}" style="--tint:${corHex(Object.keys((ps[0]||{est:{}}).est)[0]||'')}">${capa?`<img src="${capa}" alt="">`:''}<span class="cb-t"><small>${ps.length} ${ps.length===1?'peça':'peças'}</small><b>${esc(c.nome)}</b><em>Ver tudo →</em></span></button>
       ${subs.length?`<div class="cb-subs">${subs.map(x=>`<button data-blink="cat:${esc(catPath(x))}">${esc(x.nome)}</button>`).join('')}</div>`:''}</div>`; }).join(''); }; }
@@ -6047,7 +6087,7 @@ async function sbCarregar(admin){
     pedidos.forEach(p => { snapSt[p.num] = p.st; p.tCri = p.data.getTime(); if (p.st>=1) p.tPago = p.data.getTime(); if (p.st>=2) p.tEnv = p.data.getTime(); });
     if (cps.data.length) cupons = cps.data.map(cupDoBanco);
   }
-  ofertasValidas(); sbCarregado = true;
+  ofertasValidas(); sbCarregado = true; window.__emePronto = true;
   aplicaTema(); renderCats(); renderProdutos(); renderBanner(); renderFlash(); renderHorario?.(); atualizaContador();
   if (admin){ fotografa(); kpis(); if (!$('#s-gestao').hidden) renderGestao(); }
 }
@@ -6523,7 +6563,7 @@ document.addEventListener('click', e => {
   box.className = 'catbig';
   box.innerHTML = tops.map(c => { const ps = pubDe(c), subs = subsVis(c), path = esc(catPath(c));
     if (!c.foto && !ps.length) return '';
-    const img = c.foto ? `<img src="${c.foto}" alt="${esc(c.nome)}">` : '';
+    const img = c.foto ? `<img src="${vImg(c.foto)}" alt="${esc(c.nome)}">` : '';
     if (!ps.length) return `<div class="cb-item arte vazio"><div class="cb-arte" role="img" aria-label="${esc(c.nome)}: em breve">${img}</div><span class="cb-breve">Em breve</span></div>`;
     return `<div class="cb-item arte"><button class="cb-arte" data-blink="cat:${path}" aria-label="${esc(c.nome)}: ver todas as peças">${img}</button>
       <button class="cb-ver" data-blink="cat:${path}">Ver tudo · ${ps.length} ${ps.length===1?'peça':'peças'} →</button>
@@ -6889,10 +6929,10 @@ const emojiCat = nome => '';
   const nomeOuEdita = c => catEdit===c.id ? `<span class="cat-edit"><input id="catRen" value="${esc(c.nome)}" aria-label="Novo nome"><button class="btn sm" data-catsave="${c.id}">Salvar</button></span>` : `<b>${esc(c.nome)}</b>`;
   const mover = c => catMover===c.id ? `<div class="cat-mover"><label for="catDest">Mover “${esc(c.nome)}” para</label><div class="inrow"><select id="catDest"><option value="">Nível principal (aparece no menu da loja)</option>${destinosDe(c).map(x => `<option value="${x.id}" ${x.id===c.pai?'selected':''}>Dentro de ${esc(catPath(x))}</option>`).join('')}</select><button class="btn sm" data-catmoveok="${c.id}">Mover</button><button class="btn sm ghost" data-catmoveno>Cancelar</button></div><span class="hint">Os produtos vão junto. Se já existir uma com o mesmo nome no destino, as duas viram uma só.</span></div>` : '';
   const linhaSub = (c, d) => { const n = contaCat(c);
-    return `<div class="cat-sub" style="--d:${d}"><label class="cat-foto-l" title="${c.foto ? 'Trocar foto' : 'Colocar foto'}">${c.foto ? `<img class="cat-sub-img" src="${esc(c.foto)}" alt="">` : `<span class="cat-emo" aria-hidden="true">${emojiCat(c.nome)}</span>`}<input type="file" accept="image/*" data-catfoto="${c.id}" hidden></label><span class="cat-nome">${nomeOuEdita(c)}<small>${n} produto${n===1?'':'s'}${n ? '' : ' · escondida na loja'}</small></span>${acoes(c)}</div>${mover(c)}${CATS.filter(x => x.pai===c.id).map(x => linhaSub(x, d+1)).join('')}`; };
+    return `<div class="cat-sub" style="--d:${d}"><label class="cat-foto-l" title="${c.foto ? 'Trocar foto' : 'Colocar foto'}">${c.foto ? `<img class="cat-sub-img" src="${esc(vImg(c.foto))}" alt="">` : `<span class="cat-emo" aria-hidden="true">${emojiCat(c.nome)}</span>`}<input type="file" accept="image/*" data-catfoto="${c.id}" hidden></label><span class="cat-nome">${nomeOuEdita(c)}<small>${n} produto${n===1?'':'s'}${n ? '' : ' · escondida na loja'}</small></span>${acoes(c)}</div>${mover(c)}${CATS.filter(x => x.pai===c.id).map(x => linhaSub(x, d+1)).join('')}`; };
   const tops = CATS.filter(c => !c.pai);
   painel.outerHTML = `<div class="cat-grupos">${tops.map(c => { const subs = CATS.filter(x => x.pai===c.id), n = contaCat(c);
-    return `<section class="cat-grupo"><div class="cat-top"><label class="cat-foto-l" title="${c.foto ? 'Trocar foto' : 'Colocar foto'}">${c.foto ? `<img src="${c.foto}" alt="">` : `<span class="cat-emo grande">${emojiCat(c.nome)}</span>`}<input type="file" accept="image/*" data-catfoto="${c.id}" hidden></label><span class="cat-nome">${nomeOuEdita(c)}<small>${n} produto${n===1?'':'s'} · ${subs.length} subcategoria${subs.length===1?'':'s'}</small></span>${acoes(c)}</div>${mover(c)}
+    return `<section class="cat-grupo"><div class="cat-top"><label class="cat-foto-l" title="${c.foto ? 'Trocar foto' : 'Colocar foto'}">${c.foto ? `<img src="${vImg(c.foto)}" alt="">` : `<span class="cat-emo grande">${emojiCat(c.nome)}</span>`}<input type="file" accept="image/*" data-catfoto="${c.id}" hidden></label><span class="cat-nome">${nomeOuEdita(c)}<small>${n} produto${n===1?'':'s'} · ${subs.length} subcategoria${subs.length===1?'':'s'}</small></span>${acoes(c)}</div>${mover(c)}
       <div class="cat-lista">${subs.length ? subs.map(x => linhaSub(x, 0)).join('') : '<p class="note" style="margin:0;padding:10px 4px">Nenhuma subcategoria ainda.</p>'}<button class="cat-add" data-catsub="${c.id}">+ Nova subcategoria em ${esc(c.nome)}</button></div></section>`; }).join('') || '<div class="panel"><p class="note">Nenhuma categoria.</p></div>'}</div>`; }; }
 document.addEventListener('click', e => { const s = e.target.closest('.cat-menu summary'); document.querySelectorAll('.cat-menu[open]').forEach(d => { if (!s || d !== s.parentElement) d.open = false; }); if (e.target.closest('.cat-pop button')) e.target.closest('.cat-menu').open = false; }, true);
 
@@ -7814,10 +7854,10 @@ document.addEventListener('click', async e => { const b = e.target.closest('[dat
 
 
 /* ===== v49 · Configurações revisadas (só o que funciona), entregas editáveis e academias parceiras ===== */
-var ENTREGA = {motoboy:{on:true, valor:0, cidades:['Volta Redonda']}, retirada:{on:true, endereco:'', horario:'seg. a sex., 10h às 18h'}, gratis:{on:true, min:250}};
+var ENTREGA = {motoboy:{on:true, valor:0, cidades:['Volta Redonda']}, app:{on:true, cidades:['Volta Redonda']}, retirada:{on:true, endereco:'', horario:'seg. a sex., 10h às 18h'}, gratis:{on:true, min:250}};
 var ACADEMIAS = {lista:[]};
 function aplicaEntrega(){ const g = ENTREGA.gratis || {}; FRETE_GRATIS_MIN = g.on === false ? Infinity : Math.max(0, +g.min || 0); }
-CONFIG.entrega = {pub:true, get:() => ENTREGA, set:v => { if (v && typeof v === 'object'){ ['motoboy','retirada','gratis'].forEach(k => { ENTREGA[k] = {...ENTREGA[k], ...(v[k]||{})}; }); if (!Array.isArray(ENTREGA.motoboy.cidades)) ENTREGA.motoboy.cidades = []; aplicaEntrega(); } }};
+CONFIG.entrega = {pub:true, get:() => ENTREGA, set:v => { if (v && typeof v === 'object'){ ['motoboy','app','retirada','gratis'].forEach(k => { ENTREGA[k] = {...ENTREGA[k], ...(v[k]||{})}; }); if (!Array.isArray(ENTREGA.motoboy.cidades)) ENTREGA.motoboy.cidades = []; if (!Array.isArray(ENTREGA.app.cidades)) ENTREGA.app.cidades = ['Volta Redonda']; aplicaEntrega(); } }};
 CONFIG.academias = {pub:true, get:() => ACADEMIAS, set:v => { if (v && Array.isArray(v.lista)) ACADEMIAS.lista = v.lista; }};
 aplicaEntrega();
 const normNome = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
@@ -7827,8 +7867,10 @@ const normNome = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLo
   const m = ENTREGA.motoboy, r = ENTREGA.retirada, info = cepInfo(cep) || {};
   const cid = normNome(base == null ? co.end?.cidade : ''), cidades = (m.cidades||[]).map(normNome);
   const atende = m.on && (cidades.includes(cid) || (info.vr && cidades.includes('volta redonda')));
-  const out = l.filter(o => o.id !== 'moto' && o.id !== 'ret');
-  if (atende) out.push({id:'moto', g:'Motoboy', n:'99/Uber', prazo:`${(m.cidades||[]).join(', ')} · em horário de atendimento`, v:Math.max(0, +m.valor || 0), local:true});
+  const out = l.filter(o => o.id !== 'moto' && o.id !== 'ret' && o.id !== 'app');
+  if (atende) out.push({id:'moto', g:'Motoboy', n:'Motoboy da loja', prazo:`${(m.cidades||[]).join(', ')} · em horário de atendimento`, v:Math.max(0, +m.valor || 0), local:true});
+  { const a = ENTREGA.app || {}, cidA = (a.cidades||[]).map(normNome); if (a.on && (cidA.includes(cid) || (info.vr && cidA.includes('volta redonda'))))
+    out.push({id:'app', g:'99/Uber', n:'Corrida por aplicativo (99/Uber)', prazo:'Valor da corrida combinado com a loja pelo WhatsApp antes do envio', v:0, local:true, combinar:true}); }
   if (r.on) out.push({id:'ret', g:'Retirada', n:'Retirar no local', prazo:`${r.endereco ? r.endereco + ' · ' : 'Volta Redonda · '}${r.horario || ''}`.replace(/ · $/, ''), v:0, local:true});
   return out; }; }
 { const _fm = freteMsg; freteMsg = function(){ if (!isFinite(FRETE_GRATIS_MIN)) return 'Enviamos para todo o Brasil'; return _fm(); }; }
@@ -7911,10 +7953,13 @@ function renderEntregas(){ const box = document.querySelector('[data-g="entregas
     <div class="panel"><div class="ent-h"><div><b>Melhor Envio</b><span>Correios, Jadlog e outras transportadoras, com cotação pelo CEP da cliente.</span></div><span class="tag ok">Ligado</span></div>
       <div class="field"><label for="entCep">Testar cotação por CEP</label><div class="inrow"><input id="entCep" inputmode="numeric" maxlength="9" placeholder="00000-000"><button class="btn sm" data-ent="cota">Cotar</button></div></div>
       ${testeFrete ? `<div class="ent-teste">${testeFrete}</div>` : ''}</div>
-    <div class="panel"><div class="ent-h"><div><b>Motoboy (99/Uber)</b><span>Entrega local. O valor abaixo é o cobrado da cliente.</span></div><label class="switch mini"><span class="d"><b>${m.on?'Ligado':'Desligado'}</b></span><input type="checkbox" data-entsw="motoboy" ${m.on?'checked':''}></label></div>
+    <div class="panel"><div class="ent-h"><div><b>Motoboy</b><span>Entrega local com motoboy. O valor abaixo é o cobrado da cliente.</span></div><label class="switch mini"><span class="d"><b>${m.on?'Ligado':'Desligado'}</b></span><input type="checkbox" data-entsw="motoboy" ${m.on?'checked':''}></label></div>
       ${m.on ? `<div class="row2"><div class="field"><label for="entMotoV">Valor da entrega (R$)</label><input id="entMotoV" data-entv="motoboy.valor" type="number" min="0" step="0.5" inputmode="decimal" value="${+m.valor||0}"><span class="hint">${+m.valor ? '' : 'Com R$ 0,00 a entrega sai grátis.'}</span></div></div>
       <div class="lbl">Cidades atendidas</div><div class="ent-chips">${(m.cidades||[]).map((c,i) => `<span class="ent-chip">${esc(c)}<button type="button" aria-label="Tirar ${esc(c)}" data-ent="tiracid" data-i="${i}">×</button></span>`).join('') || '<span class="note">Nenhuma cidade. Adicione pelo menos uma.</span>'}</div>
       <div class="inrow" style="margin-top:8px"><input id="entCid" placeholder="Ex.: Barra Mansa" maxlength="60"><button class="btn sm ghost" data-ent="addcid">Adicionar cidade</button></div>` : ''}</div>
+    <div class="panel"><div class="ent-h"><div><b>99/Uber</b><span>Corrida por aplicativo. O valor é combinado com a cliente pelo WhatsApp antes do envio.</span></div><label class="switch mini"><span class="d"><b>${(ENTREGA.app||{}).on?'Ligado':'Desligado'}</b></span><input type="checkbox" data-entsw="app" ${(ENTREGA.app||{}).on?'checked':''}></label></div>
+      ${(ENTREGA.app||{}).on ? `<div class="lbl">Cidades atendidas</div><div class="ent-chips">${((ENTREGA.app||{}).cidades||[]).map((c,i) => `<span class="ent-chip">${esc(c)}<button type="button" aria-label="Tirar ${esc(c)}" data-ent="tiraapp" data-i="${i}">×</button></span>`).join('') || '<span class="note">Nenhuma cidade. Adicione pelo menos uma.</span>'}</div>
+      <div class="inrow" style="margin-top:8px"><input id="entCidApp" placeholder="Ex.: Barra Mansa" maxlength="60"><button class="btn sm ghost" data-ent="addapp">Adicionar cidade</button></div>` : ''}</div>
     <div class="panel"><div class="ent-h"><div><b>Retirada no local</b><span>Sem custo para a cliente.</span></div><label class="switch mini"><span class="d"><b>${r.on?'Ligada':'Desligada'}</b></span><input type="checkbox" data-entsw="retirada" ${r.on?'checked':''}></label></div>
       ${r.on ? `<div class="field"><label for="entRetE">Endereço de retirada</label><input id="entRetE" data-entv="retirada.endereco" maxlength="140" value="${esc(r.endereco||'')}" placeholder="Ex.: Rua Tiradentes, 94 · Eucaliptal · Volta Redonda"></div>
       <div class="field"><label for="entRetH">Dias e horário</label><input id="entRetH" data-entv="retirada.horario" maxlength="80" value="${esc(r.horario||'')}" placeholder="Ex.: seg. a sex., 10h às 18h"></div>` : ''}</div>
@@ -7931,6 +7976,8 @@ document.addEventListener('change', e => { const sw = e.target.closest('[data-en
 document.addEventListener('click', async e => { const b = e.target.closest('[data-ent]'); if (!b) return; const ac = b.dataset.ent;
   if (ac==='addcid'){ const c = ($('#entCid').value || '').trim().replace(/\s+/g,' '); if (c.length < 2) return; if (!ENTREGA.motoboy.cidades.some(x => normNome(x)===normNome(c))) ENTREGA.motoboy.cidades.push(c); salvaAcad(); return renderEntregas(); }
   if (ac==='tiracid'){ ENTREGA.motoboy.cidades.splice(+b.dataset.i, 1); salvaAcad(); return renderEntregas(); }
+  if (ac==='addapp'){ const c = ($('#entCidApp').value || '').trim().replace(/\s+/g,' '); if (c.length < 2) return; ENTREGA.app = ENTREGA.app || {on:true, cidades:[]}; if (!ENTREGA.app.cidades.some(x => normNome(x)===normNome(c))) ENTREGA.app.cidades.push(c); salvaAcad(); return renderEntregas(); }
+  if (ac==='tiraapp'){ ENTREGA.app.cidades.splice(+b.dataset.i, 1); salvaAcad(); return renderEntregas(); }
   if (ac==='remedita'){ remEdit = true; return renderEntregas(); }
   if (ac==='remcancela'){ remEdit = false; return renderEntregas(); }
   if (ac==='remsalva'){ const novo = {}; REM_CAMPOS.forEach(([k]) => novo[k] = ($('#enR_'+k)?.value || '').trim()); novo.uf = novo.uf.toUpperCase();
@@ -8217,7 +8264,7 @@ if (sbOn()) REGRAS.forEach(r => { if (r.k === 'enviaAuto' || r.k === 'entregaAut
 /* ---------- 4) a Mel: avatar animada que conversa com a cliente ---------- */
 /* Mel em vídeo: os vídeos dela (com o fundo já tirado) tocam num canvas transparente e trocam conforme o que a cliente faz */
 function MelVideo(box, base){
-  const MEL_SEM = {} /* todos os gestos começam e terminam na mesma pose */, CLIPS = {parada:'mel-p.mp4?v=2', look:'mel-o.mp4?v=2', fala:'mel-f.mp4?v=2', acena:'mel-a.mp4?v=2', coracao:'mel-c.mp4?v=2', pensa:'mel-k.mp4?v=2', aponta:'mel-t.mp4?v=2', comemora:'mel-m.mp4?v=2'};
+  const MEL_SEM = {} /* todos os gestos começam e terminam na mesma pose */, CLIPS = {parada:'mel-p.mp4?v=3', look:'mel-o.mp4?v=3', fala:'mel-f.mp4?v=3', acena:'mel-a.mp4?v=3', coracao:'mel-c.mp4?v=3', pensa:'mel-k.mp4?v=3', aponta:'mel-t.mp4?v=3', comemora:'mel-m.mp4?v=3'};
   const api = {ok:false, tocar(){}, fala(){}, pula(){}, festa(){}, olha(){}, parar(){}};
   const cv = document.createElement('canvas'); cv.className = 'mel-cv'; cv.setAttribute('aria-hidden','true');
   cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block'; box.appendChild(cv);
@@ -8233,7 +8280,7 @@ function MelVideo(box, base){
 
       float L = dot(cA, vec3(.299,.587,.114));
       float sh = clamp(h.z / rv, 0.0, 1.3);
-      vec3 n = cA * pow(sh, mix(1.35, 0.85, smoothstep(0.08, 0.8, L)));
+      vec3 n = cA * pow(sh, mix(2.6, 1.6, smoothstep(0.08, 0.8, L)));
       n += vec3(max(sh - 0.98, 0.0) * mix(0.45, 0.18, L));
       n = mix(n, n * (0.94 + 0.12 * h.y), 0.5);
       u = mix(u, clamp(n, 0.0, 1.0), tA * mr);
@@ -8508,7 +8555,9 @@ setInterval(() => { if (!melIniciou && $('#s-gestao')?.hidden !== false) melInic
 /* ===== v53 · roupa da Mel (modelo e cor da paleta da marca) no painel ===== */
 const melRGB = h => [1,3,5].map(i => parseInt(h.substr(i,2),16)/255);
 const MEL_CORES = Object.fromEntries([
-  ['azul','Azul EME','#2F6DA8']
+  ['azul','Azul EME','#2F6DA8'], ['celeste','Azul celeste','#5E9BD6'], ['pastel','Azul pastel','#9CC7EE'], ['bebe','Azul bebê','#BFDDF6'],
+  ['marinho','Azul marinho','#1F3A5F'], ['petroleo','Azul petróleo','#245B73'], ['preto','Preto','#1E1B1D'], ['grafite','Grafite','#4A4F57'],
+  ['creme','Creme','#E8DCC8'], ['offwhite','Off white','#F2ECE2']
 ].map(([k,n,hex,orig]) => [k, {n, hex, c: orig ? null : melRGB(hex)}]));
 const MEL_MODELOS = {classico:{n:'Clássico', d:'Top colorido e legging preta com faixas coloridas'}, mono:{n:'Conjunto inteiro', d:'Top e legging da mesma cor'}, invertido:{n:'Invertido', d:'Top e faixas pretos, legging colorida'}};
 if (!ap.mel){ let g = null; try { g = JSON.parse(localStorage.getItem('emeMel') || 'null'); } catch(_){} ap.mel = g && g.cor ? g : {cor:'azul'}; }
@@ -8735,7 +8784,7 @@ try { MC.msgs = JSON.parse(sessionStorage.getItem('emeMelChat') || '[]'); } catc
 const mcGuarda = () => { try { sessionStorage.setItem('emeMelChat', JSON.stringify(MC.msgs.slice(-30))); } catch(_){} };
 const mcLigado = () => !ap.mel || ap.mel.chat !== false;
 async function mcStatus(){ if (MC.ativo !== null || !sbOn()) return MC.ativo; try { const {data} = await sb.functions.invoke('mel-chat', {body:{acao:'status'}}); MC.ativo = !!(data && data.ativo); } catch(_){ MC.ativo = false; } return MC.ativo; }
-const mcPoliticas = () => ['faq','entrega','troca'].map(k => POLITICAS[k] ? `${POLITICAS[k].t}: ${POLITICAS[k].txt.replace(/[#*]/g,'').replace(/\{site\}/g, SITE_LOJA)}` : '').join('\n\n');
+const mcPoliticas = () => trocaHorario(['faq','entrega','troca'].map(k => POLITICAS[k] ? `${POLITICAS[k].t}: ${POLITICAS[k].txt.replace(/[#*]/g,'').replace(/\{site\}/g, SITE_LOJA)}` : '').join('\n\n'));
 function mcContexto(){ const p = pd && prod(pd.id);
   return {tela: telaAtual === 'sacola' ? (co.step >= 1 ? 'finalizando a compra' : 'sacola') : telaAtual,
     produto: p ? `${p.n} (id ${p.id}) · ${brl(precoAtual(p))} · ${Object.entries(p.est).map(([c, t]) => c + ': ' + Object.keys(t).filter(x => t[x] > 0).join('/')).join('; ')}` : '',
@@ -9405,6 +9454,67 @@ if (sbOn()){
 document.querySelectorAll('.sfoot [data-go="gestao"], .sdrawer [data-go="gestao"]').forEach(b => b.remove());
 
 aplicaTema(); renderCats(); renderProdutos(); renderFlash(); renderReward(); renderHorario(); renderVitrine(); renderBanner(); renderFiltros(); renderGestao(); kpis(); atualizaContador(); requestAnimationFrame(revelaInicio);
+
+/* ===== v117 · sacola e checkout numa aba lateral à direita (como a mini sacola), com as etapas na mesma aba ===== */
+{ let SAC_PREV = 'inicio', SAC_Y = 0;
+  const sec = $('#s-sacola');
+  if (sec && !sec.querySelector('.sac-top')) sec.insertAdjacentHTML('afterbegin', `<div class="sac-top"><div><small>EME Moda &amp; Fit</small><b id="sacTit">Sua sacola</b></div><button type="button" class="sac-x" data-sacfecha aria-label="Fechar a sacola">×</button></div><ol class="sac-steps" id="sacSteps" aria-label="Etapas da compra"></ol>`);
+  document.body.insertAdjacentHTML('beforeend', '<div class="sac-veil" id="sacVeil" data-sacfecha hidden></div>');
+  const passos = () => { const el = $('#sacSteps'); if (!el) return; const nomes = ['Sacola','Seus dados','Entrega','Pagamento']; let at = 0; if (co.step >= 4) at = 4; else if (co.step >= 1){ const secs = [...document.querySelectorAll('#coBody .ck-sec')];
+      const feita = sec => { const obr = [...sec.querySelectorAll('label.obg')].map(l => l.htmlFor && document.getElementById(l.htmlFor)).filter(x => x && x.offsetParent);
+        const radios = [...sec.querySelectorAll('input[type=radio]')]; const nomesR = [...new Set(radios.map(r => r.name))];
+        return obr.every(x => String(x.value || '').trim().length > 1) && nomesR.every(n => radios.some(r => r.name === n && r.checked)) && (obr.length || nomesR.length); };
+      const i = secs.findIndex(x => !feita(x)); at = secs.length ? 1 + (i < 0 ? secs.length - 1 : i) : Math.min(co.step, 3); }
+    el.innerHTML = nomes.map((n, i) => `<li class="${i < at ? 'ok' : i === at ? 'on' : ''}" ${i >= 1 && co.step >= 1 && co.step < 4 ? `data-sacir="${i}" role="button" tabindex="0"` : ''}><span>${i < at ? '✓' : i + 1}</span>${n}</li>`).join('');
+    const t = $('#sacTit'); if (t) t.textContent = co.step === 0 ? 'Sua sacola' : co.step >= 4 ? 'Pedido feito' : 'Finalizar compra'; };
+  const abre = () => { document.body.classList.add('sac-on'); $('#sacVeil').hidden = false; const pv = $('#s-' + SAC_PREV); if (pv && SAC_PREV !== 'sacola') pv.hidden = false; window.scrollTo(0, SAC_Y); passos(); };
+  const fecha = () => { document.body.classList.remove('sac-on'); $('#sacVeil').hidden = true; };
+  const _moS = mostrar; mostrar = function(n){
+    if (n === 'sacola'){ if (telaAtual !== 'sacola' && telaAtual !== 'gestao'){ SAC_PREV = telaAtual || 'inicio'; SAC_Y = window.scrollY; } const r = _moS.apply(this, arguments); abre(); return r; }
+    fecha(); return _moS.apply(this, arguments); };
+  const _rcS = renderCheckout; renderCheckout = function(){ const r = _rcS.apply(this, arguments); passos(); const sc = $('#s-sacola'); return r; };
+  document.addEventListener('click', e => { if (!e.target.closest('[data-sacfecha]')) return; e.preventDefault(); const y = SAC_Y; mostrar(SAC_PREV && SAC_PREV !== 'sacola' ? SAC_PREV : 'inicio'); window.scrollTo(0, y); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('sac-on')) $('#sacVeil').click(); });
+  document.addEventListener('click', e => { const li = e.target.closest('[data-sacir]'); if (!li) return; const sec = document.querySelectorAll('#coBody .ck-sec')[+li.dataset.sacir - 1]; if (sec) sec.scrollIntoView({behavior:'smooth', block:'start'}); });
+  { let tP = null; const ag = () => { clearTimeout(tP); tP = setTimeout(passos, 120); }; new MutationObserver(ag).observe($('#coBody'), {subtree:true, attributes:true, attributeFilter:['class']}); ['input','change'].forEach(ev => document.addEventListener(ev, e => { if (e.target.closest && e.target.closest('#coBody')) ag(); })); }
+  /* rolar para o topo da aba a cada etapa */
+  { const _rc2 = renderCheckout; let ult = -1; renderCheckout = function(){ const r = _rc2.apply(this, arguments); if (co.step !== ult){ ult = co.step; const sc = $('#s-sacola'); if (sc && document.body.classList.contains('sac-on')) sc.scrollTop = 0; } return r; }; }
+  const st = document.createElement('style'); st.textContent = `
+body.sac-on{overflow:hidden}
+.sac-veil{position:fixed;inset:0;background:rgba(20,17,19,.38);backdrop-filter:blur(2px);z-index:1190;animation:sacFade .25s ease}
+.sac-top,.sac-steps{display:none}
+body.sac-on #s-sacola{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);max-width:none;margin:0;padding:0 22px 40px;background:var(--bg);z-index:1200;overflow-y:auto;overscroll-behavior:contain;box-shadow:-24px 0 60px rgba(20,17,19,.18);animation:sacIn .38s cubic-bezier(.2,.8,.2,1)}
+body.sac-on #s-sacola > .sec,body.sac-on #s-sacola .crumbs,body.sac-on #s-sacola nav[aria-label*="aminho"]{display:none!important}
+body.sac-on .sac-top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:3;background:var(--bg);margin:0 -22px;padding:18px 22px 12px;border-bottom:1px solid var(--line)}
+.sac-top small{display:block;font:700 10.5px var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.sac-top b{font:500 26px var(--bodoni);color:var(--ink)}
+.sac-x{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:22px;line-height:1;cursor:pointer;color:var(--ink)}
+body.sac-on .sac-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;list-style:none;margin:14px 0 6px;padding:0}
+.sac-steps li{display:grid;justify-items:center;gap:6px;font:600 11px var(--body);color:var(--muted);text-align:center;position:relative}
+.sac-steps li span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);font:700 12px var(--body);color:var(--muted);transition:all .3s}
+.sac-steps li.on{color:var(--ink)}.sac-steps li.on span{background:#C5E4FD;border-color:#C5E4FD;color:#141113;box-shadow:0 0 0 4px rgba(197,228,253,.45)}
+.sac-steps li.ok span{background:#2F6DA8;border-color:#2F6DA8;color:#fff}
+.sac-steps li:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:var(--line)}
+.sac-steps li.ok:not(:last-child)::after{background:#2F6DA8}
+body.sac-on #coBody{display:flex!important;flex-direction:column;align-items:stretch!important;gap:12px;margin-top:8px}
+body.sac-on #coBody > *{width:100%;max-width:none!important}
+.sac-steps li[data-sacir]{cursor:pointer}
+body.sac-on #s-sacola .ck-sec{scroll-margin-top:150px}
+body.sac-on #coBody .co-side{position:static!important;order:2;margin:0}
+body.sac-on #coBody .co-main{order:1}
+body.sac-on #coBody .panel{border-radius:16px;border-color:#E3E8EE;box-shadow:0 6px 18px -12px rgba(30,60,100,.25)}
+body.sac-on #coTimer:empty{display:none}
+#coBody .co-n{background:#2F6DA8!important;color:#fff!important;border-color:#2F6DA8!important}
+#coBody .radio.sel,#coBody .radio:has(input:checked){border-color:#2F6DA8!important;background:#F2F8FE!important}
+@keyframes sacIn{from{transform:translateX(100%);opacity:.6}to{transform:none;opacity:1}}
+@keyframes sacFade{from{opacity:0}to{opacity:1}}
+/* barra do frete grátis e destaques nas cores da EME */
+.fbar .trk{background:#E3EEF8!important}.fbar .trk i{background:linear-gradient(90deg,#7FB3E6,#2F6DA8)!important}.freebar .fill{background:#2F6DA8!important}.freebar .track{background:#E3EEF8!important}
+@media (prefers-reduced-motion:reduce){body.sac-on #s-sacola,.sac-veil{animation:none}}
+/* Mel fica visível ao lado da aba até o fim da compra */
+@media (min-width:720px){ body.sac-on .mel{right:calc(min(520px,100vw) + 6px)!important;z-index:1210!important} }
+@media (max-width:719px){ body.sac-on #s-sacola{padding-bottom:150px} body.sac-on .mel{z-index:1210!important;left:4px!important;right:auto!important;bottom:8px!important} body.sac-on .mel .mel-boneca{width:70px!important;height:116px!important} body.sac-on .mel .mel-balao{display:none!important} }
+`; document.head.appendChild(st); }
 </script>
 
 </body>
