@@ -9614,7 +9614,7 @@ body.sac-on #coTimer:empty{display:none}
   new MutationObserver(() => { if (!document.querySelector('.app.painel')) return; const sh = document.querySelector('#veil:not([hidden]) #sheet'); if (!sh || sh.querySelector('[data-salvartudo]') || sh.querySelector('#fPainelLogin')) return;
     if (!sh.querySelector('input, select, textarea')) return; sh.insertAdjacentHTML('beforeend', `<div class="salvar-bar sheet-bar"><span class="salvar-info">${etiqueta()}</span><button class="btn salvar-btn" type="button" data-salvartudo>Salvar</button></div>`); }).observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['hidden']});
   const st = document.createElement('style'); st.textContent = `
-.salvar-bar{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:12px 14px;background:rgba(252,248,241,.96);backdrop-filter:blur(6px);border:1px solid #E3E8EE;border-radius:14px;box-shadow:0 10px 24px -16px rgba(30,60,100,.35)}
+.salvar-bar{display:none!important;position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:12px 14px;background:rgba(252,248,241,.96);backdrop-filter:blur(6px);border:1px solid #E3E8EE;border-radius:14px;box-shadow:0 10px 24px -16px rgba(30,60,100,.35)}
 .salvar-info{font-size:12.5px;color:var(--muted)}
 .salvar-btn{min-width:170px}
 .sheet-bar{bottom:0;margin-top:14px}
@@ -9683,6 +9683,41 @@ body.sac-on #coTimer:empty{display:none}
 .snav-top.tem-sub.encolhido::after{transform:rotate(-45deg);margin-top:0}
 .snav-sub{animation:subIn .25s ease}
 @keyframes subIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}`; document.head.appendChild(st); }
+
+/* v129 · painel reorganizado: menu com poucos grupos e as telas de cada grupo como abas no topo */
+{ const todas = GRUPOS.flatMap(g => g[1]); const tem = k => todas.includes(k); const so = l => l.filter(tem);
+  const NOVO = [
+    ['Início', ['inicio']],
+    ['Vendas', so(['pedidos','pdv','analytics','financeiro','historico','impressoras'])],
+    ['Produtos', so(['produtos','categorias','estoque','precificacao','importacao','avaliacoes'])],
+    ['Clientes', so(['clientes','funil','academias'])],
+    ['Marketing', so(['cupons','ofertas','automacoes','automatico','aprovar'])],
+    ['Loja', so(['aparencia','assistente'])],
+    ['Configurações', so(['config','entregas','integracoes'])]];
+  const usadas = NOVO.flatMap(g => g[1]); const sobra = todas.filter(k => !usadas.includes(k)); if (sobra.length) NOVO[NOVO.length - 1][1].push(...sobra);
+  GRUPOS.splice(0, GRUPOS.length, ...NOVO.filter(g => g[1].length));
+  PICO['Vendas'] = PICO['Pedidos']; PICO['Loja'] = PICO['Aparência'] || PICO['Ferramentas'];
+  const NOMES = {pedidos:'Pedidos', pdv:'Venda no balcão', analytics:'Relatórios', financeiro:'Financeiro', historico:'Histórico', impressoras:'Impressão', produtos:'Todos os produtos', categorias:'Categorias', estoque:'Estoque', precificacao:'Precificação', importacao:'Importar planilha', avaliacoes:'Avaliações', clientes:'Clientes', funil:'Funil', academias:'Academias parceiras', cupons:'Cupons', ofertas:'Ofertas', automacoes:'Mensagens do WhatsApp', automatico:'Piloto automático', aprovar:'Para aprovar', aparencia:'Aparência', assistente:'Assistente IA', config:'Dados da loja', entregas:'Fretes e entregas', integracoes:'Integrações'};
+  Object.entries(NOMES).forEach(([k, n]) => { const g = GES.find(x => x[0] === k); if (g) g[1] = n; });
+  const abas = () => { const sec = document.getElementById('s-gestao'); if (!sec || sec.hidden) return; const g = grupoDe(gesAtual); let bar = sec.querySelector(':scope > .gtabs');
+    if (!g || g[1].length < 2){ bar?.remove(); return; }
+    const html = g[1].map(k => `<button type="button" role="tab" data-ges="${k}" aria-selected="${k === gesAtual}">${esc(nomeGes(k))}${typeof contagem === 'function' && contagem(k) ? `<b class="snav-n">${contagem(k)}</b>` : ''}</button>`).join('');
+    if (!bar){ const pt = sec.querySelector(':scope > .ptitle'); (pt || sec.firstElementChild).insertAdjacentHTML('afterend', `<nav class="gtabs" role="tablist" aria-label="Telas de ${esc(g[0])}"></nav>`); bar = sec.querySelector(':scope > .gtabs'); }
+    if (bar.dataset.h !== html){ bar.innerHTML = html; bar.dataset.h = html; bar.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest', inline:'center'}); } };
+  const _rgA = renderGestao; renderGestao = function(){ const r = _rgA.apply(this, arguments); abas(); return r; };
+  setInterval(abas, 600);
+  const st = document.createElement('style'); st.textContent = `
+.snav .snav-sub{display:none!important}
+.snav-top.tem-sub::after{display:none!important}
+.gtabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #E3E8EE;margin:10px 0 16px;padding:0 2px}
+.gtabs::-webkit-scrollbar{display:none}
+.gtabs button{flex:0 0 auto;border:0;background:none;padding:10px 14px 11px;font:600 13.5px var(--body);color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:color .2s,border-color .2s}
+.gtabs button:hover{color:var(--ink)}
+.gtabs button[aria-selected="true"]{color:#141113;border-bottom-color:#2F6DA8}
+.app.wide #s-gestao > .gtabs{grid-column:1/-1}
+.subabas{margin-top:0}
+@media (max-width:760px){ .gtabs{margin:6px -16px 12px;padding:0 12px} .gtabs button{padding:9px 11px 10px;font-size:13px} }`; document.head.appendChild(st);
+  try { if (!$('#s-gestao').hidden) renderGestao(); } catch(_){} }
 </script>
 
 </body>
