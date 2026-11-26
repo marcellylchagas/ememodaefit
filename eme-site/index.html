@@ -29,6 +29,19 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="supabase.js"></script>
 <script>
+/* abrir o painel direto: sem mostrar a loja antes */
+if (/painel/.test(location.hash) || /^\/painel(\/|$)/.test(location.pathname)) document.documentElement.classList.add('modo-painel');
+</script>
+<style>
+html.modo-painel .app:not(.painel),html.modo-painel #mel,html.modo-painel .wa-fab,html.modo-painel #appConv,html.modo-painel #cookieBar,html.modo-painel .cookiebar{visibility:hidden!important}
+html.modo-painel body{background:#FCF8F1}
+
+/* ===== versão pública: só a loja ===== */
+.app:not(.painel) [data-go="gestao"],.sdrawer [data-go="gestao"],.proto,.app:not(.painel) .example{display:none!important}
+</style>
+</head>
+<body>
+<script>
 /* app do painel: em /painel/ a página usa o manifesto, o ícone e o nome do painel e abre direto no painel */
 (function(){ if (!/^\/painel(\/|$)/.test(location.pathname)) return;
   if (location.pathname === '/painel') { location.replace('/painel/' + (location.hash || '#painel')); return; }
@@ -1428,12 +1441,7 @@ a.btn{text-decoration:none!important}
 .chipbtn[aria-pressed="true"],.app .chipbtn[aria-pressed="true"],.opt[aria-pressed="true"],.seg3 button[aria-pressed="true"],.seg button[aria-pressed="true"],.app.painel .seg button[aria-pressed="true"],.mchip[aria-pressed="true"],.snav .snav-top.on,.vg-quick button{background:var(--btn-eme)!important;color:#141113!important;border-color:var(--btn-eme)!important}
 .snav .snav-top.on svg,.vg-quick button svg{color:#141113!important}
 .subabas button.on,.subabas [aria-selected="true"]{background:var(--btn-eme)!important;color:#141113!important}
-
-/* ===== versão pública: só a loja ===== */
-.app:not(.painel) [data-go="gestao"],.sdrawer [data-go="gestao"],.proto,.app:not(.painel) .example{display:none!important}
 </style>
-</head>
-<body>
 
 <div id="emeSplash" aria-hidden="true"><img src="logo.png?v=104" alt=""><i></i></div>
 <style>
@@ -1453,7 +1461,7 @@ a.btn{text-decoration:none!important}
 </style>
 <script>
 (function(){ var t0 = Date.now(), MIN = 900, MAX = 6000; function sai(){ var el = document.getElementById('emeSplash'); if (!el || el.classList.contains('sai')) return; el.classList.add('sai'); setTimeout(function(){ el.remove(); }, 600); }
-  function ve(){ if (window.__emePronto) { setTimeout(sai, Math.max(0, MIN - (Date.now() - t0))); return; } if (Date.now() - t0 > MAX) return sai(); setTimeout(ve, 120); }
+  function ve(){ var mp = document.documentElement.classList.contains('modo-painel'); var pronto = mp ? (document.querySelector('.app.painel') || document.getElementById('fPainelLogin')) : window.__emePronto; if (pronto) { setTimeout(sai, mp ? 150 : Math.max(0, MIN - (Date.now() - t0))); return; } if (Date.now() - t0 > MAX) return sai(); setTimeout(ve, 120); }
   setTimeout(ve, 120); })();
 </script>
 <div class="app">
@@ -9540,6 +9548,12 @@ body.sac-on #coTimer:empty{display:none}
       <p>O ícone "EME Painel" abre direto no painel, separado do app da loja.</p><button class="btn full" data-close>Entendi</button></div>`; $('#veil').hidden = false; });
   /* no app do painel, "Visitar loja" abre a loja no navegador */
   document.addEventListener('click', e => { const v = e.target.closest('.top .tp .visit, [data-visitar]'); if (v && instalado()){ e.preventDefault(); e.stopPropagation(); window.open('/', '_blank'); } }, true); } }
+
+/* v121 · modo painel: some quando a dona sai do painel para a loja */
+{ let visto = false; const H = document.documentElement;
+  new MutationObserver(() => { if (document.querySelector('.app.painel')) visto = true; }).observe(document.querySelector('.app'), {attributes:true, attributeFilter:['class']});
+  const _moP = mostrar; mostrar = function(n){ const r = _moP.apply(this, arguments); if (n !== 'gestao' && visto) H.classList.remove('modo-painel'); return r; };
+  const _fsP = fecharSheet; fecharSheet = function(){ const r = _fsP.apply(this, arguments); setTimeout(() => { if (H.classList.contains('modo-painel') && !document.querySelector('.app.painel') && $('#veil').hidden){ H.classList.remove('modo-painel'); if (/painel/.test(location.hash)) history.replaceState(null, '', location.pathname.replace(/^\/painel\/?/, '/')); } }, 80); return r; }; }
 </script>
 
 </body>
