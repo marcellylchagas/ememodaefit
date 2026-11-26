@@ -1384,11 +1384,11 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 .real [data-simav],.real [data-simrun],.real [data-pixpago],.real [data-pixv],.real #g-automatico .clock,.real [data-wateste]{display:none!important}
 
 /* ===== nova marca (azul pastel) ===== */
-.logo-eme{display:block;width:auto;object-fit:contain;border-radius:0!important}
+.logo-eme{display:block;width:auto;object-fit:contain;border-radius:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
 .app .top .tl .brand img.logo-eme{height:76px;width:auto;max-width:200px;margin:-8px 0}
 .app.painel .top .tp .brand img.logo-eme{height:44px;width:auto;max-width:140px}
 .sd-h .logo-eme{height:48px}
-.sf-brand .logo-eme{height:70px;background:#FDF8F0;padding:8px 14px;border-radius:14px!important;margin-bottom:10px}
+.sf-brand .logo-eme{height:86px;margin-bottom:10px}
 @media (max-width:760px){ .app .top .tl .brand img.logo-eme{height:56px;max-width:140px;margin:-6px 0} }
 
 /* ===== versão pública: só a loja ===== */
@@ -7920,7 +7920,7 @@ cfg.atacado.on = false; cfg.senha.on = false;
 { const _csA = CONFIG.loja.set; CONFIG.loja.set = v => { _csA(v); cfg.atacado.on = false; cfg.senha.on = false; }; }
 function limpaConfig(){ const g = $('#g-config'); if (!g) return;
   g.querySelectorAll('.panel').forEach(pn => { const t = pn.querySelector('.lbl')?.textContent || '';
-    if (/Modo atacado|Preços com senha/i.test(t)) pn.innerHTML = `<div class="ent-h"><div><b>${/atacado/i.test(t) ? 'Modo atacado' : 'Preços com senha'}</b><span>${/atacado/i.test(t) ? 'Preço especial a partir de um número mínimo de peças.' : 'Esconder os preços da vitrine para quem não tem a senha.'}</span></div><span class="tag">Em breve</span></div>`; pn.hidden = true; });
+    if (/Modo atacado|Preços com senha/i.test(t)){ pn.innerHTML = `<div class="ent-h"><div><b>${/atacado/i.test(t) ? 'Modo atacado' : 'Preços com senha'}</b><span>${/atacado/i.test(t) ? 'Preço especial a partir de um número mínimo de peças.' : 'Esconder os preços da vitrine para quem não tem a senha.'}</span></div><span class="tag">Em breve</span></div>`; pn.hidden = true; } });
   g.querySelectorAll('.example').forEach(x => x.remove()); }
 function limpaEquipe(){ const g = $('#g-equipe'); if (!g) return; const f = g.querySelector('#fEq'); if (f) f.outerHTML = `<div class="panel"><div class="ent-h"><div><b>Convidar outras pessoas</b><span>Dar acesso ao painel para quem trabalha com você, cada uma com o seu papel.</span></div><span class="tag">Em breve</span></div></div>`;
   g.querySelectorAll('.example').forEach(x => x.remove()); }
