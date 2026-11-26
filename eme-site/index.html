@@ -1777,7 +1777,7 @@ a.btn{text-decoration:none!important}
 <button class="wa-fab" data-wa aria-label="Falar com a EME no WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l1.3-4A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/></svg></button>
 
 <script>
-function vImg(u){ u = String(u||''); return /^(banner|cat)-[a-z]+\.jpg$/i.test(u) ? u + '?v=116' : u; }
+function vImg(u){ u = String(u||''); return /^(banner|cat)-[a-z]+\.jpg$/i.test(u) ? u + '?v=118' : u; }
 
 /* bibliotecas pesadas do painel: só carregam quando alguém entra no painel (a loja abre bem mais leve) */
 var _libsP = null;
@@ -2016,7 +2016,7 @@ function renderSheet(){
     ${p.desc?`<div class="lbl">Descrição</div><p style="font-size:14px;color:var(--soft);white-space:pre-line;margin:0">${esc(p.desc)}</p>`:''}
     <p class="note" style="margin-top:14px">Evite contato com água quente e ferro de passar.</p>
     <div class="lbl">Avaliações</div>
-    ${revs.length ? revs.map(r=>`<div class="review"><span class="stars">${estrelas(r.nota)}</span> <b>${esc(r.nome)}</b><br>${esc(r.txt)}${r.foto?`<img class="rv-foto" src="${r.foto}" alt="Foto enviada por ${esc(r.nome)}">`:''}</div>`).join('') : '<p class="note">Ainda sem avaliações.</p>'}`;
+    ${revs.length ? revs.map(r=>`<div class="review"><span class="stars">${estrelas(r.nota)}</span> <b>${esc(r.nome)}</b><br>${esc(r.txt)}${r.foto?`<img class="rv-foto" src="${vImg(r.foto)}" alt="Foto enviada por ${esc(r.nome)}">`:''}</div>`).join('') : '<p class="note">Ainda sem avaliações.</p>'}`;
   if (ap.ocultarPreco && !estTotal(p)) $('#sheet .price-big').textContent = 'Esgotado';
 }
 function fecharSheet(){ $('#veil').hidden = true; pd = null; }
@@ -3129,7 +3129,7 @@ function renderSheet(){
       <details class="acc" open><summary>Descrição</summary><p style="white-space:pre-line">${esc(descComTam(p))}</p><p class="note">Evite contato com água quente e ferro de passar.</p></details>
       <details class="acc"><summary>Tabela de medidas</summary>${tabelaMedidasHTML(p)}</details>
       <details class="acc"><summary>Entrega e troca</summary><p>Melhor Envio para todo o Brasil, motoboy e 99/Uber (valor combinado pelo WhatsApp) em Volta Redonda e retirada no local (seg. a sex., 10h às 18h). Frete grátis a partir de R$ 250,00.</p><p>Troca por tamanho ou modelo em até 30 dias corridos após o recebimento, com a peça sem sinais de uso e com as etiquetas. <button class="link" data-info="troca">Ver política de troca</button></p></details>
-      <details class="acc"><summary>Avaliações (${revs.length})</summary>${revs.length ? revs.map(r=>`<div class="review"><span class="stars">${estrelas(r.nota)}</span> <b>${esc(r.nome)}</b><br>${esc(r.txt)}${r.foto?`<img class="rv-foto" src="${r.foto}" alt="Foto enviada por ${esc(r.nome)}">`:''}</div>`).join('') : '<p class="note">Ainda sem avaliações.</p>'}</details>
+      <details class="acc"><summary>Avaliações (${revs.length})</summary>${revs.length ? revs.map(r=>`<div class="review"><span class="stars">${estrelas(r.nota)}</span> <b>${esc(r.nome)}</b><br>${esc(r.txt)}${r.foto?`<img class="rv-foto" src="${vImg(r.foto)}" alt="Foto enviada por ${esc(r.nome)}">`:''}</div>`).join('') : '<p class="note">Ainda sem avaliações.</p>'}</details>
       ${(() => { const rel = PRODUTOS.filter(x => x.id!==p.id && x.status==='Publicado' && x.c===p.c).slice(0,4); return rel.length ? `<div class="sec"><h2 style="font-size:16px">Combina com</h2><span>${esc(p.c)}</span></div><div class="shelf">${rel.map(x=>cardHTML(x,{mini:true})).join('')}</div>` : ''; })()}
     </div>
     <div class="buybar">
@@ -5605,9 +5605,9 @@ document.addEventListener('click', e => { if (e.target.closest('[data-rvsemfoto]
 { const _rs5 = renderSheet; renderSheet = function(){ _rs5(); const f = $('#fRev'); if (!f || $('#rvFotoIn')) return; const sb = f.querySelector('[type=submit]');
   (sb || f.lastElementChild).insertAdjacentHTML('beforebegin', `<div class="field"><label for="rvFotoIn">Foto com a peça (opcional)</label><input id="rvFotoIn" type="file" accept="image/*"><div class="rv-pv" id="rvFotoPv">${rvFoto?`<img src="${rvFoto}" alt="Prévia da foto"><button type="button" class="link" data-rvsemfoto>Tirar foto</button>`:''}</div></div>`); }; }
 document.addEventListener('submit', e => { if (e.target.id!=='fRev') return; const n = avaliacoes.length; setTimeout(() => { if (avaliacoes.length > n && rvFoto){ avaliacoes[avaliacoes.length-1].foto = rvFoto; rvFoto = null; } }, 0); }, true);
-const fotoRev = a => a.foto ? `<img class="rv-foto" src="${a.foto}" alt="Foto enviada por ${esc(a.nome)}">` : '';
+const fotoRev = a => a.foto ? `<img class="rv-foto" src="${vImg(a.foto)}" alt="Foto enviada por ${esc(a.nome)}">` : '';
 { const _rrl = renderReviewsLoja; renderReviewsLoja = function(){ _rrl(); const ok = avaliacoes.filter(a=>a.ok && !a.oculta && prod(a.prod));
-  const com = ok.filter(a=>a.foto); if (com.length){ const box = $('#reviewsLoja .rv-store'); if (box) box.insertAdjacentHTML('afterend', `<div class="sec"><h2 style="font-size:20px">Fotos das clientes</h2><span>${com.length}</span></div><div class="rv-galeria">${com.map(a=>`<button data-prod="${a.prod}" aria-label="Ver ${esc(prod(a.prod).n)}"><img src="${a.foto}" alt="Foto de ${esc(a.nome)} com ${esc(prod(a.prod).n)}"></button>`).join('')}</div>`); }
+  const com = ok.filter(a=>a.foto); if (com.length){ const box = $('#reviewsLoja .rv-store'); if (box) box.insertAdjacentHTML('afterend', `<div class="sec"><h2 style="font-size:20px">Fotos das clientes</h2><span>${com.length}</span></div><div class="rv-galeria">${com.map(a=>`<button data-prod="${a.prod}" aria-label="Ver ${esc(prod(a.prod).n)}"><img src="${vImg(a.foto)}" alt="Foto de ${esc(a.nome)} com ${esc(prod(a.prod).n)}"></button>`).join('')}</div>`); }
   const cards = [...document.querySelectorAll('#reviewsLoja > .panel')].slice(1); ok.forEach((a,i) => { if (a.foto && cards[i]) cards[i].insertAdjacentHTML('beforeend', fotoRev(a)); }); }; }
 { const _ra2 = renderAvaliacoesAdm; renderAvaliacoesAdm = function(){ _ra2(); document.querySelectorAll('#g-avaliacoes .cup').forEach(c => { const b = c.querySelector('[data-revoc]'); if (!b) return; const a = avaliacoes[+b.dataset.revoc]; if (a && a.foto) c.querySelector('.note')?.insertAdjacentHTML('afterend', fotoRev(a)); }); }; }
 
@@ -8065,7 +8065,7 @@ const fotoCat = c => c.foto || (() => { for (const p of pubDe(c)){ const s = typ
   tops.forEach(t => { const subs = subsVis(t); if (subs.length) itens.push(...subs.map(s => [s, catPath(s)])); else itens.push([t, catPath(t)]); });
   if (!itens.length){ box.innerHTML = ''; return; }
   const bola = ([c, path]) => { const f = fotoCat(c); return `<button class="cbola" data-blink="cat:${esc(path)}"><span class="cbola-img">${f ? `<img src="${esc(f)}" alt="" loading="lazy">` : `<span>${typeof emojiCat==='function' ? emojiCat(c.nome) : ''}</span>`}</span><span class="cbola-n">${esc(c.nome)}</span></button>`; };
-  const todas = `<button class="cbola" data-go="loja"><span class="cbola-img todas">${tops[0] && tops[0].foto ? `<img src="${esc(tops[0].foto)}" alt="" loading="lazy">` : '<span>✦</span>'}</span><span class="cbola-n">Ver tudo</span></button>`;
+  const todas = `<button class="cbola" data-go="loja"><span class="cbola-img todas">${tops[0] && tops[0].foto ? `<img src="${esc(vImg(tops[0].foto))}" alt="" loading="lazy">` : '<span>✦</span>'}</span><span class="cbola-n">Ver tudo</span></button>`;
   box.className = 'cats-mini'; box.innerHTML = carrossel('homeCatsT', todas + itens.map(bola).join(''), 'carr-bolas'); requestAnimationFrame(() => marcaSetas(box)); }; }
 
 /* ---------- Produtos: uma fileira só, limpa, com setas ---------- */
