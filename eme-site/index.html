@@ -1874,7 +1874,7 @@ const premios = [{t:'5% OFF', c:'var(--rose)'},{t:'Frete grátis', c:'var(--surf
 const cliente = {pontos:0, cash:0, giros:1, giroAng:0, premio:''};
 
 let cart = [];
-const co = {step:0, nome:'', email:'', whats:'', cep:'', frete:null, pag:'pix', parc:1, cupom:null, cupMsg:'', err:'', usarCash:false, bump:false, entregaForma:'Dinheiro', timerFim:0, end:{rua:'',num:'',comp:'',bairro:'',cidade:'',uf:''}};
+const co = {step:0, nome:'', email:'', whats:'', cep:'', frete:null, pag:'pix', parc:1, cupom:null, cupMsg:'', err:'', usarCash:false, bump:false, entregaForma:'Pix', timerFim:0, end:{rua:'',num:'',comp:'',bairro:'',cidade:'',uf:''}};
 let catAtual = 'Todos', busca = '', ordFiltro = 'Todos', cliFiltro = 'Todos', gesAtual = 'inicio';
 
 /* ================= utilitários ================= */
@@ -2232,8 +2232,8 @@ function telaPagamento(){
   if (co.pag==='pix') corpo = `<p class="note" style="margin-top:10px">Pix sem acréscimo. O QR code vale por 30 minutos.</p><div class="pix"><div class="qr" aria-label="QR code de exemplo"></div><b>${brl(base)}</b><span class="note">O QR code e o Pix copia e cola aparecem aqui ao finalizar.</span></div>`;
   else if (co.pag==='boleto') corpo = `<p class="note" style="margin-top:10px">Boleto sem acréscimo. Compensação em até 3 dias úteis. O pedido é separado após a compensação.</p>`;
   else if (co.pag==='entrega') corpo = `<p class="note" style="margin-top:10px">Sem cobrança online. Você paga ao receber ou ao retirar.</p>
-      <div class="field"><label for="entForma">Como vai pagar</label><select id="entForma">${['Dinheiro','Cartão de crédito','Cartão de débito','Pix'].map(f=>`<option ${co.entregaForma===f?'selected':''}>${f}</option>`).join('')}</select></div>
-      ${co.entregaForma==='Dinheiro'?'<div class="field"><label for="troco">Troco para quanto?</label><input id="troco" inputmode="decimal" placeholder="Ex.: 200,00"></div>':''}`;
+      <div class="field"><label for="entForma">Como vai pagar</label><select id="entForma">${['Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${co.entregaForma===f?'selected':''}>${f}</option>`).join('')}</select></div>
+      `;
   else corpo = `
       <div class="field"><label for="cdNum">Número do cartão</label><input id="cdNum" inputmode="numeric" autocomplete="off" placeholder="0000 0000 0000 0000" maxlength="19"></div>
       <div class="field"><label for="cdNome">Nome impresso no cartão</label><input id="cdNome" autocomplete="off"></div>
@@ -2374,7 +2374,7 @@ function renderOfertas(){
   $('#checkoutCfg').innerHTML = sw2('timer','Cronômetro de urgência','Contagem de 10 minutos enquanto a cliente finaliza')
     + sw2('selos','Selos de confiança','Compra protegida, envio ágil e suporte humano')
     + sw2('rapido','Cadastro rápido na sacola','Pede nome e WhatsApp. Quem preenche entra em Clientes, mesmo sem comprar')
-    + sw2('entrega','Pagamento na retirada','Dinheiro, cartão ou Pix na hora de retirar no local');
+    + sw2('entrega','Pagamento na retirada','Cartão ou Pix na hora de retirar no local');
 }
 
 /* ================= automações ================= */
@@ -3600,7 +3600,7 @@ function confirmarImport(){
 }
 
 /* ================= PDV ================= */
-const pdv = {itens:[], cliente:'', desc:0, descTipo:'R$', pag:'Dinheiro', busca:'', espera:[]};
+const pdv = {itens:[], cliente:'', desc:0, descTipo:'R$', pag:'Pix', busca:'', espera:[]};
 function variantes(){ const out=[]; PRODUTOS.forEach(p => Object.keys(p.est).forEach(c => TAMANHOS.forEach(s => { if ((p.est[c][s]||0)>0) out.push({p, c, s, sku:skuVar(p,c,s)}); }))); return out; }
 function pdvTot(){ const sub = pdv.itens.reduce((a,i)=>a+i.preco*i.qtd,0); const d = pdv.descTipo==='%' ? sub*Math.min(100,pdv.desc)/100 : Math.min(sub,pdv.desc); return {sub, d, total:sub-d}; }
 function renderPDV(){
@@ -3618,7 +3618,7 @@ function renderPDV(){
       <div class="field"><label for="pdvCli">Cliente (opcional)</label><input id="pdvCli" value="${esc(pdv.cliente)}" placeholder="CPF, telefone ou nome"></div>
       <div class="row2"><div class="field"><label for="pdvDesc">Desconto no total</label><input id="pdvDesc" type="number" min="0" step="0.01" value="${pdv.desc||''}"></div>
         <div class="field"><label for="pdvDescT">Em</label><select id="pdvDescT"><option ${pdv.descTipo==='R$'?'selected':''}>R$</option><option ${pdv.descTipo==='%'?'selected':''}>%</option></select></div></div>
-      <div class="field"><label for="pdvPag">Pagamento</label><select id="pdvPag">${['Dinheiro','Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${f===pdv.pag?'selected':''}>${f}</option>`).join('')}</select></div>
+      <div class="field"><label for="pdvPag">Pagamento</label><select id="pdvPag">${['Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${f===pdv.pag?'selected':''}>${f}</option>`).join('')}</select></div>
       <div class="sum" style="margin-top:12px"><div><span>Subtotal</span><span>${brl(t.sub)}</span></div>${t.d?`<div class="neg"><span>Desconto</span><span>− ${brl(t.d)}</span></div>`:''}<div class="tot"><span>Total · ${pdv.itens.reduce((a,i)=>a+i.qtd,0)} unid.</span><span>${brl(t.total)}</span></div></div>
       <div class="row2" style="margin-top:12px"><button class="btn ghost" data-pdv="segurar" ${pdv.itens.length?'':'disabled'}>Segurar</button><button class="btn ghost" data-pdv="cancelar" ${pdv.itens.length?'':'disabled'}>Cancelar</button></div>
       <button class="btn full" style="margin-top:8px" data-pdv="finalizar" ${pdv.itens.length?'':'disabled'}>Finalizar venda · ${brl(t.total)}</button></div>
@@ -5536,7 +5536,7 @@ Trabalhamos com os tamanhos P (34/36), M (38/40), G (42/44) e GG (46), conforme 
 - Pix, sem acréscimo;
 - Cartão de crédito em até 3x, com a taxa do cartão repassada;
 - Cartão de débito;
-- Na retirada em Volta Redonda: dinheiro, cartão ou Pix na hora de retirar.
+- Na retirada em Volta Redonda: cartão ou Pix na hora de retirar.
 # Tem desconto na primeira compra?
 Sim. Use o cupom EME05 e ganhe 5% de desconto na primeira compra, em pedidos acima de R$ 50,00.
 # Como funciona o frete?
@@ -5552,7 +5552,7 @@ Enviamos para todo o Brasil pelo Melhor Envio, com as transportadoras disponíve
 # Opções em Volta Redonda (RJ)
 - Entrega por motoboy;
 - Corrida por aplicativo 99/Uber, com o valor combinado pelo WhatsApp;
-- Retirada no local, de segunda a sexta, das 10h às 18h, com pagamento na hora (dinheiro, cartão ou Pix).
+- Retirada no local, de segunda a sexta, das 10h às 18h, com pagamento na hora (cartão ou Pix).
 # Frete grátis
 O frete é grátis nas compras a partir de R$ 250,00.
 # Prazo
@@ -5776,7 +5776,7 @@ let waPedidoUrl = '';
   const d = document.createElement('div'); d.innerHTML = h;
   const panel = d.querySelector('.panel'); const seg = panel.querySelector('.seg');
   [...panel.children].forEach(ch => { if (ch!==seg && !ch.matches('.bump') && !(ch.matches('.row2') && ch.querySelector('[data-finish]')) && !ch.matches('.err')) ch.remove(); });
-  seg.insertAdjacentHTML('afterend', `${co.pag==='entrega' ? `<p class="note" style="margin-top:10px">${info}</p><div class="field"><label for="entForma">Como vai pagar na retirada</label><select id="entForma">${['Dinheiro','Cartão de crédito','Cartão de débito','Pix'].map(f=>`<option ${co.entregaForma===f?'selected':''}>${f}</option>`).join('')}</select></div>` : co.pag==='credito' ? `<div class="field"><label for="wParc">Parcelas</label><select id="wParc">${parcOpts}</select><span class="hint">A taxa do cartão é somada ao total, conforme o número de parcelas. A loja envia o link de pagamento pelo WhatsApp.</span></div>` : `<p class="note" style="margin-top:10px">${info}</p>`}
+  seg.insertAdjacentHTML('afterend', `${co.pag==='entrega' ? `<p class="note" style="margin-top:10px">${info}</p><div class="field"><label for="entForma">Como vai pagar na retirada</label><select id="entForma">${['Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${co.entregaForma===f?'selected':''}>${f}</option>`).join('')}</select></div>` : co.pag==='credito' ? `<div class="field"><label for="wParc">Parcelas</label><select id="wParc">${parcOpts}</select><span class="hint">A taxa do cartão é somada ao total, conforme o número de parcelas. A loja envia o link de pagamento pelo WhatsApp.</span></div>` : `<p class="note" style="margin-top:10px">${info}</p>`}
 `);
   const fin = panel.querySelector('[data-finish]'); if (fin) fin.innerHTML = `Enviar pedido pelo WhatsApp · ${brl(t.total)}`;
   return d.innerHTML; }; }
@@ -9784,7 +9784,7 @@ body.sac-on #coTimer:empty{display:none}
       <div class="field"><label for="pdvCli">Cliente (opcional)</label><input id="pdvCli" value="${esc(pdv.cliente)}" placeholder="CPF, telefone ou nome"></div>
       <div class="row2"><div class="field"><label for="pdvDesc">Desconto no total</label><input id="pdvDesc" type="number" min="0" step="0.01" value="${pdv.desc||''}"></div>
         <div class="field"><label for="pdvDescT">Em</label><select id="pdvDescT"><option ${pdv.descTipo==='R$'?'selected':''}>R$</option><option ${pdv.descTipo==='%'?'selected':''}>%</option></select></div></div>
-      <div class="field"><label for="pdvPag">Pagamento</label><select id="pdvPag">${['Dinheiro','Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${f===pdv.pag?'selected':''}>${f}</option>`).join('')}</select></div>
+      <div class="field"><label for="pdvPag">Pagamento</label><select id="pdvPag">${['Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${f===pdv.pag?'selected':''}>${f}</option>`).join('')}</select></div>
       <div class="sum" style="margin-top:12px"><div><span>Subtotal</span><span>${brl(t.sub)}</span></div>${t.d?`<div class="neg"><span>Desconto</span><span>− ${brl(t.d)}</span></div>`:''}<div class="tot"><span>Total · ${pdv.itens.reduce((a,i)=>a+i.qtd,0)} unid.</span><span>${brl(t.total)}</span></div></div>
       <div class="row2" style="margin-top:12px"><button class="btn ghost" data-pdv="segurar" ${pdv.itens.length?'':'disabled'}>Segurar</button><button class="btn ghost" data-pdv="cancelar" ${pdv.itens.length?'':'disabled'}>Cancelar</button></div>
       <button class="btn full" style="margin-top:8px" data-pdv="finalizar" ${pdv.itens.length?'':'disabled'}>Finalizar venda · ${brl(t.total)}</button></div>
