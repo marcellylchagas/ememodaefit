@@ -9665,6 +9665,19 @@ body.sac-on #coTimer:empty{display:none}
 .panel.editando,form.editando{outline:2px solid #C5E4FD;outline-offset:2px}
 .btn.perigo-leve{background:#FDECEC!important;color:#9B2C2C!important}
 @media (min-width:761px){ .trav-acts{position:absolute;top:14px;right:16px;margin:0} [data-trava] > .lbl,[data-trava] .ent-h{padding-right:230px} }`; document.head.appendChild(st); }
+
+/* v127 · menu do painel: tocar de novo no grupo aberto (ex.: Configurações) encolhe a lista; tocar outra vez abre */
+{ let fechado = null;
+  const aplica = () => { document.querySelectorAll('.snav .snav-top').forEach(b => { const sub = b.nextElementSibling && b.nextElementSibling.classList.contains('snav-sub') ? b.nextElementSibling : null; if (!sub) { b.classList.remove('tem-sub','encolhido'); return; }
+      b.classList.add('tem-sub'); const f = fechado === b.dataset.ges; b.classList.toggle('encolhido', f); sub.hidden = f; b.setAttribute('aria-expanded', f ? 'false' : 'true'); }); };
+  document.addEventListener('click', e => { const b = e.target.closest('.snav .snav-top'); if (!b) return; const sub = b.nextElementSibling && b.nextElementSibling.classList.contains('snav-sub') ? b.nextElementSibling : null;
+    if (!sub){ fechado = null; return; } e.preventDefault(); e.stopImmediatePropagation(); fechado = fechado === b.dataset.ges ? null : b.dataset.ges; aplica(); }, true);
+  new MutationObserver(() => aplica()).observe(document.body, {childList:true, subtree:true});
+  const st = document.createElement('style'); st.textContent = `
+.snav-top.tem-sub::after{content:'';width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin:-4px 4px 0 6px;transition:transform .25s ease;opacity:.6;flex:0 0 auto}
+.snav-top.tem-sub.encolhido::after{transform:rotate(-45deg);margin-top:0}
+.snav-sub{animation:subIn .25s ease}
+@keyframes subIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}`; document.head.appendChild(st); }
 </script>
 
 </body>
