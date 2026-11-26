@@ -9553,7 +9553,8 @@ body.sac-on #coTimer:empty{display:none}
 { let visto = false; const H = document.documentElement;
   new MutationObserver(() => { if (document.querySelector('.app.painel')) visto = true; }).observe(document.querySelector('.app'), {attributes:true, attributeFilter:['class']});
   const _moP = mostrar; mostrar = function(n){ const r = _moP.apply(this, arguments); if (n !== 'gestao' && visto) H.classList.remove('modo-painel'); return r; };
-  const _fsP = fecharSheet; fecharSheet = function(){ const r = _fsP.apply(this, arguments); setTimeout(() => { if (H.classList.contains('modo-painel') && !document.querySelector('.app.painel') && $('#veil').hidden){ H.classList.remove('modo-painel'); if (/painel/.test(location.hash)) history.replaceState(null, '', location.pathname.replace(/^\/painel\/?/, '/')); } }, 80); return r; }; }
+  document.addEventListener('click', e => { const v = e.target.closest('#sheet [data-close]'); if (!v || !document.getElementById('fPainelLogin') || !H.classList.contains('modo-painel')) return;
+    setTimeout(() => { if (!document.querySelector('.app.painel')){ H.classList.remove('modo-painel'); if (/painel/.test(location.hash)) history.replaceState(null, '', location.pathname.replace(/^\/painel\/?/, '/')); } }, 80); }); }
 </script>
 
 </body>
