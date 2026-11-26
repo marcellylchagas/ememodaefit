@@ -5608,7 +5608,7 @@ if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(
 { const col = document.querySelector('.sfoot .sf-in > div:nth-child(3)'); if (col) col.insertAdjacentHTML('beforeend', '<button data-instalar><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg>Instalar o app da loja</button>'); }
 document.addEventListener('click', async e => { if (!e.target.closest('[data-instalar]')) return;
   if (jaInstalado()){ toast('O app da loja já está instalado neste aparelho.'); return; }
-  if (pedidoInstalar){ pedidoInstalar.prompt(); try { const r = await pedidoInstalar.userChoice; if (r.outcome==='accepted') toast('App instalado. Ele aparece na tela inicial.'); } catch(err){} pedidoInstalar = null; return; }
+  if (pedidoInstalar){ pedidoInstalar.prompt(); try { const r = await pedidoInstalar.userChoice; if (r.outcome==='accepted') instalandoLoja(); } catch(err){} pedidoInstalar = null; return; }
   const sh = $('#sheet'); sh.classList.remove('prodpage','minicart'); sh.classList.add('cupompop');
   sh.innerHTML = `<button class="x pop-x" data-close aria-label="Fechar">×</button><div class="pop-in"><small>App da EME</small><h3>Instale a loja<br>no seu celular</h3>
     ${ehIOS ? `<ol class="inst"><li>Toque em <b>Compartilhar</b> (o quadrado com a seta) na barra do Safari.</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol>` : `<ol class="inst"><li>Abra o menu do navegador (⋮).</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme em <b>Instalar</b>.</li></ol>`}
@@ -10014,6 +10014,36 @@ if (sbOn()){
     @media (max-width:700px){.cx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#g-caixa .cx-tab{display:block;overflow-x:auto;white-space:nowrap}#g-caixa .cx-rel .cx-tab{display:block;overflow-x:auto;white-space:nowrap}}`;
   document.head.appendChild(st);
 }
+
+/* v136 · app da loja: tela "Instalando o app" com barra e porcentagem */
+function instalandoLoja(){
+  document.getElementById('instLoja')?.remove();
+  const ov = document.createElement('div'); ov.id = 'instLoja'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-live', 'polite');
+  ov.innerHTML = `<div class="il-box"><img src="logo.png?v=104" alt="EME Moda &amp; Fit"><h3>Instalando o app da EME</h3>
+    <div class="il-bar"><i></i></div><div class="il-pct">0%</div><p class="il-txt">Aguarde um instante, o celular está instalando o app.</p><button class="btn full il-ok" type="button" hidden>Fechar</button></div>`;
+  document.body.appendChild(ov);
+  const bar = ov.querySelector('.il-bar i'), pct = ov.querySelector('.il-pct'), txt = ov.querySelector('.il-txt'), ok = ov.querySelector('.il-ok');
+  let p = 0, fim = false; const t0 = Date.now();
+  const pinta = () => { bar.style.width = p.toFixed(1) + '%'; pct.textContent = Math.floor(p) + '%'; };
+  const tick = setInterval(() => { if (fim) return; p += (92 - p) * 0.045; pinta();
+    if (Date.now() - t0 > 30000){ clearInterval(tick); txt.textContent = 'Quase lá. A instalação continua pelo celular; quando terminar, o ícone da EME aparece na tela inicial.'; ok.hidden = false; } }, 150);
+  const concluiu = () => { if (fim) return; fim = true; clearInterval(tick);
+    const anima = setInterval(() => { p = Math.min(100, p + 2.5); pinta(); if (p >= 100){ clearInterval(anima); ov.querySelector('h3').textContent = 'App instalado!'; txt.textContent = 'O app da EME já está na tela inicial do seu celular.'; ok.hidden = false; } }, 30); };
+  window.addEventListener('appinstalled', concluiu, {once:true});
+  ok.addEventListener('click', () => { clearInterval(tick); ov.classList.add('sai'); setTimeout(() => ov.remove(), 350); });
+  requestAnimationFrame(() => ov.classList.add('on'));
+}
+{ const st = document.createElement('style'); st.textContent = `
+#instLoja{position:fixed;inset:0;z-index:6000;background:#FCF8F1;display:grid;place-items:center;padding:24px;opacity:0;transition:opacity .3s}
+#instLoja.on{opacity:1}#instLoja.sai{opacity:0}
+#instLoja .il-box{width:min(360px,100%);text-align:center;display:grid;justify-items:center;gap:12px}
+#instLoja img{width:min(180px,50vw);height:auto}
+#instLoja h3{margin:6px 0 0;font-size:19px;color:#141113}
+#instLoja .il-bar{width:100%;height:8px;border-radius:8px;background:#E3EEF8;overflow:hidden}
+#instLoja .il-bar i{display:block;height:100%;width:0;background:#2F6DA8;border-radius:8px;transition:width .15s linear}
+#instLoja .il-pct{font-size:28px;font-weight:700;color:#2F6DA8;font-variant-numeric:tabular-nums}
+#instLoja .il-txt{margin:0;font-size:14px;color:#55505a;line-height:1.45}
+#instLoja .il-ok{margin-top:6px}`; document.head.appendChild(st); }
 </script>
 
 </body>
