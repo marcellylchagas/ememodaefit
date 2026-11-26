@@ -9573,6 +9573,96 @@ body.sac-on #coTimer:empty{display:none}
     try { const {data} = await sb.from('config').select('chave,valor'); (data || []).forEach(row => { const k = row.chave; if (!CONFIG[k] || !fotoAnt.conf) return;
       const agora = J(CONFIG[k].get()), base = fotoAnt.conf[k], chegou = J(row.valor); if (chegou === base || agora !== base) return;
       CONFIG[k].set(row.valor); fotoAnt.conf[k] = J(CONFIG[k].get()); }); if (!$('#s-gestao').hidden) renderGestao(); } catch(_){} }); }
+
+/* v124 · botão "Salvar" no topo do painel e no fim de cada tela: grava tudo no Supabase e confere se ficou gravado */
+{ let ultimo = null;
+  const hora = d => d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const etiqueta = () => ultimo ? `Salvo no Supabase às ${hora(ultimo)}` : 'As mudanças também são salvas sozinhas';
+  async function salvarTudo(btn){
+    if (!sbOn() || !sbAdmin){ toast('Entre no painel para salvar.'); return; }
+    const bts = document.querySelectorAll('[data-salvartudo]'); bts.forEach(b => { b.disabled = true; b.dataset.txt = b.dataset.txt || b.textContent; b.textContent = 'Salvando…'; });
+    try {
+      /* formulários de configuração abertos na tela também são gravados */
+      ['fHor','fRegra'].forEach(id => { const f = document.getElementById(id); if (f && f.offsetParent) f.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true})); });
+      document.dispatchEvent(new Event('click')); /* força a conferência completa */
+      for (let i = 0; i < 60 && salvando; i++) await new Promise(r => setTimeout(r, 250));
+      await salvarAgora(true); for (let i = 0; i < 60 && (salvando || pendente); i++) await new Promise(r => setTimeout(r, 250));
+      /* confere no banco: cada configuração do painel precisa estar igual ao que está na tela */
+      const {data, error} = await sb.from('config').select('chave,valor'); if (error) throw error;
+      const db = Object.fromEntries((data || []).map(r => [r.chave, J(r.valor)])); const falta = Object.keys(CONFIG).filter(k => db[k] !== undefined && db[k] !== J(CONFIG[k].get()));
+      if (falta.length){ const {error: e2} = await sb.from('config').upsert(falta.map(k => ({chave:k, valor:CONFIG[k].get(), publica:CONFIG[k].pub}))); if (e2) throw e2; }
+      const {count, error: e3} = await sb.from('produtos').select('id', {count:'exact', head:true}); if (e3) throw e3;
+      if (count !== PRODUTOS.length){ await salvarAgora(true); }
+      fotoAnt = retrato(); ultimo = new Date(); marcaSalvo('ok'); toast(`Tudo salvo no Supabase às ${hora(ultimo)}. A loja já mostra as mudanças.`);
+    } catch(e){ console.error('salvar tudo', e); marcaSalvo('erro'); toast('Não consegui salvar agora. Confira a internet e toque em Salvar de novo.'); }
+    finally { document.querySelectorAll('[data-salvartudo]').forEach(b => { b.disabled = false; b.textContent = b.dataset.txt || 'Salvar'; }); document.querySelectorAll('.salvar-info').forEach(x => x.textContent = etiqueta()); } }
+  window.salvarTudo = salvarTudo;
+  document.addEventListener('click', e => { const b = e.target.closest('[data-salvartudo]'); if (b){ e.preventDefault(); salvarTudo(b); } });
+  /* topo do painel */
+  setInterval(() => { const r = document.querySelector('.app.painel .top .tp .r'); if (r && !r.querySelector('[data-salvartudo]')) r.insertAdjacentHTML('afterbegin', '<button class="btn sm salvar-topo" type="button" data-salvartudo>Salvar</button>'); }, 800);
+  /* fim de cada tela do painel */
+  const _rgS = renderGestao; renderGestao = function(){ const r = _rgS.apply(this, arguments);
+    setTimeout(() => { const box = document.querySelector(`[data-g="${gesAtual}"]`); if (!box || box.querySelector(':scope > .salvar-bar')) return;
+      if (/^(inicio|analytics|historico|aprovar|assistente)$/.test(gesAtual)) return;
+      box.insertAdjacentHTML('beforeend', `<div class="salvar-bar"><span class="salvar-info">${etiqueta()}</span><button class="btn salvar-btn" type="button" data-salvartudo>Salvar alterações</button></div>`); }, 0); return r; };
+  /* no cadastro de produto, cupom e demais janelas do painel */
+  new MutationObserver(() => { if (!document.querySelector('.app.painel')) return; const sh = document.querySelector('#veil:not([hidden]) #sheet'); if (!sh || sh.querySelector('[data-salvartudo]') || sh.querySelector('#fPainelLogin')) return;
+    if (!sh.querySelector('input, select, textarea')) return; sh.insertAdjacentHTML('beforeend', `<div class="salvar-bar sheet-bar"><span class="salvar-info">${etiqueta()}</span><button class="btn salvar-btn" type="button" data-salvartudo>Salvar</button></div>`); }).observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['hidden']});
+  const st = document.createElement('style'); st.textContent = `
+.salvar-bar{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:12px 14px;background:rgba(252,248,241,.96);backdrop-filter:blur(6px);border:1px solid #E3E8EE;border-radius:14px;box-shadow:0 10px 24px -16px rgba(30,60,100,.35)}
+.salvar-info{font-size:12.5px;color:var(--muted)}
+.salvar-btn{min-width:170px}
+.sheet-bar{bottom:0;margin-top:14px}
+.salvar-topo{font-weight:800}
+@media (max-width:760px){ .salvar-bar{bottom:76px} .salvar-info{font-size:11.5px} .salvar-btn{min-width:0;flex:0 0 auto} }`; document.head.appendChild(st); }
+
+/* v125 · cada bloco de configuração funciona como o "Endereço de origem": fica travado mostrando o que está salvo;
+   toque em Editar, mude, e toque em Salvar (ou Cancelar). Onde faz sentido, há também Excluir. */
+{ const ALVOS = [
+    ['config', /^Endereço do site/i, null], ['config', /^Horário de atendimento/i, null], ['config', /^Loja fechada/i, 'manut'],
+    ['entregas', /^Motoboy$/i, 'motoboy'], ['entregas', /^99\/Uber/i, 'app'], ['entregas', /^Retirada no local/i, 'retirada'], ['entregas', /^Frete grátis/i, 'gratis'],
+    ['precificacao', /^Preço de venda a partir do custo/i, null],
+    ['aparencia', /^Cor de destaque/i, null], ['aparencia', /^Produtos esgotados/i, null], ['aparencia', /^Filtros da loja/i, null],
+    ['ofertas', /^Ofertas$/i, null], ['ofertas', /^Cronômetro de urgência/i, null],
+    ['impressoras', /^Qual é a sua impressora/i, null], ['impressoras', /^Papel de cada documento/i, null],
+    ['automacoes', /^Mensagens prontas/i, null], ['financeiro', /^Meta de vendas/i, null] ];
+  const EDITANDO = new Set(); let SNAP = null, apagar = null;
+  const titulo = p => (p.querySelector('.lbl, .ent-h b, .h b, h3, b')?.textContent || '').replace(/\s+/g, ' ').trim();
+  const chave = (k, t) => k + '|' + t.slice(0, 40);
+  function aplica(){ const k = gesAtual; const box = document.querySelector(`[data-g="${k}"]`); if (!box) return;
+    box.querySelectorAll(':scope > .panel, :scope > .card, :scope > form').forEach(p => { const t = titulo(p); const alvo = ALVOS.find(a => a[0] === k && a[1].test(t)); if (!alvo) return;
+      const id = chave(k, t), ed = EDITANDO.has(id); p.dataset.trava = id; p.classList.toggle('trav', !ed); p.classList.toggle('editando', ed);
+      p.querySelectorAll('input, select, textarea, button').forEach(el => { if (el.closest('.trav-acts')) return; if (!ed){ if (!el.disabled){ el.disabled = true; el.dataset.travou = '1'; } } else if (el.dataset.travou){ el.disabled = false; delete el.dataset.travou; } });
+      let acts = p.querySelector(':scope > .trav-acts'); const temExc = !!alvo[2];
+      const html = ed ? `<button type="button" class="btn sm ghost" data-trav="cancela">Cancelar</button>${temExc ? `<button type="button" class="btn sm perigo-leve" data-trav="exclui">${apagar === id ? 'Confirmar exclusão' : 'Excluir'}</button>` : ''}<button type="button" class="btn sm" data-trav="salva">Salvar</button>`
+                      : `<button type="button" class="btn sm ghost" data-trav="edita">Editar</button>`;
+      if (!acts){ p.insertAdjacentHTML('afterbegin', `<div class="trav-acts">${html}</div>`); } else if (acts.dataset.h !== html){ acts.innerHTML = html; }
+      p.querySelector(':scope > .trav-acts').dataset.h = html; }); }
+  let tA = null; const agenda = () => { clearTimeout(tA); tA = setTimeout(aplica, 30); };
+  new MutationObserver(m => { if (m.some(x => !x.target.closest || !x.target.closest('.trav-acts'))) agenda(); }).observe(document.getElementById('s-gestao') || document.body, {childList:true, subtree:true});
+  const EXC = { manut: () => { cfg.manut = false; cfg.manutMsg = ''; }, motoboy: () => { ENTREGA.motoboy = {on:false, valor:0, cidades:[]}; }, app: () => { ENTREGA.app = {on:false, cidades:[]}; },
+    retirada: () => { ENTREGA.retirada = {on:false, endereco:'', horario:''}; }, gratis: () => { ENTREGA.gratis = {on:false, min:0}; } };
+  document.addEventListener('click', async e => { const b = e.target.closest('[data-trav]'); if (!b) return; e.preventDefault(); e.stopPropagation(); const p = b.closest('[data-trava]'); if (!p) return; const id = p.dataset.trava, ac = b.dataset.trav;
+    if (ac === 'edita'){ EDITANDO.clear(); EDITANDO.add(id); apagar = null; SNAP = Object.fromEntries(Object.entries(CONFIG).map(([k, c]) => [k, J(c.get())])); aplica(); p.querySelector('input:not([type=checkbox]):not([disabled]), select, textarea')?.focus(); return; }
+    if (ac === 'cancela'){ if (SNAP) Object.entries(SNAP).forEach(([k, v]) => { if (J(CONFIG[k].get()) !== v) CONFIG[k].set(JSON.parse(v)); }); EDITANDO.delete(id); apagar = null; if (typeof aplicaEntrega === 'function') aplicaEntrega(); renderGestao(); await salvarAgora(); toast('Alteração cancelada. Ficou como estava.'); return; }
+    if (ac === 'salva'){ ['fHor','fRegra'].forEach(fid => { const f = p.id === fid ? p : null; if (f) f.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true})); });
+      await (window.salvarTudo ? window.salvarTudo(b) : salvarAgora(true)); EDITANDO.delete(id); apagar = null; renderGestao(); return; }
+    if (ac === 'exclui'){ const alvo = ALVOS.find(a => chave(a[0], titulo(p)) === id); if (!alvo || !EXC[alvo[2]]) return;
+      if (apagar !== id){ apagar = id; aplica(); setTimeout(() => { if (apagar === id){ apagar = null; aplica(); } }, 5000); return; }
+      EXC[alvo[2]](); if (typeof aplicaEntrega === 'function') aplicaEntrega(); EDITANDO.delete(id); apagar = null; renderGestao(); await (window.salvarTudo ? window.salvarTudo(b) : salvarAgora(true)); toast('Excluído e salvo no Supabase.'); } }, true);
+  /* Endereço de origem: botão Excluir na edição */
+  new MutationObserver(() => { const box = document.querySelector('[data-g="entregas"]'); if (!box) return; const ac = box.querySelector('[data-ent="remsalva"]'); if (!ac || ac.parentElement.querySelector('[data-remexc]') || !(typeof remetente !== 'undefined' && remetente && remetente.nome)) return;
+    ac.insertAdjacentHTML('beforebegin', '<button type="button" class="btn sm perigo-leve" data-remexc>Excluir endereço</button>'); }).observe(document.getElementById('s-gestao') || document.body, {childList:true, subtree:true});
+  document.addEventListener('click', async e => { const b = e.target.closest('[data-remexc]'); if (!b) return; if (!b.dataset.ok){ b.dataset.ok = '1'; b.textContent = 'Confirmar exclusão'; setTimeout(() => { if (b.isConnected){ delete b.dataset.ok; b.textContent = 'Excluir endereço'; } }, 5000); return; }
+    const {error} = await sb.from('config').upsert({chave:'remetente', valor:{}, publica:false}); if (error){ toast('Não deu para excluir agora.'); return; } remetente = {}; remEdit = false; renderEntregas(); toast('Endereço de origem excluído.'); });
+  const st = document.createElement('style'); st.textContent = `
+[data-trava]{position:relative}
+.trav-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:-4px 0 10px}
+.panel.trav input:disabled,.panel.trav select:disabled,.panel.trav textarea:disabled,form.trav input:disabled,form.trav select:disabled{background:transparent;border-color:transparent;color:var(--ink);opacity:1;-webkit-text-fill-color:var(--ink);cursor:default}
+.panel.trav .switch,.panel.trav label.chk,.panel.trav button:disabled:not(.trav-acts button){opacity:.75}
+.panel.editando,form.editando{outline:2px solid #C5E4FD;outline-offset:2px}
+.btn.perigo-leve{background:#FDECEC!important;color:#9B2C2C!important}
+@media (min-width:761px){ .trav-acts{position:absolute;top:14px;right:16px;margin:0} [data-trava] > .lbl,[data-trava] .ent-h{padding-right:230px} }`; document.head.appendChild(st); }
 </script>
 
 </body>
