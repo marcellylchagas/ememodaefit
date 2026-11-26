@@ -9599,7 +9599,9 @@ body.sac-on #coTimer:empty{display:none}
   window.salvarTudo = salvarTudo;
   document.addEventListener('click', e => { const b = e.target.closest('[data-salvartudo]'); if (b){ e.preventDefault(); salvarTudo(b); } });
   /* topo do painel */
-  setInterval(() => { const r = document.querySelector('.app.painel .top .tp .r'); if (r && !r.querySelector('[data-salvartudo]')) r.insertAdjacentHTML('afterbegin', '<button class="btn sm salvar-topo" type="button" data-salvartudo>Salvar</button>'); }, 800);
+  setInterval(() => { const r = document.querySelector('.app.painel .top .tp .r'); if (!r) return; let b = r.querySelector('.salvar-topo');
+    if (!b){ r.insertAdjacentHTML('afterbegin', '<button class="btn sm salvar-topo" type="button" data-salvartudo>Salvar</button>'); b = r.querySelector('.salvar-topo'); }
+    const sair = r.querySelector('.sair-btn, [data-sairpainel]'); if (sair && sair.previousElementSibling !== b) sair.before(b); }, 500);
   /* fim de cada tela do painel */
   const _rgS = renderGestao; renderGestao = function(){ const r = _rgS.apply(this, arguments);
     setTimeout(() => { const box = document.querySelector(`[data-g="${gesAtual}"]`); if (!box || box.querySelector(':scope > .salvar-bar')) return;
