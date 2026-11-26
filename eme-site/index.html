@@ -7092,7 +7092,7 @@ renderGestao = comMemo(renderGestao); renderEstoque = comMemo(renderEstoque); re
 if (typeof retrato==='function' && sbOn()){
   let sujo = true, cache = null, quando = 0;
   ['click','input','change','submit','keydown','drop','paste'].forEach(ev => document.addEventListener(ev, () => { sujo = true; }, true));
-  const _ret = comMemo(retrato); retrato = function(){ if (!sujo && cache && Date.now() - quando < 20000) return cache; sujo = false; quando = Date.now(); return cache = _ret(); };
+  const _ret = comMemo(retrato); retrato = function(){ if (!sujo && cache && Date.now() - quando < 2500) return cache; sujo = false; quando = Date.now(); return cache = _ret(); };
   const _saR = salvarAgora; salvarAgora = function(){ sujo = true; return _saR.apply(this, arguments); };
   const _foR = fotografa; fotografa = function(){ sujo = true; return _foR.apply(this, arguments); }; }
 
