@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.ememodaefit.loja",
+        "sha256_cert_fingerprints": ["CD:9C:D6:65:DC:5D:94:CC:F4:6F:E9:E1:AD:04:AC:60:0F:B9:08:99:9C:F9:11:9C:65:F2:E4:F5:E3:9F:CD:EA"]
+      }
+    }]
