@@ -8648,8 +8648,12 @@ function bannersCompactos(box){ const pn = [...box.children].find(x => /^Banners
   pn.querySelectorAll(':scope > .cup').forEach((c, i) => { const h = c.firstElementChild; if (!h) return;
     const nome = (h.textContent || '').replace(/\s+/g, ' ').trim(), id = nome.split('.')[0] || String(i);
     if (!c.dataset.bn){ c.dataset.bn = id; const pv = [...c.children].find(x => x !== h && x.querySelector && (x.matches('img') || x.querySelector('img'))); if (pv) pv.classList.add('bn-prev');
-      h.classList.add('bn-h'); h.insertAdjacentHTML('beforeend', '<button type="button" class="btn sm ghost bn-tg" data-bntg>Editar</button>'); }
+      h.classList.add('bn-h'); h.insertAdjacentHTML('beforeend', `<span class="bn-acts"><button type="button" class="btn sm ghost bn-tg" data-bntg>Editar</button><button type="button" class="btn sm ghost bn-del" data-bnexc="${i}">Excluir</button></span>`); }
     const aberto = BN_ABERTO.has(c.dataset.bn); c.classList.toggle('bn-fecha', !aberto); const tg = c.querySelector('[data-bntg]'); if (tg) tg.textContent = aberto ? 'Fechar' : 'Editar'; }); }
+document.addEventListener('click', e => { const b = e.target.closest('[data-bnexc]'); if (!b) return; e.stopPropagation();
+  if (!b.dataset.ok){ b.dataset.ok = '1'; b.textContent = 'Confirmar exclusão'; b.classList.add('perigo'); b.classList.remove('ghost'); setTimeout(() => { if (b.isConnected && b.dataset.ok){ delete b.dataset.ok; b.textContent = 'Excluir'; b.classList.remove('perigo'); b.classList.add('ghost'); } }, 5000); return; }
+  const i = +b.dataset.bnexc; if (!ap.banners[i]) return; const nome = ap.banners[i].tit || 'Banner'; ap.banners.splice(i, 1); BN_ABERTO.clear(); bIdx = 0;
+  renderBanner(); renderAparencia(); if (typeof aplicaSub === 'function') aplicaSub(); { const g = document.querySelector('[data-g="aparencia"]'); if (g) bannersCompactos(g); } if (typeof salvarAgora === 'function') salvarAgora(); toast(`${nome} excluído.`); }, true);
 document.addEventListener('click', e => { const t = e.target.closest('[data-bntg]'); if (!t) return; const c = t.closest('.cup'); if (!c) return; const id = c.dataset.bn;
   BN_ABERTO.has(id) ? BN_ABERTO.delete(id) : BN_ABERTO.add(id); bannersCompactos(c.closest('[data-g]')); });
 function limpaConversas(){ if (gesAtual !== 'atendimento') return; const box = document.querySelector('[data-g="atendimento"]'); if (!box) return;
@@ -8671,6 +8675,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-ges]
 #s-gestao .sub-off{display:none!important}
 .app.painel .top .brand .wm small{white-space:nowrap}
 @media (max-width:480px){ .app.painel .top .brand .wm small{letter-spacing:.18em;font-size:7.5px} }
+.bn-acts{display:inline-flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
 .cup.bn-fecha > :not(.bn-h):not(.bn-prev){display:none!important}
 .cup .bn-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cup .bn-h .bn-tg{margin-left:auto}
