@@ -2678,7 +2678,7 @@ function renderAparencia(){
         <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sm ghost" style="cursor:pointer">Enviar imagem<input type="file" accept="image/png,image/jpeg,image/webp" data-bimg="${i}" hidden></label>
           <button class="btn sm bn-salvar" data-bsalvar="${i}">Salvar</button><button class="btn sm ghost" data-bon="${i}">${b.on?'Pausar':'Ativar'}</button><button class="btn sm ghost" data-bup="${i}" aria-label="Subir banner">↑</button><button class="btn sm ghost" data-bdel="${i}">Excluir</button></div></div>`).join('')}
       <button class="btn sm" style="margin-top:10px" data-bnovo>Novo banner</button>
-      <p class="example">Tamanho recomendado: 1950 × 810 pixels, a mesma proporção dos banners atuais.</p></div>
+      <p class="example">Tamanho recomendado: 1600 × 664 pixels, o mesmo dos banners originais do site.</p></div>
     <div class="panel"><div class="lbl" style="margin-top:0">Faixa preta no topo da loja · avisos (${ap.infos.length}/8)</div>
       ${ap.infos.map((t,i)=>`<div class="ship"><span>${esc(t)}</span><button class="link" data-idel="${i}">Remover</button></div>`).join('')}
       ${ap.infos.length<8?`<form id="fInfo" class="field" novalidate><label for="infoNovo">Novo informativo</label><div class="inrow"><input id="infoNovo"><button class="btn sm" type="submit">Adicionar</button></div></form>`:''}</div>
@@ -8176,7 +8176,7 @@ document.addEventListener('click', e => { const bl = e.target.closest('[data-bli
       ${temBotao(b) ? `<div class="row2">${b.img ? '' : `<div class="field" style="margin-top:4px"><label for="bBtn${i}">Texto do botão</label><input id="bBtn${i}" data-bbtn="${i}" value="${esc(b.btn||'')}" placeholder="Ex.: Ver a coleção"></div>`}
         <div class="field" style="margin-top:4px"><label for="bLk${i}">Leva para</label><select id="bLk${i}" data-blk2="${i}">${opts}</select></div></div>
         ${url || b.urlAberto ? `<div class="field" style="margin-top:4px"><label for="bUrl${i}">Cole o link</label><input id="bUrl${i}" data-burl="${i}" value="${esc(url)}" placeholder="https://ememodaefit.pages.dev/conjunto-..." inputmode="url"><span class="hint">Pode ser o link de um produto, de uma categoria ou de outro site.</span></div>` : ''}` : ''}`; });
-  const ex = [...document.querySelectorAll('#g-aparencia .example')].find(x => /Tamanho recomendado/.test(x.textContent)); if (ex) ex.textContent = 'Todos os banners aparecem do mesmo tamanho. Use imagens de 1950 × 810 pixels (proporção 2,4 : 1); se a imagem for diferente, ela é cortada nas bordas para caber.'; }; }
+  const ex = [...document.querySelectorAll('#g-aparencia .example')].find(x => /Tamanho recomendado/.test(x.textContent)); if (ex) ex.textContent = 'Tamanho dos banners originais do site: 1600 × 664 pixels (proporção 2,4 : 1). Também serve 1950 × 810 ou 1800 × 747 pixels. Se a imagem tiver outra proporção, ela é cortada nas bordas para caber.'; }; }
 document.addEventListener('change', e => { const t = e.target;
   if (t.dataset.bbotao){ const b = ap.banners[+t.dataset.bbotao]; b.botao = t.checked; renderBanner(); renderAparencia(); return; }
   if (t.dataset.blk2){ const b = ap.banners[+t.dataset.blk2]; if (t.value === '__url'){ b.urlAberto = true; } else { b.link = t.value; b.url = ''; b.urlAberto = false; } renderBanner(); renderAparencia(); if (t.value === '__url') setTimeout(() => $('#bUrl' + t.dataset.blk2)?.focus(), 30); } });
@@ -8190,7 +8190,7 @@ if (sbOn()) REGRAS.forEach(r => { if (r.k === 'enviaAuto' || r.k === 'entregaAut
 /* ---------- 4) a Mel: avatar animada que conversa com a cliente ---------- */
 /* Mel em vídeo: os vídeos dela (com o fundo já tirado) tocam num canvas transparente e trocam conforme o que a cliente faz */
 function MelVideo(box, base){
-  const MEL_SEM = {} /* todos os gestos começam e terminam na mesma pose */, CLIPS = {parada:'mel-p.mp4', look:'mel-o.mp4', fala:'mel-f.mp4', acena:'mel-a.mp4', coracao:'mel-c.mp4', pensa:'mel-k.mp4', aponta:'mel-t.mp4', comemora:'mel-m.mp4'};
+  const MEL_SEM = {} /* todos os gestos começam e terminam na mesma pose */, CLIPS = {parada:'mel-p.mp4?v=2', look:'mel-o.mp4?v=2', fala:'mel-f.mp4?v=2', acena:'mel-a.mp4?v=2', coracao:'mel-c.mp4?v=2', pensa:'mel-k.mp4?v=2', aponta:'mel-t.mp4?v=2', comemora:'mel-m.mp4?v=2'};
   const api = {ok:false, tocar(){}, fala(){}, pula(){}, festa(){}, olha(){}, parar(){}};
   const cv = document.createElement('canvas'); cv.className = 'mel-cv'; cv.setAttribute('aria-hidden','true');
   cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block'; box.appendChild(cv);
@@ -8201,11 +8201,9 @@ function MelVideo(box, base){
   gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, `precision mediump float; varying vec2 v; uniform sampler2D t; uniform float o; uniform vec3 cA; uniform vec3 cB; uniform float tA; uniform float tB; uniform float rv; uniform float gw; uniform float ph;
     vec3 hsv(vec3 c){ vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0); vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g)); vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r)); float d = q.x - min(q.w, q.y); return vec3(abs(q.z + (q.w - q.y) / (6.0*d + 1e-5)), d / (q.x + 1e-5), q.x); }
     void main(){ float y = v.y / 3.0; vec3 c = texture2D(t, vec2(v.x, y)).rgb; float a = texture2D(t, vec2(v.x, 1.0/3.0 + y)).r; float mr = texture2D(t, vec2(v.x, 2.0/3.0 + y)).r;
-      float nr = mr; for (int i = 0; i < 8; i++){ float ang = float(i) * 0.785398; vec2 dv = vec2(cos(ang) * 0.042, sin(ang) * 0.025); nr = max(nr, texture2D(t, vec2(v.x + dv.x, 2.0/3.0 + clamp(v.y + dv.y, 0.0, 0.999) / 3.0)).r); nr = max(nr, texture2D(t, vec2(v.x + dv.x * 0.5, 2.0/3.0 + clamp(v.y + dv.y * 0.5, 0.0, 0.999) / 3.0)).r); }
       a = smoothstep(0.03, 0.97, a); mr = smoothstep(0.12, 0.88, mr);
       vec3 u = c / max(a, 0.02); vec3 h = hsv(u);
-      float pano = smoothstep(-0.085, -0.045, u.b - u.g) * smoothstep(0.06, 0.11, u.r - u.g) * (1.0 - smoothstep(0.27, 0.33, u.r - u.g)) * smoothstep(0.6, 0.75, max(u.r, max(u.g, u.b)));
-      mr = max(mr, pano * smoothstep(0.3, 0.7, nr));
+
       float L = dot(cA, vec3(.299,.587,.114));
       float sh = clamp(h.z / rv, 0.0, 1.3);
       vec3 n = cA * pow(sh, mix(1.35, 0.85, smoothstep(0.08, 0.8, L)));
@@ -8649,6 +8647,12 @@ function bannersCompactos(box){ const pn = [...box.children].find(x => /^Banners
     const nome = (h.textContent || '').replace(/\s+/g, ' ').trim(), id = nome.split('.')[0] || String(i);
     if (!c.dataset.bn){ c.dataset.bn = id; const pv = [...c.children].find(x => x !== h && x.querySelector && (x.matches('img') || x.querySelector('img'))); if (pv) pv.classList.add('bn-prev');
       h.classList.add('bn-h'); h.insertAdjacentHTML('beforeend', `<span class="bn-acts"><button type="button" class="btn sm ghost bn-tg" data-bntg>Editar</button><button type="button" class="btn sm ghost bn-del" data-bnexc="${i}">Excluir</button></span>`); }
+    { const im = c.querySelector('img'); const h2 = c.querySelector('.bn-h'); if (im && h2 && !c.dataset.tam){ c.dataset.tam = '1';
+      const mede = () => { if (!im.naturalWidth) return; const w = im.naturalWidth, hh = im.naturalHeight, r = w / hh, ok = Math.abs(r - 1946/808) < 0.06;
+        let tg = c.querySelector('.bn-tam'); if (!tg){ tg = document.createElement('div'); tg.className = 'bn-tam'; h2.after(tg); }
+        tg.className = 'bn-tam ' + (ok ? 'ok' : 'warn');
+        tg.textContent = ok ? `Imagem ${w} × ${hh} px · tamanho certo, aparece inteira.` : `Imagem ${w} × ${hh} px · fica cortada ${r > 1946/808 ? 'nas laterais' : 'em cima e embaixo'}. Use 1600 × 664 px, o tamanho dos banners originais.`; };
+      if (im.complete) mede(); else im.addEventListener('load', mede, {once:true}); } }
     const aberto = BN_ABERTO.has(c.dataset.bn); c.classList.toggle('bn-fecha', !aberto); const tg = c.querySelector('[data-bntg]'); if (tg) tg.textContent = aberto ? 'Fechar' : 'Editar'; }); }
 document.addEventListener('click', async e => { const b = e.target.closest('[data-bsalvar]'); if (!b) return; e.stopPropagation();
   const i = +b.dataset.bsalvar, bn = ap.banners[i]; if (!bn) return; const c = b.closest('.cup');
@@ -8683,8 +8687,9 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-ges]
 #s-gestao .sub-off{display:none!important}
 .app.painel .top .brand .wm small{white-space:nowrap}
 @media (max-width:480px){ .app.painel .top .brand .wm small{letter-spacing:.18em;font-size:7.5px} }
+.bn-tam{font-size:12.5px;margin:2px 0 8px;padding:6px 10px;border-radius:10px;background:var(--head);color:var(--muted,#6f6466)}.bn-tam.warn{background:#FFF1E0;color:#8a4b00}.bn-tam.ok{color:#2e6b3f}
 .bn-acts{display:inline-flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
-.cup.bn-fecha > :not(.bn-h):not(.bn-prev){display:none!important}
+.cup.bn-fecha > :not(.bn-h):not(.bn-prev):not(.bn-tam){display:none!important}
 .cup .bn-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cup .bn-h .bn-tg{margin-left:auto}
 .cup.bn-fecha .bn-prev{max-height:90px;overflow:hidden;border-radius:10px}`; document.head.appendChild(st); }
