@@ -1391,6 +1391,21 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 .sf-brand .logo-eme{height:86px;margin-bottom:10px}
 @media (max-width:760px){ .app .top .tl .brand img.logo-eme{height:56px;max-width:140px;margin:-6px 0} }
 
+
+/* v110 · dicas da Mel só com o texto, sem botões de ação */
+.mel .mel-balao .mel-acoes,#melAcoes{display:none!important}
+/* v110 · celular: Mel menor na sacola/checkout para não cobrir os campos; topo do painel mais leve */
+@media (max-width:719px){
+  .mel.mel-mini .mel-boneca{width:78px!important;height:130px!important}
+  .mel.mel-mini .mel-balao{display:none!important}
+  .mel.mel-mini{bottom:84px!important;right:0!important}
+}
+@media (max-width:600px){
+  .app.painel .top .tp .brand .ptag{display:none}
+  .app.painel .top .tp .brand img.logo-eme{height:38px;max-width:96px}
+  .app.painel .top .r{gap:6px}
+  .app.painel .top .r .btn.sm{padding:7px 10px;font-size:11px;white-space:nowrap}
+}
 /* v103 · todos os botões na cor da EME: azul claro do logo com letra preta */
 :root{--btn-eme:#C5E4FD;--btn-eme-h:#AED7FA}
 .btn,.btn.ghost,.btn.rose,.btn.dark,.hero .btn,.fx-d .btn,.bulk .btn,.app .btn,.app.painel .btn,.app:not(.painel) .btn,#coBody .btn,.veil .btn{background:var(--btn-eme)!important;color:#141113!important;border-color:transparent!important}
@@ -3946,7 +3961,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset.catfoto){ const c = catById(t.dataset.catfoto); lerImagem(t.files[0], url => { c.foto = url; renderCategorias(); }); return; }
-  if (t.dataset.bimg){ const b = ap.banners[+t.dataset.bimg]; lerImagem(t.files[0], url => { b.img = url; renderBanner(); renderAparencia(); }); return; }
+  if (t.dataset.bimg){ const b = ap.banners[+t.dataset.bimg]; lerImagem(t.files[0], url => { b.img = url; b.on = true; renderBanner(); renderAparencia(); if (typeof aplicaSub === 'function') aplicaSub(); if (typeof salvarAgora === 'function') salvarAgora(); toast('Imagem enviada. O banner já está ativo na loja.'); }); return; }
   if (t.dataset.blk){ ap.banners[+t.dataset.blk].link = t.value; return renderBanner(); }
   if (t.id==='apCor' || t.id==='apHex'){ const v = t.value.trim(); if (!/^#[0-9a-f]{6}$/i.test(v)){ toast('Use o formato #RRGGBB.'); return; } ap.cor = v; aplicaTema(); return renderAparencia(); }
   if (t.name==='apFundo'){ ap.fundo = t.value; aplicaTema(); return renderAparencia(); }
@@ -8699,6 +8714,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-ges]
 melVisivel = function(){ const m = $('#mel'); if (!m) return; const painel = !$('#s-gestao').hidden || document.querySelector('.app.painel');
   const o = typeof ultimo !== 'undefined' ? ultimo : null, pago = telaAtual === 'sacola' && co.step === 4 && o && (o.st >= 1 || (o.mp && o.mp.st === 'pago'));
   m.hidden = !!painel || !!pago; if (m.hidden) melChatFecha();
+  m.classList.toggle('mel-mini', telaAtual === 'sacola' && innerWidth < 720);
   m.classList.toggle('no-produto', !$('#veil').hidden && !!pd); };
 
 /* 2) conversa */
