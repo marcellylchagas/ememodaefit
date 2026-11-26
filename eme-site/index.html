@@ -2690,7 +2690,7 @@ function prateleira(t, lista){ return lista.length ? `<div class="sec"><h2>${esc
 function renderPrateleiras(){
   let h = '';
   if (ap.maisVendidos.on) h += prateleira('Mais vendidos', maisVendidos());
-  ap.carrosseis.forEach(c => { const pub = PRODUTOS.filter(p=>p.status==='Publicado'); h += prateleira(c.tit, c.fonte.startsWith('cat:') ? pub.filter(p=>inCat(p,c.fonte.slice(4))) : pub.filter(p=>p.tags.includes(c.fonte.slice(4)))); });
+  ap.carrosseis.forEach(c => { if (/^\s*mais\s+vendidos\s*$/i.test(c.tit || '') && (!ap.maisVendidos.on || h.includes('Mais vendidos'))) return; const pub = PRODUTOS.filter(p=>p.status==='Publicado'); h += prateleira(c.tit, c.fonte.startsWith('cat:') ? pub.filter(p=>inCat(p,c.fonte.slice(4))) : pub.filter(p=>p.tags.includes(c.fonte.slice(4)))); });
   $('#shelves').innerHTML = h;
 }
 function renderAparencia(){
