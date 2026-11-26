@@ -9759,7 +9759,7 @@ body.sac-on #coTimer:empty{display:none}
     const q = pdv.busca.trim().toLowerCase(), t = pdvTot();
     const comEst = PRODUTOS.filter(p => estP(p) > 0);
     const lista = comEst.filter(p => naCat(p) && (!q || p.n.toLowerCase().includes(q) || String(p.sku||'').toLowerCase().includes(q) || Object.keys(p.est).some(c => TAMANHOS.some(s => (p.est[c][s]||0)>0 && skuVar(p,c,s).toLowerCase().includes(q)))));
-    const cats = CATS.map(c => catPath(c)).filter(pc => comEst.some(p => p.c===pc || String(p.c||'').startsWith(pc+' ›')));
+    const cats = CATS.map(c => catPath(c)).filter(pc => { const n = comEst.filter(p => p.c===pc || String(p.c||'').startsWith(pc+' ›')).length; return n > 0 && n < comEst.length; });
     const p = pdv.sel ? prod(pdv.sel) : null;
     let esq;
     if (p){
@@ -9885,7 +9885,7 @@ if (sbOn()){
         ${r.pedidos.length ? r.pedidos.map(p => `<tr><td>#${p.num}</td><td>${hora(p.hora)}</td><td>${esc(p.cliente || '')}</td><td>${p.origem}</td><td>${esc(p.pag || '')}</td><td>${esc(p.status)}</td><td>${p.desconto ? brl(p.desconto) : '—'}</td><td>${brl(p.total)}</td></tr>`).join('') : '<tr><td colspan="8">Nenhum pedido no período.</td></tr>'}</tbody></table>
       <p class="note">Relatório gerado em ${dt(r.gerado)}. Vendas do balcão e do site juntas.</p></div>`;
   }
-  const CSSREL = `.cx-rel h4{margin:18px 0 8px;font-size:14px}.cx-cab{display:flex;flex-wrap:wrap;gap:12px 28px;margin-bottom:10px}
+  const CSSREL = `.cx-tab td[colspan]{text-align:left!important}.cx-tab{min-width:0!important}.cx-rel{overflow-x:auto}.cx-rel h4{margin:18px 0 8px;font-size:14px}.cx-cab{display:flex;flex-wrap:wrap;gap:12px 28px;margin-bottom:10px}
     .cx-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.cx-kpis>div{border:1px solid #E3E8EE;border-radius:12px;padding:10px 12px;background:#fff}
     .cx-kpis span{display:block;font-size:12px;color:#6b6b6b}.cx-kpis b{display:block;font-size:18px;margin:2px 0}.cx-kpis small{font-size:11.5px;color:#6b6b6b}
     .cx-tab{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.cx-tab th,.cx-tab td{text-align:left;padding:7px 8px;border-bottom:1px solid #EEF1F4}
@@ -9973,7 +9973,7 @@ if (sbOn()){
     if (CX.ver){
       const c = CX.lista.find(x => x.id === CX.ver); if (!c){ CX.ver = null; return pinta(); }
       box.innerHTML = `<div class="panel"><div class="pdv-topo"><button class="btn sm ghost" type="button" data-cx="lista">← Todos os caixas</button><span style="display:flex;gap:8px">${c.fechado_em ? '' : '<span class="tag ok">Caixa aberto · parcial</span>'}<button class="btn sm" type="button" data-cx="pdf">Imprimir / salvar PDF</button></span></div>
-        <h3 style="margin:4px 0 10px;text-transform:capitalize">${dia(c.aberto_em)}</h3><div id="cxRel"><p class="note">Montando o relatório…</p></div></div>`;
+        <h3 style="margin:4px 0 10px">${(d => d.charAt(0).toUpperCase() + d.slice(1))(dia(c.aberto_em))}</h3><div id="cxRel"><p class="note">Montando o relatório…</p></div></div>`;
       relDe(c).then(r => { if (CX.ver === c.id && $('#cxRel')) $('#cxRel').innerHTML = relHTML(c, r); }).catch(e => { if ($('#cxRel')) $('#cxRel').innerHTML = `<p class="note">Não consegui montar: ${esc(e.message || e)}</p>`; });
       return;
     }
@@ -10008,6 +10008,7 @@ if (sbOn()){
   const st = document.createElement('style'); st.textContent = CSSREL + `
     #g-pdv .cx-st{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     #g-pdv .cx-form{border:1.5px solid #2F6DA8}
+    #g-caixa .pdv-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
     @media (max-width:700px){.cx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#g-caixa .cx-tab{display:block;overflow-x:auto;white-space:nowrap}#g-caixa .cx-rel .cx-tab{display:block;overflow-x:auto;white-space:nowrap}}`;
   document.head.appendChild(st);
 }
