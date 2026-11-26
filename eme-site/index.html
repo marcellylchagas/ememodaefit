@@ -10056,6 +10056,49 @@ setInterval(() => { try {
   ENTREGA.retirada.horario = d.curta;
   const inp = document.getElementById('entRetH'); if (inp && document.activeElement !== inp) inp.value = d.curta;
 } catch(e){} }, 3000);
+
+/* v138 · notificações: o aparelho se recadastra sozinho ao abrir o painel e o sino mostra o que aconteceu com o painel fechado */
+if (sbOn()){
+  let feito = false;
+  const garantePush = async () => {
+    if (feito || !sbAdmin || !sbCarregado || typeof suportaPush !== 'function' || !suportaPush() || Notification.permission !== 'granted') return; feito = true;
+    try {
+      const reg = await regSW(); if (!reg) return;
+      const r = await sb.functions.invoke('notificar', {body:{acao:'chave'}}); const pub = r && r.data && r.data.publica; if (!pub) return;
+      let s = await reg.pushManager.getSubscription();
+      if (s && s.options && s.options.applicationServerKey && bytesB64u(s.options.applicationServerKey) !== pub){ await s.unsubscribe(); s = null; }
+      if (!s) s = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey: b64uBytes(pub)});
+      const j = s.toJSON(); const up = await sb.from('push_inscricoes').upsert({endpoint:j.endpoint, dados:j, aparelho:nomeAparelho()});
+      notifAtivo = !up.error; if (typeof renderNotif === 'function') renderNotif();
+    } catch(e){ console.warn('push', e); feito = false; }
+  };
+  setInterval(garantePush, 2000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden){ feito = false; garantePush(); } });
+
+  /* sino: busca no banco os avisos que chegaram enquanto o painel estava fechado */
+  const K = 'emeSinoDesde';
+  const sinoBanco = async () => {
+    if (!sbAdmin || !sbCarregado || typeof novoAviso !== 'function') return;
+    let desde = ''; try { desde = localStorage.getItem(K) || ''; } catch(_){}
+    if (!desde){ const d = new Date(Date.now() - 3 * 864e5); desde = d.toISOString(); }
+    try {
+      const r = await sb.from('historico').select('id,tipo,texto,alerta,criado_em').gt('criado_em', desde).order('criado_em', {ascending:true}).limit(40);
+      if (r.error || !r.data) return;
+      const vistos = new Set(AVISOS.map(a => a.tag));
+      r.data.filter(x => /pedido|estoque|avalia|pagamento|cancel/i.test(x.tipo + ' ' + x.texto) || x.alerta).forEach(x => {
+        const tag = 'h' + x.id; if (vistos.has(tag)) return;
+        const tit = /pedido/i.test(x.tipo) ? '🛍️ Pedido' : x.alerta ? '⚠️ Aviso' : '🔔 ' + x.tipo;
+        novoAviso(tit, String(x.texto || '').replace(/R\$ (\d+)\.(\d{2})\b/g, 'R$ $1,$2'), tag);
+        const a = AVISOS.find(z => z.tag === tag); if (a) a.t = new Date(x.criado_em).getTime();
+      });
+      AVISOS.sort((a, b) => b.t - a.t); guardaAvisos(); if (typeof marcaSino === 'function') marcaSino();
+      if (r.data.length) try { localStorage.setItem(K, r.data[r.data.length - 1].criado_em); } catch(_){}
+    } catch(e){}
+  };
+  let sb1 = setInterval(() => { if (sbAdmin && sbCarregado){ clearInterval(sb1); sinoBanco(); } }, 1500);
+  setInterval(sinoBanco, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) sinoBanco(); });
+}
 </script>
 
 </body>
