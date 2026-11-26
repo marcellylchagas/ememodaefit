@@ -27,6 +27,17 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="supabase.js"></script>
+<script>
+/* app do painel: em /painel/ a página usa o manifesto, o ícone e o nome do painel e abre direto no painel */
+(function(){ if (!/^\/painel(\/|$)/.test(location.pathname)) return;
+  if (location.pathname === '/painel') { location.replace('/painel/' + (location.hash || '#painel')); return; }
+  if (!/painel/.test(location.hash)) history.replaceState(null, '', '/painel/#painel');
+  var m = document.querySelector('link[rel="manifest"]'); if (m) m.href = '/manifest-painel.webmanifest';
+  var a = document.querySelector('link[rel="apple-touch-icon"]'); if (a) a.href = '/painel-apple.png';
+  var t = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (t) t.content = 'EME Painel';
+  document.title = 'Painel | EME Moda & Fit'; window.__APP_PAINEL = true; })();
+</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Sora:wght@400;600;700&family=Manrope:wght@400;500;600;700&display=swap">
 <style>
@@ -1440,7 +1451,6 @@ a.btn{text-decoration:none!important}
 .btn{transition:transform .15s ease,background .25s ease,box-shadow .25s ease}
 @media (prefers-reduced-motion:reduce){#emeSplash img,#emeSplash i::after,[data-screen]:not([hidden]),.card,.prod,.pcard{animation:none!important}}
 </style>
-<script src="supabase.js"></script>
 <script>
 (function(){ var t0 = Date.now(), MIN = 900, MAX = 6000; function sai(){ var el = document.getElementById('emeSplash'); if (!el || el.classList.contains('sai')) return; el.classList.add('sai'); setTimeout(function(){ el.remove(); }, 600); }
   function ve(){ if (window.__emePronto) { setTimeout(sai, Math.max(0, MIN - (Date.now() - t0))); return; } if (Date.now() - t0 > MAX) return sai(); setTimeout(ve, 120); }
@@ -9515,6 +9525,21 @@ body.sac-on #coTimer:empty{display:none}
 @media (min-width:720px){ body.sac-on .mel{right:calc(min(520px,100vw) + 6px)!important;z-index:1210!important} }
 @media (max-width:719px){ body.sac-on #s-sacola{padding-bottom:150px} body.sac-on .mel{z-index:1210!important;left:4px!important;right:auto!important;bottom:8px!important} body.sac-on .mel .mel-boneca{width:70px!important;height:116px!important} body.sac-on .mel .mel-balao{display:none!important} }
 `; document.head.appendChild(st); }
+
+/* v120 · app do painel: botão para instalar no celular quando aberto em /painel/ */
+{ if (window.__APP_PAINEL){ let pedP = null; window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedP = e; mostra(); });
+  const instalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const mostra = () => { if (instalado() || document.getElementById('instPainel')) return; const r = document.querySelector('.top .tp .r'); if (!r) return;
+    r.insertAdjacentHTML('afterbegin', '<button class="btn sm" id="instPainel" type="button">Instalar app</button>'); };
+  setInterval(() => { if (!instalado() && document.querySelector('.app.painel')) mostra(); }, 1500);
+  document.addEventListener('click', async e => { if (!e.target.closest('#instPainel')) return;
+    if (pedP){ pedP.prompt(); try { const r = await pedP.userChoice; if (r.outcome === 'accepted'){ toast('App do painel instalado. Ele aparece na tela inicial como "EME Painel".'); document.getElementById('instPainel')?.remove(); } } catch(_){} pedP = null; return; }
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent); const sh = $('#sheet'); sh.classList.remove('prodpage','minicart'); sh.classList.add('cupompop');
+    sh.innerHTML = `<button class="x pop-x" data-close aria-label="Fechar">×</button><div class="pop-in"><small>App do painel</small><h3>Instale o painel<br>no seu celular</h3>
+      ${ios ? '<ol class="inst"><li>No <b>Safari</b>, toque em <b>Compartilhar</b> (o quadrado com a seta).</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol>' : '<ol class="inst"><li>No <b>Chrome</b>, abra o menu (⋮).</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme em <b>Instalar</b>.</li></ol>'}
+      <p>O ícone "EME Painel" abre direto no painel, separado do app da loja.</p><button class="btn full" data-close>Entendi</button></div>`; $('#veil').hidden = false; });
+  /* no app do painel, "Visitar loja" abre a loja no navegador */
+  document.addEventListener('click', e => { const v = e.target.closest('.top .tp .visit, [data-visitar]'); if (v && instalado()){ e.preventDefault(); e.stopPropagation(); window.open('/', '_blank'); } }, true); } }
 </script>
 
 </body>
