@@ -1396,6 +1396,7 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 .btn,.btn.ghost,.btn.rose,.btn.dark,.hero .btn,.fx-d .btn,.bulk .btn,.app .btn,.app.painel .btn,.app:not(.painel) .btn,#coBody .btn,.veil .btn{background:var(--btn-eme)!important;color:#141113!important;border-color:transparent!important}
 .btn:hover:not(:disabled){background:var(--btn-eme-h)!important}
 .btn svg{color:#141113}
+a.btn{text-decoration:none!important}
 .btn.perigo{background:var(--bad)!important;color:#fff!important}
 .arr2,.hero .arr2{background:var(--btn-eme)!important;color:#141113!important}
 .chipbtn[aria-pressed="true"],.app .chipbtn[aria-pressed="true"],.opt[aria-pressed="true"],.seg3 button[aria-pressed="true"],.seg button[aria-pressed="true"],.app.painel .seg button[aria-pressed="true"],.mchip[aria-pressed="true"],.snav .snav-top.on,.vg-quick button{background:var(--btn-eme)!important;color:#141113!important;border-color:var(--btn-eme)!important}
@@ -5527,6 +5528,11 @@ if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(
 { const col = document.querySelector('.sfoot .sf-in > div:nth-child(3)'); if (col) col.insertAdjacentHTML('beforeend', '<button data-instalar><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg>Instalar o app da loja</button>'); }
 document.addEventListener('click', async e => { if (!e.target.closest('[data-instalar]')) return;
   if (jaInstalado()){ toast('O app da loja já está instalado neste aparelho.'); return; }
+  if (/android/i.test(navigator.userAgent)){ const sh = $('#sheet'); sh.classList.remove('prodpage','minicart'); sh.classList.add('cupompop');
+    sh.innerHTML = `<button class="x pop-x" data-close aria-label="Fechar">×</button><div class="pop-in"><small>App da EME</small><h3>Baixe o app<br>no seu Android</h3>
+    <ol class="inst"><li>Toque em <b>Baixar o app</b> abaixo.</li><li>Quando terminar, toque no arquivo <b>EME Moda & Fit</b> para abrir.</li><li>Se o celular pedir, permita <b>instalar apps desta fonte</b> e toque em <b>Instalar</b>.</li></ol>
+    <p>Depois é só abrir pelo ícone da EME, como qualquer aplicativo.</p><a class="btn full" href="eme-moda-fit.apk?v=1" download="EME Moda & Fit.apk" data-close>Baixar o app</a></div>`;
+    $('#veil').hidden = false; return; }
   if (pedidoInstalar){ pedidoInstalar.prompt(); try { const r = await pedidoInstalar.userChoice; if (r.outcome==='accepted') toast('App instalado. Ele aparece na tela inicial.'); } catch(err){} pedidoInstalar = null; return; }
   const sh = $('#sheet'); sh.classList.remove('prodpage','minicart'); sh.classList.add('cupompop');
   sh.innerHTML = `<button class="x pop-x" data-close aria-label="Fechar">×</button><div class="pop-in"><small>App da EME</small><h3>Instale a loja<br>no seu celular</h3>
