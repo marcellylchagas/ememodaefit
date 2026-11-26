@@ -6156,6 +6156,15 @@ function marcaSalvo(s){ const el = $('#sbSalvo'); if (!el) return; el.dataset.s 
 { const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<span class="sb-salvo" id="sbSalvo" hidden>Tudo salvo</span>'); }
 var painelMexeu = true; ['input','change','click','drop','keyup'].forEach(ev => document.addEventListener(ev, () => { painelMexeu = true; }, {capture:true, passive:true}));
 setInterval(() => { if (!sbAdmin || !fotoAnt || !painelMexeu) return; painelMexeu = false; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 1500);
+/* v114 · formulários de configuração salvam sozinhos ao mudar qualquer campo (horário e precificação) */
+{ let tf = null; document.addEventListener('change', e => { const f = e.target.closest && e.target.closest('#fHor, #fRegra'); if (!f) return;
+    clearTimeout(tf); tf = setTimeout(() => { const g = document.getElementById(f.id); if (g) g.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true})); }, 400); }); }
+/* v114 · endereço de origem: salva sozinho no Supabase quando estiver completo */
+{ let tr = null; document.addEventListener('change', e => { if (!/^enR_/.test(e.target.id || '') || typeof REM_CAMPOS === 'undefined') return;
+    clearTimeout(tr); tr = setTimeout(async () => { const novo = {}; REM_CAMPOS.forEach(([k]) => novo[k] = ($('#enR_' + k)?.value || '').trim()); novo.uf = (novo.uf || '').toUpperCase();
+      if (typeof remOk === 'function' && !remOk(novo)) return; if (!sbOn() || !sbAdmin) return;
+      const {error} = await sb.from('config').upsert({chave:'remetente', valor:novo, publica:false}); if (error){ toast('Não deu para salvar o endereço. Tente de novo.'); return; }
+      remetente = novo; toast('Endereço de origem salvo.'); }, 600); }); }
 /* rede de segurança: a cada 4 segundos confere se ficou alguma mudança sem ir para o Supabase (mesmo sem clique) e salva */
 setInterval(() => { if (!sbAdmin || !fotoAnt || salvando) return; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 4000);
 window.addEventListener('beforeunload', e => { if (sbAdmin && fotoAnt && J(retrato()) !== J(fotoAnt)){ salvarAgora(); e.preventDefault(); e.returnValue = ''; } });
