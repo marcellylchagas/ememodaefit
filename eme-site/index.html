@@ -9718,6 +9718,299 @@ body.sac-on #coTimer:empty{display:none}
 .subabas{margin-top:0}
 @media (max-width:760px){ .gtabs{margin:6px -16px 12px;padding:0 12px} .gtabs button{padding:9px 11px 10px;font-size:13px} }`; document.head.appendChild(st);
   try { if (!$('#s-gestao').hidden) renderGestao(); } catch(_){} }
+
+/* v131 · PDV com grade de fotos */
+{ Object.assign(pdv, {cat:'', sel:null, cor:''});
+  const imgP = p => { const i = (p.imgs||[])[0]; return i ? (i.src||i.url||i.ref||'') : ''; };
+  const estP = p => Object.values(p.est||{}).reduce((a,o)=>a+Object.values(o||{}).reduce((x,n)=>x+(n>0?n:0),0),0);
+  const estC = (p,c) => Object.values(p.est[c]||{}).reduce((x,n)=>x+(n>0?n:0),0);
+  const naCat = p => !pdv.cat || p.c===pdv.cat || String(p.c||'').startsWith(pdv.cat+' ›');
+  const curto = c => String(c).split(' › ').pop();
+  const st = document.createElement('style'); st.textContent = `
+  #g-pdv .pdv-wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+  #g-pdv .pdv-side{position:sticky;top:76px}
+  #g-pdv .pdv-side .panel{margin:0 0 12px}
+  #g-pdv .pdv-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+  #g-pdv .pdv-chips::-webkit-scrollbar{display:none}
+  #g-pdv .pdv-chips button{flex:0 0 auto;border:1px solid var(--line,#e4e0d8);background:var(--surface,#fff);color:var(--ink,#1a1a1a);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+  #g-pdv .pdv-chips button[aria-pressed="true"]{background:#C5E4FD;border-color:#C5E4FD;color:#000;font-weight:600}
+  #g-pdv .pdv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  #g-pdv .pdv-card{display:flex;flex-direction:column;text-align:left;border:1px solid var(--line,#e4e0d8);background:var(--surface,#fff);border-radius:14px;overflow:hidden;padding:0;cursor:pointer;font:inherit;color:inherit;transition:transform .15s,box-shadow .15s}
+  #g-pdv .pdv-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+  #g-pdv .pdv-card img,#g-pdv .pdv-card .sem{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f3efe8;display:block}
+  #g-pdv .pdv-card .i{padding:8px 10px 10px}
+  #g-pdv .pdv-card .n{font-size:13px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  #g-pdv .pdv-card .m{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;font-size:12px;color:var(--muted,#6b6b6b)}
+  #g-pdv .pdv-card .m b{color:var(--ink,#1a1a1a);font-size:14px}
+  #g-pdv .pdv-det{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px}
+  #g-pdv .pdv-det img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#f3efe8}
+  #g-pdv .pdv-opc{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+  #g-pdv .pdv-opc button{border:1px solid var(--line,#e4e0d8);background:var(--surface,#fff);color:var(--ink,#1a1a1a);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;min-width:54px}
+  #g-pdv .pdv-opc button small{display:block;font-size:11px;color:var(--muted,#6b6b6b)}
+  #g-pdv .pdv-opc button[aria-pressed="true"]{background:#C5E4FD;border-color:#2F6DA8;color:#000;font-weight:600}
+  #g-pdv .pdv-opc button:disabled{opacity:.4;cursor:not-allowed}
+  #g-pdv .pdv-opc.tam button{font-weight:600;font-size:15px;padding:10px 14px}
+  #g-pdv .pdv-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+  @media (max-width:900px){#g-pdv .pdv-wrap{grid-template-columns:1fr}#g-pdv .pdv-side{position:static}#g-pdv .pdv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#g-pdv .pdv-det{grid-template-columns:110px minmax(0,1fr)}}`;
+  document.head.appendChild(st);
+
+  renderPDV = function(){
+    const g = $('#g-pdv'); if (!g) return;
+    const q = pdv.busca.trim().toLowerCase(), t = pdvTot();
+    const comEst = PRODUTOS.filter(p => estP(p) > 0);
+    const lista = comEst.filter(p => naCat(p) && (!q || p.n.toLowerCase().includes(q) || String(p.sku||'').toLowerCase().includes(q) || Object.keys(p.est).some(c => TAMANHOS.some(s => (p.est[c][s]||0)>0 && skuVar(p,c,s).toLowerCase().includes(q)))));
+    const cats = CATS.map(c => catPath(c)).filter(pc => comEst.some(p => p.c===pc || String(p.c||'').startsWith(pc+' ›')));
+    const p = pdv.sel ? prod(pdv.sel) : null;
+    let esq;
+    if (p){
+      const cores = Object.keys(p.est).filter(c => estC(p,c) > 0);
+      if (!cores.includes(pdv.cor)) pdv.cor = cores[0] || '';
+      const c = pdv.cor, im = imgP(p);
+      esq = `<div class="panel"><div class="pdv-topo"><button class="btn sm ghost" type="button" data-pdvvolta>← Voltar às peças</button><span class="note">${esc(p.sku||'')}</span></div>
+        <div class="pdv-det">${im?`<img src="${esc(im)}" alt="${esc(p.n)}">`:'<div></div>'}
+        <div><h3 style="margin:0 0 4px">${esc(p.n)}</h3><div style="font-size:18px;font-weight:700;margin-bottom:12px">${brl(precoAtual(p))}</div>
+          <div class="lbl">Cor</div><div class="pdv-opc">${cores.map(x=>`<button type="button" data-pdvcor="${esc(x)}" aria-pressed="${x===c}">${esc(x)}<small>${estC(p,x)} em estoque</small></button>`).join('')}</div>
+          <div class="lbl">Tamanho · toque para adicionar</div><div class="pdv-opc tam">${TAMANHOS.filter(s => p.est[c] && s in p.est[c]).map(s => { const n = p.est[c][s]||0, na = (pdv.itens.find(i=>i.sku===skuVar(p,c,s))||{}).qtd||0;
+            return `<button type="button" ${n>0?`data-pdvadd="${esc(skuVar(p,c,s))}"`:'disabled'}>${s}<small>${n>0?`${n-na} disp.`:'esgotado'}</small></button>`; }).join('')}</div></div></div></div>`;
+    } else {
+      esq = `<div class="panel"><div class="pdv-topo"><b>Caixa 01</b><span class="tag ok">Caixa aberto</span></div>
+        <div class="field"><label for="pdvBusca">Buscar peça ou bipar o código (SKU)</label><input id="pdvBusca" value="${esc(pdv.busca)}" placeholder="Nome da peça ou ex.: ${esc(comEst[0]?comEst[0].sku:'EME001')}" autocomplete="off"></div>
+        <div class="pdv-chips"><button type="button" data-pdvcat="" aria-pressed="${!pdv.cat}">Todas (${comEst.length})</button>${cats.map(pc=>`<button type="button" data-pdvcat="${esc(pc)}" aria-pressed="${pc===pdv.cat}">${esc(curto(pc))}</button>`).join('')}</div>
+        <div class="pdv-grid">${lista.map(x => { const im = imgP(x); return `<button type="button" class="pdv-card" data-pdvprod="${esc(x.id)}">${im?`<img src="${esc(im)}" alt="" loading="lazy">`:'<span class="sem"></span>'}<span class="i"><span class="n">${esc(x.n)}</span><span class="m"><b>${brl(precoAtual(x))}</b><span>${estP(x)} un.</span></span></span></button>`; }).join('') || '<p class="note">Nenhuma peça encontrada.</p>'}</div></div>`;
+    }
+    const sac = `<div class="panel"><div class="lbl" style="margin-top:0">Venda atual</div>
+      ${pdv.itens.length ? pdv.itens.map((i,ix)=>`<div class="line"><div class="d"><div class="n">${esc(i.nome)}</div><div class="c">${esc(i.sku)}</div>
+        <div class="qty" style="margin-top:6px"><button data-pdvq="${ix}:-1" aria-label="Diminuir">−</button><span>${i.qtd}</span><button data-pdvq="${ix}:1" aria-label="Aumentar">+</button></div></div><div class="pr">${brl(i.preco*i.qtd)}<br><button class="link" data-pdvrm="${ix}">Remover</button></div></div>`).join('') : '<p class="note">Toque numa peça para escolher cor e tamanho.</p>'}
+      <div class="field"><label for="pdvCli">Cliente (opcional)</label><input id="pdvCli" value="${esc(pdv.cliente)}" placeholder="CPF, telefone ou nome"></div>
+      <div class="row2"><div class="field"><label for="pdvDesc">Desconto no total</label><input id="pdvDesc" type="number" min="0" step="0.01" value="${pdv.desc||''}"></div>
+        <div class="field"><label for="pdvDescT">Em</label><select id="pdvDescT"><option ${pdv.descTipo==='R$'?'selected':''}>R$</option><option ${pdv.descTipo==='%'?'selected':''}>%</option></select></div></div>
+      <div class="field"><label for="pdvPag">Pagamento</label><select id="pdvPag">${['Dinheiro','Pix','Cartão de crédito','Cartão de débito'].map(f=>`<option ${f===pdv.pag?'selected':''}>${f}</option>`).join('')}</select></div>
+      <div class="sum" style="margin-top:12px"><div><span>Subtotal</span><span>${brl(t.sub)}</span></div>${t.d?`<div class="neg"><span>Desconto</span><span>− ${brl(t.d)}</span></div>`:''}<div class="tot"><span>Total · ${pdv.itens.reduce((a,i)=>a+i.qtd,0)} unid.</span><span>${brl(t.total)}</span></div></div>
+      <div class="row2" style="margin-top:12px"><button class="btn ghost" data-pdv="segurar" ${pdv.itens.length?'':'disabled'}>Segurar</button><button class="btn ghost" data-pdv="cancelar" ${pdv.itens.length?'':'disabled'}>Cancelar</button></div>
+      <button class="btn full" style="margin-top:8px" data-pdv="finalizar" ${pdv.itens.length?'':'disabled'}>Finalizar venda · ${brl(t.total)}</button></div>
+      <div class="panel"><div class="lbl" style="margin-top:0">Pedidos em espera · ${pdv.espera.length}</div>
+      ${pdv.espera.length ? pdv.espera.map((e,i)=>`<div class="line"><div class="d"><div class="n">${esc(e.cliente||'Sem cliente')}</div><div class="c">${e.itens.reduce((a,x)=>a+x.qtd,0)} unid.</div></div><div class="pr"><button class="btn sm" data-pdvret="${i}">Retomar</button></div></div>`).join('') : '<p class="note">Use Segurar para guardar uma comanda e atender outra cliente.</p>'}</div>`;
+    g.innerHTML = `<div class="pdv-wrap"><div class="pdv-main">${esq}</div><div class="pdv-side">${sac}</div></div>`;
+  };
+  document.addEventListener('click', e => { const t = e.target; if (!t.closest || !t.closest('#g-pdv')) return;
+    const pp = t.closest('[data-pdvprod]'); if (pp){ pdv.sel = pp.dataset.pdvprod; pdv.cor = ''; renderPDV(); $('#g-pdv')?.scrollIntoView({block:'start', behavior:'smooth'}); return; }
+    const pc = t.closest('[data-pdvcor]'); if (pc){ pdv.cor = pc.dataset.pdvcor; return renderPDV(); }
+    const ct = t.closest('[data-pdvcat]'); if (ct){ pdv.cat = ct.dataset.pdvcat; return renderPDV(); }
+    if (t.closest('[data-pdvvolta]')){ pdv.sel = null; return renderPDV(); }
+  });
+  const addOrig = pdvAdd;
+  pdvAdd = function(sku){ const n0 = pdv.itens.reduce((a,i)=>a+i.qtd,0); const ab = pdv.sel; addOrig(sku); if (ab){ pdv.sel = ab; renderPDV(); }
+    if (pdv.itens.reduce((a,i)=>a+i.qtd,0) > n0){ const it = pdv.itens.find(i=>i.sku===sku); if (it) toast(`${it.nome} adicionada.`); } };
+}
+
+/* v132 · caixa: abrir, fechar e relatórios */
+if (sbOn()){
+  const CX = {atual:null, lista:[], carregado:false, carregando:false, ver:null, de:'', ate:'', form:null, msg:''};
+  window.__CX = CX;
+  const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
+  const dt = d => new Date(d).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+  const dia = d => new Date(d).toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  const hora = d => new Date(d).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const PAGO = ['Pago','Enviado','Entregue'], SAIU = ['Cancelado','Reembolsado'];
+
+  async function montaRelatorio(ini, fim){
+    const a = new Date(ini).toISOString(), b = new Date(fim || Date.now()).toISOString();
+    const [r1, r2] = await Promise.all([
+      sb.from('pedidos').select('num,cliente_nome,status,forma_pagamento,parcelas,entrega,subtotal,desconto,frete,total,criado_em,pago_em,cancel_em,cupom').gte('criado_em', a).lte('criado_em', b).order('criado_em'),
+      sb.from('pedidos').select('num,cliente_nome,status,forma_pagamento,entrega,total,criado_em,cancel_em').in('status', SAIU).gte('cancel_em', a).lte('cancel_em', b)]);
+    if (r1.error) throw r1.error;
+    const peds = r1.data || [], canc = new Map();
+    peds.filter(p => SAIU.includes(p.status)).forEach(p => canc.set(p.num, p));
+    (r2.data || []).forEach(p => canc.set(p.num, p));
+    const ent = peds.filter(p => !SAIU.includes(p.status) && (PAGO.includes(p.status) || p.pago_em));
+    const pend = peds.filter(p => !SAIU.includes(p.status) && !(PAGO.includes(p.status) || p.pago_em));
+    let itens = [];
+    if (ent.length){ const r3 = await sb.from('pedido_itens').select('pedido_num,nome,cor,tamanho,sku,qtd,preco_unit').in('pedido_num', ent.map(p => p.num)); if (r3.error) throw r3.error; itens = r3.data || []; }
+    const soma = (l, k) => +l.reduce((x, p) => x + (+p[k] || 0), 0).toFixed(2);
+    const porPag = {}; ent.forEach(p => { const f = p.forma_pagamento || 'Outro'; (porPag[f] = porPag[f] || {qtd:0, total:0}); porPag[f].qtd++; porPag[f].total = +(porPag[f].total + (+p.total || 0)).toFixed(2); });
+    const pec = {}; itens.forEach(i => { const k = `${i.nome}|${i.cor}|${i.tamanho}`; const o = pec[k] = pec[k] || {nome:i.nome, cor:i.cor, tam:i.tamanho, sku:i.sku || '', qtd:0, total:0}; o.qtd += +i.qtd; o.total = +(o.total + i.qtd * i.preco_unit).toFixed(2); });
+    const origem = p => /balc/i.test(p.entrega || '') ? 'Balcão' : 'Site';
+    const tot = soma(ent, 'total');
+    return {inicio:a, fim:b, gerado:new Date().toISOString(),
+      entradas:{qtd:ent.length, total:tot, porPag},
+      saidas:{qtd:canc.size, total:soma([...canc.values()], 'total'), lista:[...canc.values()].map(p => ({num:p.num, cliente:p.cliente_nome, status:p.status, pag:p.forma_pagamento, total:+p.total, origem:origem(p)}))},
+      pendentes:{qtd:pend.length, total:soma(pend, 'total')},
+      subtotal:soma(ent, 'subtotal'), descontos:soma(ent, 'desconto'), frete:soma(ent, 'frete'),
+      ticket: ent.length ? +(tot / ent.length).toFixed(2) : 0,
+      unidades: itens.reduce((x, i) => x + (+i.qtd), 0),
+      pecas: Object.values(pec).sort((x, y) => y.qtd - x.qtd || y.total - x.total),
+      pedidos: peds.map(p => ({num:p.num, hora:p.criado_em, cliente:p.cliente_nome, origem:origem(p), pag:p.forma_pagamento + (p.parcelas > 1 ? ` ${p.parcelas}x` : ''), status:p.status, desconto:+p.desconto || 0, total:+p.total || 0, cupom:p.cupom || ''}))};
+  }
+
+  async function carrega(){
+    if (CX.carregando) return; CX.carregando = true;
+    try {
+      const r = await sb.from('caixas').select('*').order('aberto_em', {ascending:false}).limit(400);
+      if (r.error) throw r.error;
+      CX.lista = r.data || []; CX.atual = CX.lista.find(c => !c.fechado_em) || null; CX.carregado = true; CX.msg = '';
+    } catch(e){ CX.msg = 'Não consegui carregar o caixa: ' + (e.message || e); }
+    CX.carregando = false; pintaTudo();
+  }
+  const pintaTudo = () => { if (gesAtual === 'pdv') renderPDV(); if (gesAtual === 'caixa') pinta(); };
+
+  /* ---------- relatório em HTML (tela e impressão) ---------- */
+  function relHTML(c, r){
+    if (!r) return '<p class="note">Relatório ainda não gerado.</p>';
+    const pags = Object.entries(r.entradas.porPag || {});
+    return `<div class="cx-rel">
+      <div class="cx-cab"><div><div class="lbl" style="margin:0">Período</div><b>${dt(r.inicio)} → ${c && c.fechado_em ? dt(r.fim) : 'agora (caixa aberto)'}</b></div>
+        <div><div class="lbl" style="margin:0">Abriu</div><b>${esc(c?.aberto_por || '—')}</b></div>
+        <div><div class="lbl" style="margin:0">Fechou</div><b>${esc(c?.fechado_por || '—')}</b></div></div>
+      ${c?.obs_abertura ? `<p class="note"><b>Obs. na abertura:</b> ${esc(c.obs_abertura)}</p>` : ''}${c?.obs_fechamento ? `<p class="note"><b>Obs. no fechamento:</b> ${esc(c.obs_fechamento)}</p>` : ''}
+      <div class="cx-kpis">
+        <div><span>Entradas</span><b>${brl(r.entradas.total)}</b><small>${r.entradas.qtd} pedido${r.entradas.qtd === 1 ? '' : 's'} pago${r.entradas.qtd === 1 ? '' : 's'}</small></div>
+        <div><span>Saídas</span><b>${brl(r.saidas.total)}</b><small>${r.saidas.qtd} cancelamento${r.saidas.qtd === 1 ? '' : 's'}/estorno${r.saidas.qtd === 1 ? '' : 's'}</small></div>
+        <div><span>Saldo do período</span><b>${brl(r.entradas.total - r.saidas.total)}</b><small>entradas − saídas</small></div>
+        <div><span>Ticket médio</span><b>${brl(r.ticket)}</b><small>${r.unidades} peça${r.unidades === 1 ? '' : 's'} vendida${r.unidades === 1 ? '' : 's'}</small></div></div>
+      <h4>Vendas por forma de pagamento</h4>
+      <table class="cx-tab"><thead><tr><th>Forma</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>
+        ${pags.length ? pags.map(([f, o]) => `<tr><td>${esc(f)}</td><td>${o.qtd}</td><td>${brl(o.total)}</td></tr>`).join('') : '<tr><td colspan="3">Nenhuma venda paga no período.</td></tr>'}
+        <tr class="t"><td>Total</td><td>${r.entradas.qtd}</td><td>${brl(r.entradas.total)}</td></tr></tbody></table>
+      <table class="cx-tab cx-mini"><tbody><tr><td>Valor das peças</td><td>${brl(r.subtotal)}</td></tr><tr><td>Descontos</td><td>− ${brl(r.descontos)}</td></tr><tr><td>Frete cobrado</td><td>${brl(r.frete)}</td></tr>
+        ${r.pendentes.qtd ? `<tr><td>Aguardando pagamento (não entra no total)</td><td>${r.pendentes.qtd} · ${brl(r.pendentes.total)}</td></tr>` : ''}</tbody></table>
+      <h4>Peças vendidas</h4>
+      <table class="cx-tab"><thead><tr><th>Peça</th><th>Cor</th><th>Tam.</th><th>SKU</th><th>Qtd.</th><th>Total</th></tr></thead><tbody>
+        ${r.pecas.length ? r.pecas.map(p => `<tr><td>${esc(p.nome)}</td><td>${esc(p.cor)}</td><td>${esc(p.tam)}</td><td>${esc(p.sku)}</td><td>${p.qtd}</td><td>${brl(p.total)}</td></tr>`).join('') : '<tr><td colspan="6">Nenhuma peça vendida no período.</td></tr>'}</tbody></table>
+      <h4>Saídas (cancelamentos e estornos)</h4>
+      <table class="cx-tab"><thead><tr><th>Pedido</th><th>Cliente</th><th>Origem</th><th>Pagamento</th><th>Situação</th><th>Valor</th></tr></thead><tbody>
+        ${r.saidas.lista.length ? r.saidas.lista.map(p => `<tr><td>#${p.num}</td><td>${esc(p.cliente || '')}</td><td>${p.origem}</td><td>${esc(p.pag || '')}</td><td>${esc(p.status)}</td><td>${brl(p.total)}</td></tr>`).join('') : '<tr><td colspan="6">Nenhuma saída no período.</td></tr>'}</tbody></table>
+      <h4>Todos os pedidos do período</h4>
+      <table class="cx-tab"><thead><tr><th>Pedido</th><th>Hora</th><th>Cliente</th><th>Origem</th><th>Pagamento</th><th>Situação</th><th>Desconto</th><th>Total</th></tr></thead><tbody>
+        ${r.pedidos.length ? r.pedidos.map(p => `<tr><td>#${p.num}</td><td>${hora(p.hora)}</td><td>${esc(p.cliente || '')}</td><td>${p.origem}</td><td>${esc(p.pag || '')}</td><td>${esc(p.status)}</td><td>${p.desconto ? brl(p.desconto) : '—'}</td><td>${brl(p.total)}</td></tr>`).join('') : '<tr><td colspan="8">Nenhum pedido no período.</td></tr>'}</tbody></table>
+      <p class="note">Relatório gerado em ${dt(r.gerado)}. Vendas do balcão e do site juntas.</p></div>`;
+  }
+  const CSSREL = `.cx-rel h4{margin:18px 0 8px;font-size:14px}.cx-cab{display:flex;flex-wrap:wrap;gap:12px 28px;margin-bottom:10px}
+    .cx-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.cx-kpis>div{border:1px solid #E3E8EE;border-radius:12px;padding:10px 12px;background:#fff}
+    .cx-kpis span{display:block;font-size:12px;color:#6b6b6b}.cx-kpis b{display:block;font-size:18px;margin:2px 0}.cx-kpis small{font-size:11.5px;color:#6b6b6b}
+    .cx-tab{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.cx-tab th,.cx-tab td{text-align:left;padding:7px 8px;border-bottom:1px solid #EEF1F4}
+    .cx-tab th{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:#6b6b6b;font-weight:600}.cx-tab td:last-child,.cx-tab th:last-child{text-align:right}
+    .cx-tab tr.t td{font-weight:700;border-top:2px solid #E3E8EE}.cx-mini{max-width:460px}`;
+
+  function imprimir(c, r){
+    const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(f);
+    const d = f.contentDocument; d.open();
+    d.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório do caixa · ${new Date(r.inicio).toLocaleDateString('pt-BR')}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#141113;margin:24px}h1{font-size:20px;margin:0 0 2px}.note{color:#555;font-size:12px}.lbl{font-size:11px;color:#666;text-transform:uppercase}${CSSREL}@page{margin:14mm}</style></head><body>
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #2F6DA8;padding-bottom:10px;margin-bottom:14px"><div><h1>Relatório do caixa</h1><div class="note">EME Moda &amp; Fit · ${dia(r.inicio)}</div></div><img src="${location.origin}/logo.png" style="height:44px" alt=""></div>
+      ${relHTML(c, r)}</body></html>`); d.close();
+    setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch(e){ toast('Não consegui abrir a impressão.'); } setTimeout(() => f.remove(), 60000); }, 600);
+  }
+
+  /* ---------- abrir e fechar ---------- */
+  async function resumoAnterior(){
+    const ult = CX.lista.find(c => c.fechado_em && c.relatorio);
+    if (ult) return {de:'caixa', inicio:ult.aberto_em, fim:ult.fechado_em, entradas:ult.relatorio.entradas, saidas:{qtd:ult.relatorio.saidas.qtd, total:ult.relatorio.saidas.total}};
+    const h = new Date(); h.setHours(0,0,0,0); const o = new Date(h); o.setDate(o.getDate() - 1);
+    const r = await montaRelatorio(o, new Date(h.getTime() - 1));
+    return {de:'dia', inicio:r.inicio, fim:r.fim, entradas:r.entradas, saidas:{qtd:r.saidas.qtd, total:r.saidas.total}};
+  }
+  const resumoHTML = a => !a ? '<p class="note">Carregando o resumo anterior…</p>' : `
+    <div class="note" style="margin-bottom:6px">${a.de === 'caixa' ? `Último caixa: ${dt(a.inicio)} → ${dt(a.fim)}` : `Dia anterior: ${new Date(a.inicio).toLocaleDateString('pt-BR')}`}</div>
+    <table class="cx-tab"><tbody>${Object.entries(a.entradas.porPag || {}).map(([f, o]) => `<tr><td>Entradas · ${esc(f)} (${o.qtd})</td><td>${brl(o.total)}</td></tr>`).join('')}
+      <tr class="t"><td>Total de entradas (${a.entradas.qtd})</td><td>${brl(a.entradas.total)}</td></tr>
+      <tr><td>Saídas · cancelamentos e estornos (${a.saidas.qtd})</td><td>− ${brl(a.saidas.total)}</td></tr>
+      <tr class="t"><td>Saldo</td><td>${brl(a.entradas.total - a.saidas.total)}</td></tr></tbody></table>`;
+
+  async function abrirForm(tipo){
+    CX.form = {tipo, nome: lsGet('eme-caixa-nome'), obs:'', resumo:null, parcial:null, enviando:false}; pintaTudo();
+    try {
+      if (tipo === 'abrir') CX.form.resumo = await resumoAnterior();
+      else CX.form.parcial = await montaRelatorio(CX.atual.aberto_em, null);
+    } catch(e){ toast('Não consegui calcular o resumo: ' + (e.message || e)); }
+    pintaTudo();
+  }
+  async function confirmar(){
+    const f = CX.form; if (!f || f.enviando) return;
+    const nome = ($('#cxNome')?.value || '').trim(), obs = ($('#cxObs')?.value || '').trim();
+    if (!nome){ toast('Informe quem está ' + (f.tipo === 'abrir' ? 'abrindo' : 'fechando') + ' o caixa.'); $('#cxNome')?.focus(); return; }
+    f.enviando = true; f.nome = nome; f.obs = obs; pintaTudo(); lsSet('eme-caixa-nome', nome);
+    try {
+      if (f.tipo === 'abrir'){
+        const r = await sb.from('caixas').insert({aberto_por:nome, obs_abertura:obs || null, resumo_anterior:f.resumo || null}).select().single();
+        if (r.error) throw r.error; toast('Caixa aberto.');
+      } else {
+        const fim = new Date(), rel = await montaRelatorio(CX.atual.aberto_em, fim);
+        const r = await sb.from('caixas').update({fechado_em:fim.toISOString(), fechado_por:nome, obs_fechamento:obs || null, relatorio:rel}).eq('id', CX.atual.id).select().single();
+        if (r.error) throw r.error; toast('Caixa fechado. Relatório salvo.'); CX.ver = r.data.id;
+      }
+      CX.form = null; await carrega();
+      if (f.tipo === 'fechar'){ gesAtual = 'caixa'; renderGestao(); }
+    } catch(e){ f.enviando = false; const m = String(e.message || e); toast(/caixas_um_aberto|duplicate/i.test(m) ? 'Já existe um caixa aberto. Atualize a página.' : 'Não consegui salvar: ' + m); pintaTudo(); }
+  }
+  const formHTML = () => { const f = CX.form; if (!f) return ''; const ab = f.tipo === 'abrir';
+    return `<div class="panel cx-form"><div class="pdv-topo"><b>${ab ? 'Abrir caixa' : 'Fechar caixa'}</b><button class="btn sm ghost" type="button" data-cx="cancelar">Cancelar</button></div>
+      <div class="row2"><div class="field"><label for="cxNome">${ab ? 'Quem está abrindo' : 'Quem está fechando'}</label><input id="cxNome" value="${esc(f.nome)}" placeholder="Seu nome" autocomplete="name"></div>
+      <div class="field"><label for="cxObs">Observação (opcional)</label><input id="cxObs" value="${esc(f.obs)}" placeholder="${ab ? 'Ex.: abertura normal' : 'Ex.: dia tranquilo'}"></div></div>
+      <div class="lbl">${ab ? 'Entradas e saídas anteriores' : 'Resumo deste caixa até agora'}</div>
+      ${ab ? resumoHTML(f.resumo) : (f.parcial ? `<table class="cx-tab"><tbody>${Object.entries(f.parcial.entradas.porPag).map(([k, o]) => `<tr><td>${esc(k)} (${o.qtd})</td><td>${brl(o.total)}</td></tr>`).join('')}<tr class="t"><td>Entradas (${f.parcial.entradas.qtd})</td><td>${brl(f.parcial.entradas.total)}</td></tr><tr><td>Saídas (${f.parcial.saidas.qtd})</td><td>− ${brl(f.parcial.saidas.total)}</td></tr><tr><td>Peças vendidas</td><td>${f.parcial.unidades}</td></tr></tbody></table>` : '<p class="note">Calculando…</p>')}
+      <button class="btn full" style="margin-top:12px" type="button" data-cx="confirmar" ${f.enviando ? 'disabled' : ''}>${f.enviando ? 'Salvando…' : ab ? 'Abrir caixa' : 'Fechar caixa e gerar relatório'}</button></div>`; };
+
+  /* ---------- status no PDV ---------- */
+  const _rp = renderPDV;
+  renderPDV = function(){ _rp.apply(this, arguments); const g = $('#g-pdv'); if (!g) return;
+    if (!CX.carregado && !CX.carregando) carrega();
+    const tag = g.querySelector('.pdv-main .pdv-topo .tag'); const a = CX.atual;
+    const st = !CX.carregado ? '<span class="tag">Carregando…</span>' : a ? `<span class="tag ok">Aberto desde ${hora(a.aberto_em)}${new Date(a.aberto_em).toDateString() !== new Date().toDateString() ? ' de ' + new Date(a.aberto_em).toLocaleDateString('pt-BR') : ''} · ${esc(a.aberto_por)}</span><button class="btn sm ghost" type="button" data-cx="fechar">Fechar caixa</button>` : '<span class="tag warn">Caixa fechado</span><button class="btn sm" type="button" data-cx="abrir">Abrir caixa</button>';
+    if (tag) tag.outerHTML = `<span class="cx-st">${st}</span>`;
+    else { const m = g.querySelector('.pdv-main'); m?.insertAdjacentHTML('afterbegin', `<div class="panel"><div class="pdv-topo"><b>Caixa 01</b><span class="cx-st">${st}</span></div></div>`); }
+    if (CX.form) g.querySelector('.pdv-main')?.insertAdjacentHTML('afterbegin', formHTML());
+    if (CX.msg) g.querySelector('.pdv-main')?.insertAdjacentHTML('afterbegin', `<p class="note" style="color:var(--bad)">${esc(CX.msg)}</p>`);
+  };
+
+  /* ---------- tela de relatórios ---------- */
+  if (!GES.some(g => g[0] === 'caixa')) GES.push(['caixa', 'Caixa']);
+  { const g = GRUPOS.find(x => x[0] === 'Vendas'); if (g && !g[1].includes('caixa')){ const i = g[1].indexOf('pdv'); g[1].splice(i >= 0 ? i + 1 : g[1].length, 0, 'caixa'); } }
+  if (!document.getElementById('g-caixa')) (document.getElementById('g-pdv')?.parentElement || document.getElementById('gesMain'))?.insertAdjacentHTML('beforeend', '<div data-g="caixa" id="g-caixa" hidden></div>');
+  async function relDe(c){ if (c.relatorio) return c.relatorio; if (!c._parcial || Date.now() - c._t > 15000){ c._parcial = await montaRelatorio(c.aberto_em, null); c._t = Date.now(); } return c._parcial; }
+  function pinta(){
+    const box = $('#g-caixa'); if (!box || gesAtual !== 'caixa') return;
+    if (!CX.carregado){ box.innerHTML = '<div class="panel"><p class="note">Carregando os caixas…</p></div>'; if (!CX.carregando) carrega(); return; }
+    if (CX.ver){
+      const c = CX.lista.find(x => x.id === CX.ver); if (!c){ CX.ver = null; return pinta(); }
+      box.innerHTML = `<div class="panel"><div class="pdv-topo"><button class="btn sm ghost" type="button" data-cx="lista">← Todos os caixas</button><span style="display:flex;gap:8px">${c.fechado_em ? '' : '<span class="tag ok">Caixa aberto · parcial</span>'}<button class="btn sm" type="button" data-cx="pdf">Imprimir / salvar PDF</button></span></div>
+        <h3 style="margin:4px 0 10px;text-transform:capitalize">${dia(c.aberto_em)}</h3><div id="cxRel"><p class="note">Montando o relatório…</p></div></div>`;
+      relDe(c).then(r => { if (CX.ver === c.id && $('#cxRel')) $('#cxRel').innerHTML = relHTML(c, r); }).catch(e => { if ($('#cxRel')) $('#cxRel').innerHTML = `<p class="note">Não consegui montar: ${esc(e.message || e)}</p>`; });
+      return;
+    }
+    const lista = CX.lista.filter(c => { const d = new Date(c.aberto_em).toISOString().slice(0, 10); return (!CX.de || d >= CX.de) && (!CX.ate || d <= CX.ate); });
+    const fech = lista.filter(c => c.relatorio), sE = fech.reduce((x, c) => x + c.relatorio.entradas.total, 0), sS = fech.reduce((x, c) => x + c.relatorio.saidas.total, 0), sP = fech.reduce((x, c) => x + c.relatorio.unidades, 0);
+    box.innerHTML = `<div class="panel"><div class="row2" style="align-items:end"><div class="field"><label for="cxDe">De</label><input id="cxDe" type="date" value="${CX.de}"></div><div class="field"><label for="cxAte">Até</label><input id="cxAte" type="date" value="${CX.ate}"></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm ghost" type="button" data-cxper="7">Últimos 7 dias</button><button class="btn sm ghost" type="button" data-cxper="30">Últimos 30 dias</button><button class="btn sm ghost" type="button" data-cxper="mes">Este mês</button><button class="btn sm ghost" type="button" data-cxper="">Tudo</button></div></div>
+      <div class="cx-kpis"><div><span>Caixas no período</span><b>${lista.length}</b><small>${lista.length - fech.length ? (lista.length - fech.length) + ' aberto' : 'todos fechados'}</small></div><div><span>Entradas</span><b>${brl(sE)}</b><small>caixas fechados</small></div><div><span>Saídas</span><b>${brl(sS)}</b><small>cancelamentos/estornos</small></div><div><span>Peças vendidas</span><b>${sP}</b><small>caixas fechados</small></div></div>
+      <div class="panel"><table class="cx-tab"><thead><tr><th>Dia</th><th>Abertura</th><th>Fechamento</th><th>Pedidos</th><th>Entradas</th><th>Saídas</th><th></th></tr></thead><tbody>
+        ${lista.length ? lista.map(c => { const r = c.relatorio; return `<tr><td>${new Date(c.aberto_em).toLocaleDateString('pt-BR')}</td><td>${hora(c.aberto_em)} · ${esc(c.aberto_por)}</td><td>${c.fechado_em ? `${hora(c.fechado_em)} · ${esc(c.fechado_por || '')}` : '<span class="tag ok">Aberto</span>'}</td><td>${r ? r.entradas.qtd : '—'}</td><td>${r ? brl(r.entradas.total) : '—'}</td><td>${r ? brl(r.saidas.total) : '—'}</td><td><button class="btn sm ghost" type="button" data-cxver="${c.id}">Ver relatório</button></td></tr>`; }).join('') : '<tr><td colspan="7">Nenhum caixa neste período. Abra o caixa em Venda no balcão.</td></tr>'}</tbody></table></div>`;
+  }
+  const _rgC = renderGestao; renderGestao = function(){ const r = _rgC.apply(this, arguments); if (gesAtual === 'caixa'){ document.querySelectorAll('[data-g]').forEach(d => d.hidden = d.dataset.g !== 'caixa'); pinta(); } return r; };
+
+  document.addEventListener('click', e => { const t = e.target; if (!t.closest) return;
+    const b = t.closest('[data-cx]'); if (b){ const a = b.dataset.cx;
+      if (a === 'abrir') return abrirForm('abrir');
+      if (a === 'fechar'){ if (!CX.atual) return; return abrirForm('fechar'); }
+      if (a === 'cancelar'){ CX.form = null; return pintaTudo(); }
+      if (a === 'confirmar') return confirmar();
+      if (a === 'lista'){ CX.ver = null; return pinta(); }
+      if (a === 'pdf'){ const c = CX.lista.find(x => x.id === CX.ver); if (c) relDe(c).then(r => imprimir(c, r)); return; } }
+    const v = t.closest('[data-cxver]'); if (v){ CX.ver = +v.dataset.cxver; pinta(); window.scrollTo(0, 0); return; }
+    const p = t.closest('[data-cxper]'); if (p){ const k = p.dataset.cxper, h = new Date(), iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      if (!k){ CX.de = ''; CX.ate = ''; } else if (k === 'mes'){ CX.de = iso(new Date(h.getFullYear(), h.getMonth(), 1)); CX.ate = iso(h); } else { const d = new Date(h); d.setDate(d.getDate() - (+k - 1)); CX.de = iso(d); CX.ate = iso(h); }
+      return pinta(); }
+  });
+  document.addEventListener('change', e => { const t = e.target; if (t.id === 'cxDe'){ CX.de = t.value; pinta(); } if (t.id === 'cxAte'){ CX.ate = t.value; pinta(); } });
+  document.addEventListener('input', e => { const t = e.target; if (CX.form && t.id === 'cxNome') CX.form.nome = t.value; if (CX.form && t.id === 'cxObs') CX.form.obs = t.value; });
+  /* outra aba abriu/fechou o caixa */
+  try { sb.channel('caixas-adm').on('postgres_changes', {event:'*', schema:'public', table:'caixas'}, () => { CX.carregado && carrega(); }).subscribe(); } catch(e){}
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && CX.carregado) carrega(); });
+  const st = document.createElement('style'); st.textContent = CSSREL + `
+    #g-pdv .cx-st{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    #g-pdv .cx-form{border:1.5px solid #2F6DA8}
+    @media (max-width:700px){.cx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#g-caixa .cx-tab{display:block;overflow-x:auto;white-space:nowrap}#g-caixa .cx-rel .cx-tab{display:block;overflow-x:auto;white-space:nowrap}}`;
+  document.head.appendChild(st);
+}
 </script>
 
 </body>
