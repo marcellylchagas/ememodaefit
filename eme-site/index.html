@@ -6156,6 +6156,8 @@ function marcaSalvo(s){ const el = $('#sbSalvo'); if (!el) return; el.dataset.s 
 { const top = $('.top .tp .r'); if (top) top.insertAdjacentHTML('afterbegin', '<span class="sb-salvo" id="sbSalvo" hidden>Tudo salvo</span>'); }
 var painelMexeu = true; ['input','change','click','drop','keyup'].forEach(ev => document.addEventListener(ev, () => { painelMexeu = true; }, {capture:true, passive:true}));
 setInterval(() => { if (!sbAdmin || !fotoAnt || !painelMexeu) return; painelMexeu = false; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 1500);
+/* rede de segurança: a cada 4 segundos confere se ficou alguma mudança sem ir para o Supabase (mesmo sem clique) e salva */
+setInterval(() => { if (!sbAdmin || !fotoAnt || salvando) return; const ag = retrato(); if (J(ag) !== J(fotoAnt)){ marcaSalvo('salvando'); salvarAgora(); } }, 4000);
 window.addEventListener('beforeunload', e => { if (sbAdmin && fotoAnt && J(retrato()) !== J(fotoAnt)){ salvarAgora(); e.preventDefault(); e.returnValue = ''; } });
 { const _rg3 = renderGestao; renderGestao = function(){ _rg3(); const s = $('#sbSalvo'), b = $('[data-sairpainel]'); if (s) s.hidden = !sbAdmin; if (b) b.hidden = !sbAdmin; }; }
 
