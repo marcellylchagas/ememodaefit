@@ -2676,7 +2676,7 @@ function renderAparencia(){
         <div class="row2"><div class="field" style="margin-top:4px"><label for="bBtn${i}">Botão</label><input id="bBtn${i}" data-bbtn="${i}" value="${esc(b.btn)}"></div>
           <div class="field" style="margin-top:4px"><label for="bLink${i}">Leva para</label><select id="bLink${i}" data-blk="${i}"><option value="loja">Loja</option>${CATS.map(c=>`<option value="cat:${esc(catPath(c))}" ${b.link==='cat:'+catPath(c)?'selected':''}>${esc(catPath(c))}</option>`).join('')}</select></div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sm ghost" style="cursor:pointer">Enviar imagem<input type="file" accept="image/png,image/jpeg,image/webp" data-bimg="${i}" hidden></label>
-          <button class="btn sm ghost" data-bon="${i}">${b.on?'Pausar':'Ativar'}</button><button class="btn sm ghost" data-bup="${i}" aria-label="Subir banner">↑</button><button class="btn sm ghost" data-bdel="${i}">Excluir</button></div></div>`).join('')}
+          <button class="btn sm bn-salvar" data-bsalvar="${i}">Salvar</button><button class="btn sm ghost" data-bon="${i}">${b.on?'Pausar':'Ativar'}</button><button class="btn sm ghost" data-bup="${i}" aria-label="Subir banner">↑</button><button class="btn sm ghost" data-bdel="${i}">Excluir</button></div></div>`).join('')}
       <button class="btn sm" style="margin-top:10px" data-bnovo>Novo banner</button>
       <p class="example">Tamanho recomendado: 1950 × 810 pixels, a mesma proporção dos banners atuais.</p></div>
     <div class="panel"><div class="lbl" style="margin-top:0">Faixa preta no topo da loja · avisos (${ap.infos.length}/8)</div>
@@ -8650,6 +8650,14 @@ function bannersCompactos(box){ const pn = [...box.children].find(x => /^Banners
     if (!c.dataset.bn){ c.dataset.bn = id; const pv = [...c.children].find(x => x !== h && x.querySelector && (x.matches('img') || x.querySelector('img'))); if (pv) pv.classList.add('bn-prev');
       h.classList.add('bn-h'); h.insertAdjacentHTML('beforeend', `<span class="bn-acts"><button type="button" class="btn sm ghost bn-tg" data-bntg>Editar</button><button type="button" class="btn sm ghost bn-del" data-bnexc="${i}">Excluir</button></span>`); }
     const aberto = BN_ABERTO.has(c.dataset.bn); c.classList.toggle('bn-fecha', !aberto); const tg = c.querySelector('[data-bntg]'); if (tg) tg.textContent = aberto ? 'Fechar' : 'Editar'; }); }
+document.addEventListener('click', async e => { const b = e.target.closest('[data-bsalvar]'); if (!b) return; e.stopPropagation();
+  const i = +b.dataset.bsalvar, bn = ap.banners[i]; if (!bn) return; const c = b.closest('.cup');
+  if (c){ const v = sel => c.querySelector(sel)?.value; const tt = v('[data-btit]'), sb2 = v('[data-bsub]'), bt = v('[data-bbtn]');
+    if (tt != null) bn.tit = tt; if (sb2 != null) bn.sub = sb2; if (bt != null) bn.btn = bt; }
+  b.disabled = true; b.textContent = 'Salvando…';
+  try { if (typeof salvarAgora === 'function') await salvarAgora(); renderBanner(); toast(`${bn.tit || 'Banner'} salvo.`);
+    if (c?.dataset.bn) BN_ABERTO.delete(c.dataset.bn); renderAparencia(); if (typeof aplicaSub === 'function') aplicaSub(); { const g = document.querySelector('[data-g="aparencia"]'); if (g) bannersCompactos(g); } }
+  catch(err){ console.error(err); toast('Não consegui salvar agora. Tente de novo.'); b.disabled = false; b.textContent = 'Salvar'; } }, true);
 document.addEventListener('click', e => { const b = e.target.closest('[data-bnexc]'); if (!b) return; e.stopPropagation();
   if (!b.dataset.ok){ b.dataset.ok = '1'; b.textContent = 'Confirmar exclusão'; b.classList.add('perigo'); b.classList.remove('ghost'); setTimeout(() => { if (b.isConnected && b.dataset.ok){ delete b.dataset.ok; b.textContent = 'Excluir'; b.classList.remove('perigo'); b.classList.add('ghost'); } }, 5000); return; }
   const i = +b.dataset.bnexc; if (!ap.banners[i]) return; const nome = ap.banners[i].tit || 'Banner'; ap.banners.splice(i, 1); BN_ABERTO.clear(); bIdx = 0;
