@@ -9714,7 +9714,7 @@ body.sac-on #coTimer:empty{display:none}
 .gtabs button{flex:0 0 auto;border:0;background:none;padding:10px 14px 11px;font:600 13.5px var(--body);color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:color .2s,border-color .2s}
 .gtabs button:hover{color:var(--ink)}
 .gtabs button[aria-selected="true"]{color:#141113;border-bottom-color:#2F6DA8}
-.app.wide #s-gestao > .gtabs{grid-column:1/-1}
+@media (min-width:901px){.app.wide #s-gestao{grid-template-rows:auto auto 1fr!important;align-items:start}.app.wide #s-gestao > .ptitle{grid-column:2!important;grid-row:1!important}.app.wide #s-gestao > .gtabs{grid-column:2!important;grid-row:2!important}.app.wide #s-gestao > aside{grid-row:1 / span 3!important}.app.wide #s-gestao > aside + div{grid-column:2!important;grid-row:3!important}}/* v130 titulo na coluna */
 .subabas{margin-top:0}
 @media (max-width:760px){ .gtabs{margin:6px -16px 12px;padding:0 12px} .gtabs button{padding:9px 11px 10px;font-size:13px} }`; document.head.appendChild(st);
   try { if (!$('#s-gestao').hidden) renderGestao(); } catch(_){} }
