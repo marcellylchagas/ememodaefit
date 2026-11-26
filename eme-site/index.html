@@ -9599,9 +9599,12 @@ body.sac-on #coTimer:empty{display:none}
   window.salvarTudo = salvarTudo;
   document.addEventListener('click', e => { const b = e.target.closest('[data-salvartudo]'); if (b){ e.preventDefault(); salvarTudo(b); } });
   /* topo do painel */
-  setInterval(() => { const r = document.querySelector('.app.painel .top .tp .r'); if (!r) return; let b = r.querySelector('.salvar-topo');
-    if (!b){ r.insertAdjacentHTML('afterbegin', '<button class="btn sm salvar-topo" type="button" data-salvartudo>Salvar</button>'); b = r.querySelector('.salvar-topo'); }
-    const sair = r.querySelector('.sair-btn, [data-sairpainel]'); if (sair && sair.previousElementSibling !== b) sair.before(b); }, 500);
+  /* botão Salvar padrão: no topo de cada tela, ao lado dos botões da tela (ex.: Exportar para o UpSeller) */
+  setInterval(() => { document.querySelectorAll('.salvar-topo').forEach(x => { if (x.closest('.top')) x.remove(); });
+    const pt = document.querySelector('.app.painel #s-gestao > .ptitle'); if (!pt) return; let ac = pt.querySelector(':scope > .pacts');
+    if (!ac){ pt.insertAdjacentHTML('beforeend', '<div class="pacts"></div>'); ac = pt.querySelector(':scope > .pacts'); }
+    if (!ac.querySelector('[data-salvartudo]')) ac.insertAdjacentHTML('afterbegin', '<button class="btn sm salvar-tela" type="button" data-salvartudo>Salvar</button>');
+    else if (ac.firstElementChild && !ac.firstElementChild.matches('[data-salvartudo]')) ac.prepend(ac.querySelector('[data-salvartudo]')); }, 300);
   /* fim de cada tela do painel */
   const _rgS = renderGestao; renderGestao = function(){ const r = _rgS.apply(this, arguments);
     setTimeout(() => { const box = document.querySelector(`[data-g="${gesAtual}"]`); if (!box || box.querySelector(':scope > .salvar-bar')) return;
@@ -9615,7 +9618,9 @@ body.sac-on #coTimer:empty{display:none}
 .salvar-info{font-size:12.5px;color:var(--muted)}
 .salvar-btn{min-width:170px}
 .sheet-bar{bottom:0;margin-top:14px}
-.salvar-topo{font-weight:800}
+.salvar-tela{font-weight:800}
+.app.painel #s-gestao > .ptitle{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.app.painel #s-gestao > .ptitle > .pacts{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 @media (max-width:760px){ .salvar-bar{bottom:76px} .salvar-info{font-size:11.5px} .salvar-btn{min-width:0;flex:0 0 auto} }`; document.head.appendChild(st); }
 
 /* v125 · cada bloco de configuração funciona como o "Endereço de origem": fica travado mostrando o que está salvo;
