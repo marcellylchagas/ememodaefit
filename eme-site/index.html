@@ -3451,7 +3451,7 @@ function salvarForm(){
   else if (PRODUTOS.some(p => p.sku===pf.sku && p.id!==pf.id)) m = 'Já existe um produto com esse SKU.';
   else if (!cores.length) m = 'Adicione pelo menos uma cor.';
   err.hidden = !m; err.textContent = m; if (m) return;
-  const dados = {precoManual: pf.precoManual && Math.abs(preco - precoRegra(custo||0)) > 0.009, n:pf.n.trim(), tipo:pf.tipo, status:pf.status, grupo:pf.grupo, c:pf.c, desc:pf.desc.trim(), custo:custo||0, preco, promo:promo||null, sku:pf.sku, est:pf.est, personal:pf.personal, tags:pf.tags, peso: parseInt(pf.peso)>0 ? parseInt(pf.peso) : null, grupo:(()=>{ let c = catByNome(pf.c); while (c && c.pai) c = catById(c.pai); return c ? c.nome : ''; })()};
+  const dados = {precoManual: pf.precoManual && Math.abs(preco - precoRegra(custo||0)) > 0.009, n:pf.n.trim(), tipo:pf.tipo, status:pf.status, c:pf.c, desc:pf.desc.trim(), custo:custo||0, preco, promo:promo||null, sku:pf.sku, est:pf.est, personal:pf.personal, tags:pf.tags, peso: parseInt(pf.peso)>0 ? parseInt(pf.peso) : null, grupo:(()=>{ let c = catByNome(pf.c); while (c && c.pai) c = catById(c.pai); return c ? c.nome : ''; })()};
   if (pf.id) Object.assign(prod(pf.id), dados);
   else { const id = slug(dados.n) + '-' + Date.now().toString(36); PRODUTOS.push({id, ...dados}); }
   fecharSheet(); renderCats(); renderProdutos(); renderProdAdm(); toast(pf.id ? 'Produto salvo.' : 'Produto criado.'); pf = null;
@@ -6899,7 +6899,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-bulk
 /* ---------- botão Voltar do navegador: volta para a tela, a página do painel ou fecha a janela aberta ---------- */
 { let restaurando = false, voltandoModal = false, ultimoPop = 0;
   const estado = () => ({tela: telaAtual, ges: telaAtual==='gestao' ? gesAtual : null, cat: telaAtual==='loja' ? catAtual : null});
-  const urlDe = s => s.tela==='gestao' ? '#painel' : location.pathname + location.search;
+  const urlDe = s => s.tela==='gestao' ? '#painel' : (/^\/painel(\/|$)/.test(location.pathname) ? location.pathname : '/') + location.search; /* v137: telas da loja não herdam o link da peça */
   const igual = (a, b) => a && b && a.tela===b.tela && a.ges===b.ges && a.cat===b.cat;
   const empurra = () => { if (restaurando) return; const s = estado(), h = history.state; if (h && h.modal){ if (!igual(h, s)) history.replaceState(s, '', urlDe(s)); return; } if (igual(h, s)) return; history.pushState(s, '', urlDe(s)); };
   try { history.replaceState(estado(), '', location.href); } catch(_){}
@@ -7431,6 +7431,7 @@ if (sbOn()){
     const t = conta.logada ? (primeiroNome() ? `Olá, ${primeiroNome()}` : 'Minha conta') : 'Entrar';
     document.querySelectorAll('.top .bagbtn[data-go="conta"]').forEach(b => { let s = b.querySelector('.h-entrar'); if (!s){ b.insertAdjacentHTML('beforeend', '<span class="h-entrar"></span>'); s = b.querySelector('.h-entrar'); b.classList.add('com-txt'); } s.textContent = t; b.setAttribute('aria-label', conta.logada ? 'Minha conta' : 'Entrar ou criar conta'); });
     document.querySelectorAll('.tab[data-go="conta"]').forEach(b => { const n = [...b.childNodes].find(x => x.nodeType===3 && x.textContent.trim()); if (n) n.textContent = conta.logada ? (primeiroNome() || 'Conta') : 'Entrar'; }); }
+  window.marcaEntrar = marcaEntrar;
   { const _rcE = renderConta; renderConta = function(){ _rcE(); marcaEntrar(); }; }
   setInterval(marcaEntrar, 1500); marcaEntrar();
 
@@ -9753,7 +9754,8 @@ body.sac-on #coTimer:empty{display:none}
   #g-pdv .pdv-opc button:disabled{opacity:.4;cursor:not-allowed}
   #g-pdv .pdv-opc.tam button{font-weight:600;font-size:15px;padding:10px 14px}
   #g-pdv .pdv-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
-  @media (max-width:900px){#g-pdv .pdv-wrap{grid-template-columns:1fr}#g-pdv .pdv-side{position:static}#g-pdv .pdv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#g-pdv .pdv-det{grid-template-columns:110px minmax(0,1fr)}}`;
+  #g-pdv .pdv-main,#g-pdv .pdv-side{min-width:0}
+  @media (max-width:900px){#g-pdv .pdv-wrap{grid-template-columns:minmax(0,1fr)}#g-pdv .pdv-side{position:static}#g-pdv .pdv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#g-pdv .pdv-det{grid-template-columns:110px minmax(0,1fr)}}`;
   document.head.appendChild(st);
 
   renderPDV = function(){
@@ -10044,6 +10046,16 @@ function instalandoLoja(){
 #instLoja .il-pct{font-size:28px;font-weight:700;color:#2F6DA8;font-variant-numeric:tabular-nums}
 #instLoja .il-txt{margin:0;font-size:14px;color:#55505a;line-height:1.45}
 #instLoja .il-ok{margin-top:6px}`; document.head.appendChild(st); }
+
+/* v137 · horário da retirada sempre igual ao horário da loja (Configurações › Horário) */
+setInterval(() => { try {
+  if (typeof sbAdmin === 'undefined' || !sbAdmin || typeof ENTREGA === 'undefined' || !ENTREGA.retirada) return;
+  const d = horarioDesc(); if (!d || !d.curta) return;
+  const atual = String(ENTREGA.retirada.horario || '');
+  if (atual === d.curta || (atual && !/\d\s*h/i.test(atual))) return; /* texto livre sem hora fica como a loja escreveu */
+  ENTREGA.retirada.horario = d.curta;
+  const inp = document.getElementById('entRetH'); if (inp && document.activeElement !== inp) inp.value = d.curta;
+} catch(e){} }, 3000);
 </script>
 
 </body>
