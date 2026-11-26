@@ -1391,6 +1391,15 @@ body{background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlig
 .sf-brand .logo-eme{height:86px;margin-bottom:10px}
 @media (max-width:760px){ .app .top .tl .brand img.logo-eme{height:56px;max-width:140px;margin:-6px 0} }
 
+/* v103 · todos os botões na cor da EME: azul claro do logo com letra preta */
+:root{--btn-eme:#C5E4FD;--btn-eme-h:#AED7FA}
+.btn,.btn.ghost,.btn.rose,.btn.dark,.hero .btn,.fx-d .btn,.bulk .btn,.app .btn,.app.painel .btn,.app:not(.painel) .btn,#coBody .btn,.veil .btn{background:var(--btn-eme)!important;color:#141113!important;border-color:transparent!important}
+.btn:hover:not(:disabled){background:var(--btn-eme-h)!important}
+.btn svg{color:#141113}
+.btn.perigo{background:var(--bad)!important;color:#fff!important}
+.arr2,.hero .arr2{background:var(--btn-eme)!important;color:#141113!important}
+.subabas button.on,.subabas [aria-selected="true"]{background:var(--btn-eme)!important;color:#141113!important}
+
 /* ===== versão pública: só a loja ===== */
 .app:not(.painel) [data-go="gestao"],.sdrawer [data-go="gestao"],.proto,.app:not(.painel) .example{display:none!important}
 </style>
@@ -8182,8 +8191,11 @@ function MelVideo(box, base){
   gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, `precision mediump float; varying vec2 v; uniform sampler2D t; uniform float o; uniform vec3 cA; uniform vec3 cB; uniform float tA; uniform float tB; uniform float rv; uniform float gw; uniform float ph;
     vec3 hsv(vec3 c){ vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0); vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g)); vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r)); float d = q.x - min(q.w, q.y); return vec3(abs(q.z + (q.w - q.y) / (6.0*d + 1e-5)), d / (q.x + 1e-5), q.x); }
     void main(){ float y = v.y / 3.0; vec3 c = texture2D(t, vec2(v.x, y)).rgb; float a = texture2D(t, vec2(v.x, 1.0/3.0 + y)).r; float mr = texture2D(t, vec2(v.x, 2.0/3.0 + y)).r;
+      float nr = mr; for (int i = 0; i < 8; i++){ float ang = float(i) * 0.785398; vec2 dv = vec2(cos(ang) * 0.042, sin(ang) * 0.025); nr = max(nr, texture2D(t, vec2(v.x + dv.x, 2.0/3.0 + clamp(v.y + dv.y, 0.0, 0.999) / 3.0)).r); nr = max(nr, texture2D(t, vec2(v.x + dv.x * 0.5, 2.0/3.0 + clamp(v.y + dv.y * 0.5, 0.0, 0.999) / 3.0)).r); }
       a = smoothstep(0.03, 0.97, a); mr = smoothstep(0.12, 0.88, mr);
       vec3 u = c / max(a, 0.02); vec3 h = hsv(u);
+      float pano = smoothstep(-0.085, -0.045, u.b - u.g) * smoothstep(0.06, 0.11, u.r - u.g) * (1.0 - smoothstep(0.27, 0.33, u.r - u.g)) * smoothstep(0.6, 0.75, max(u.r, max(u.g, u.b)));
+      mr = max(mr, pano * smoothstep(0.3, 0.7, nr));
       float L = dot(cA, vec3(.299,.587,.114));
       float sh = clamp(h.z / rv, 0.0, 1.3);
       vec3 n = cA * pow(sh, mix(1.35, 0.85, smoothstep(0.08, 0.8, L)));
