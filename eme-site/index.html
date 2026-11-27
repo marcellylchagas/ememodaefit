@@ -4496,7 +4496,7 @@ function posProduto(){
 /* ================= eventos (app de compras) ================= */
 document.addEventListener('click', e => {
   const t = e.target;
-  if (t.closest('[data-gosearch]')){ vitrine = 'produtos'; mostrar('loja'); try { $('#busca')?.focus({preventScroll:true}); } catch(_){} setTimeout(()=>{ const b = $('#busca'); if (b && document.activeElement !== b) b.focus(); }, 60); return; } /* v142: foco na hora (o teclado abre no iPhone e nada do que for digitado se perde) */
+  if (t.closest('[data-gosearch]')){ vitrine = 'produtos'; mostrar('loja'); try { $('#s-loja')?.classList.add('buscando'); $('#busca')?.focus({preventScroll:true}); } catch(_){} setTimeout(()=>{ const b = $('#busca'); if (b && document.activeElement !== b) b.focus(); }, 60); return; } /* v142: foco na hora (o teclado abre no iPhone e nada do que for digitado se perde) */
   const g = t.closest('[data-gal]'); if (g && pd){ galIdx = Math.max(0, galIdx + Number(g.dataset.gal) + Math.max(1, prod(pd.id).fotos||3)); return renderSheet(); }
   if (t.closest('[data-pdcep]') && pd){ const v = $('#pdCep').value; co.cep = v; const p = prod(pd.id); const ops = opcoesFrete(v, precoAtual(p)*pd.qtd);
     $('#pdFrete').innerHTML = ops.length ? `<div class="panel" style="margin-top:8px">${ops.map(o=>`<div class="ship" style="padding:8px 0"><div class="d"><b>${esc(o.n)}</b><span>${esc(o.prazo)}</span></div><b>${o.v?brl(o.v):(o.orig?'Grátis':'R$ 0,00')}</b></div>`).join('')}<p class="example" style="margin:6px 0 0">Valores de exemplo.</p></div>` : '<div class="err">Digite um CEP com 8 números.</div>'; return; }
