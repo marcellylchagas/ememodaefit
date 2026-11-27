@@ -10213,6 +10213,105 @@ reFrete = function(){
     if (id){ const n = document.getElementById(id); if (n && n !== document.activeElement){ n.focus({preventScroll:true}); try { if (ini != null) n.setSelectionRange(ini, fim); } catch(_){} } }
     const sc = document.querySelector('#s-sacola'); if (sc && y != null) sc.scrollTop = y;
   } else if (typeof pd !== 'undefined' && pd && $('#pdFrete') && !$('#veil').hidden) document.querySelector('[data-pdcep]')?.click(); };
+
+/* v144 · novidades no celular das clientes (peça nova, voltou ao estoque, cupom, oferta e avisos da loja) */
+if (sbOn()){
+  const NV = {estado:null, chave:null, ocupado:false};
+  const suporta = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const lsg = k => { try { return localStorage.getItem(k); } catch(_){ return null; } }, lss = (k, v) => { try { localStorage.setItem(k, v); } catch(_){} };
+  const nomeAp = () => { const u = navigator.userAgent; return /iPhone/.test(u) ? 'iPhone' : /iPad/.test(u) ? 'iPad' : /Android/.test(u) ? 'Celular Android' : /Windows/.test(u) ? 'Computador Windows' : /Mac/.test(u) ? 'Mac' : 'Aparelho'; };
+  const b64 = s => { const t = s.replace(/-/g, '+').replace(/_/g, '/'); const p = t + '='.repeat((4 - t.length % 4) % 4); return Uint8Array.from(atob(p), c => c.charCodeAt(0)); };
+  async function regLoja(){ await navigator.serviceWorker.register('/sw.js'); const r = await navigator.serviceWorker.getRegistration('/'); return r; }
+  async function chave(){ if (NV.chave) return NV.chave; const r = await sb.functions.invoke('notificar', {body:{acao:'chave'}}); NV.chave = r && r.data && r.data.publica; return NV.chave; }
+  async function inscricao(criar){ const reg = await regLoja(); if (!reg) return null; let s = await reg.pushManager.getSubscription();
+    if (!s && criar){ const k = await chave(); if (!k) return null; s = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64(k)}); } return s; }
+  async function salva(ativo, criar){ const s = await inscricao(criar); if (!s) return false; const j = s.toJSON();
+    const r = await sb.rpc('cliente_push', {endpoint:j.endpoint, dados:j, ativo, aparelho:nomeAp()}); if (r.error) throw r.error; NV.estado = ativo; return true; }
+  async function confere(){ if (!suporta() || !conta.logada || sbAdmin) return; try {
+      if (Notification.permission !== 'granted'){ NV.estado = Notification.permission === 'denied' ? 'bloq' : false; return; }
+      const s = await inscricao(false);
+      if (!s){ if (lsg('emeNovDesl') !== '1'){ await salva(true, true); } else NV.estado = false; return; } /* permissão dada e sem cadastro: cadastra sozinho */
+      const r = await sb.rpc('cliente_push_estado', {endpoint:s.endpoint}); if (r.data === null || r.data === undefined){ if (lsg('emeNovDesl') !== '1') await salva(true, false); else NV.estado = false; } else NV.estado = !!r.data;
+    } catch(e){ console.warn('novidades', e); } finally { pinta(); } }
+  async function liga(){ if (NV.ocupado) return; NV.ocupado = true; pinta();
+    try { const p = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+      if (p !== 'granted'){ NV.estado = p === 'denied' ? 'bloq' : false; toast(p === 'denied' ? 'As notificações estão bloqueadas nas configurações do celular.' : 'Tudo bem, você pode ativar depois em Minha conta.'); return; }
+      await salva(true, true); lss('emeNovDesl', '0'); toast('Pronto! Você vai receber as novidades da EME no celular.');
+    } catch(e){ toast('Não deu para ativar agora. Tente de novo.'); } finally { NV.ocupado = false; pinta(); } }
+  async function desliga(){ if (NV.ocupado) return; NV.ocupado = true; pinta();
+    try { await salva(false, false); lss('emeNovDesl', '1'); toast('Pronto, você não vai mais receber as novidades.'); } catch(e){ toast('Não deu para desligar agora. Tente de novo.'); } finally { NV.ocupado = false; pinta(); } }
+  function cartao(){ const st = NV.estado;
+    const txt = !suporta() ? (/iPhone|iPad/.test(navigator.userAgent) ? 'No iPhone: instale o app da EME (Compartilhar › Adicionar à Tela de Início), abra pelo ícone e ative aqui.' : 'Este navegador não recebe notificações.')
+      : st === 'bloq' ? 'Bloqueadas nas configurações do celular. Para receber, libere as notificações deste site/app nas configurações.'
+      : st === true ? 'Ativas neste aparelho. Você recebe novos looks, peças que voltaram, cupons e novidades da loja (no máximo 1 por dia).'
+      : 'Desligadas neste aparelho.';
+    const bt = !suporta() || st === 'bloq' ? '' : st === true ? `<button class="btn sm ghost" type="button" data-nov="off" ${NV.ocupado?'disabled':''}>Desligar</button>` : `<button class="btn sm" type="button" data-nov="on" ${NV.ocupado?'disabled':''}>Ativar novidades</button>`;
+    return `<div class="panel nov-card" id="novCard"><div class="nov-h"><span aria-hidden="true">🔔</span><div><b>Novidades no celular</b><p class="note" style="margin:2px 0 0">${esc(txt)}</p></div></div>${bt ? `<div style="margin-top:10px">${bt}</div>` : ''}</div>`; }
+  function pinta(){ const box = document.getElementById('contaBody'); if (!box || !conta.logada || sbAdmin) return; const c = document.getElementById('novCard'); const h = cartao();
+    if (c){ if (c.outerHTML !== h) c.outerHTML = h; } else box.insertAdjacentHTML('afterbegin', h); }
+  { const _rc = renderConta; renderConta = function(){ const r = _rc.apply(this, arguments); try { pinta(); } catch(_){} return r; }; }
+  /* depois do cadastro/entrada: pergunta uma vez, com um toque (o celular só deixa pedir permissão com um toque da cliente) */
+  function convite(){ if (!suporta() || !conta.logada || sbAdmin || Notification.permission !== 'default' || lsg('emeNovPerg') || document.getElementById('novConvite')) return;
+    lss('emeNovPerg', '1');
+    document.body.insertAdjacentHTML('beforeend', `<div class="nov-conv" id="novConvite" role="dialog" aria-label="Novidades no celular"><b>Quer saber das novidades primeiro? ✨</b><p>Receba no celular os novos looks, as peças que voltaram ao estoque e os cupons da EME. No máximo 1 aviso por dia.</p><div class="nov-b"><button class="btn sm" type="button" data-nov="sim">Quero receber</button><button class="btn sm ghost" type="button" data-nov="nao">Agora não</button></div></div>`);
+    requestAnimationFrame(() => document.getElementById('novConvite')?.classList.add('on')); }
+  const fechaConv = () => { const c = document.getElementById('novConvite'); if (c){ c.classList.remove('on'); setTimeout(() => c.remove(), 250); } };
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-nov]'); if (!b) return; const a = b.dataset.nov;
+    if (a === 'on' || a === 'sim'){ fechaConv(); liga(); } else if (a === 'off') desliga(); else if (a === 'nao'){ fechaConv(); } });
+  let jaConferiu = '';
+  setInterval(() => { if (typeof conta === 'undefined' || !conta.logada || sbAdmin) return; const k = String(conta.email || ''); if (jaConferiu !== k){ jaConferiu = k; confere(); setTimeout(convite, 2500); } }, 2000);
+  const st = document.createElement('style'); st.textContent = `
+    .nov-card .nov-h{display:flex;gap:10px;align-items:flex-start}.nov-card .nov-h span{font-size:20px;line-height:1.2}
+    .nov-conv{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:70;max-width:420px;margin:0 auto;background:var(--surface,#fff);border:1px solid var(--line,#e4e0d8);border-radius:16px;padding:14px 16px;box-shadow:0 18px 40px -16px rgba(0,0,0,.35);transform:translateY(20px);opacity:0;transition:transform .3s,opacity .3s}
+    .nov-conv.on{transform:none;opacity:1}.nov-conv p{margin:6px 0 10px;font-size:13.5px;color:var(--soft,#5c5660)}.nov-conv .nov-b{display:flex;gap:8px}`;
+  document.head.appendChild(st);
+}
+
+/* v144 · painel › Marketing › Avisos às clientes */
+if (sbOn()){
+  var AVCLI = {novidade:true, estoque:true, cupom:true, oferta:true};
+  CONFIG.avisos_cli = {pub:false, get:() => AVCLI, set:v => { if (v && typeof v === 'object') ['novidade','estoque','cupom','oferta'].forEach(k => { if (typeof v[k] === 'boolean') AVCLI[k] = v[k]; }); }};
+  const AV = {lista:[], inscritas:null, carregado:false, carregando:false, aviso:'', enviando:false};
+  if (!GES.some(g => g[0] === 'avisos')) GES.push(['avisos', 'Avisos às clientes']);
+  { const g = GRUPOS.find(x => x[0] === 'Marketing'); if (g && !g[1].includes('avisos')) g[1].push('avisos'); }
+  if (!document.getElementById('g-avisos')) document.getElementById('gesMain')?.insertAdjacentHTML('beforeend', '<div data-g="avisos" id="g-avisos" hidden></div>');
+  const NOMET = {novidade:'Peça nova publicada', estoque:'Peça voltou ao estoque', cupom:'Cupom novo ativado', oferta:'Oferta relâmpago ligada', manual:'Aviso da loja'};
+  async function carrega(){ if (AV.carregando || !sbAdmin) return; AV.carregando = true;
+    try { const [a, c] = await Promise.all([sb.from('avisos_clientes').select('*').order('criado_em', {ascending:false}).limit(60), sb.from('clientes_push').select('endpoint', {count:'exact', head:true}).eq('ativo', true)]);
+      AV.lista = a.data || []; AV.inscritas = c.count ?? 0; AV.carregado = true; } catch(e){ console.warn(e); } AV.carregando = false; pinta(); }
+  const hojeEnviado = () => AV.lista.some(a => a.status === 'enviado' && a.enviado_em && Date.now() - new Date(a.enviado_em).getTime() < 20 * 3600e3);
+  const dt = d => new Date(d).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+  function pinta(){ const box = document.getElementById('g-avisos'); if (!box || gesAtual !== 'avisos') return; if (!AV.carregado){ box.innerHTML = '<div class="panel"><p class="note">Carregando…</p></div>'; carrega(); return; }
+    const pend = AV.lista.filter(a => a.status === 'pendente' && a.tipo !== 'manual'), env = AV.lista.filter(a => a.status === 'enviado');
+    const opts = PRODUTOS.filter(p => p.status === 'Publicado').map(p => `<option value="/${esc(slug(p.n))}">${esc(p.n)}</option>`).join('');
+    box.innerHTML = `
+      <div class="grid2"><div class="card"><div class="k">Clientes que recebem</div><div class="v">${AV.inscritas}</div></div><div class="card"><div class="k">Próximo envio automático</div><div class="v" style="font-size:18px">${pend.length ? 'Hoje às 12h' : 'Sem novidades na fila'}</div></div></div>
+      <div class="panel"><div class="lbl" style="margin-top:0">Avisos automáticos</div><p class="note" style="margin:0 0 8px">As novidades do dia viram um aviso só, enviado às 12h. No máximo 1 por dia.</p>
+        ${['novidade','estoque','cupom','oferta'].map(k => `<label class="switch"><span class="d"><b>${NOMET[k]}</b></span><input type="checkbox" data-avcli="${k}" ${AVCLI[k] ? 'checked' : ''}></label>`).join('')}</div>
+      <form class="panel" id="avForm" novalidate><div class="lbl" style="margin-top:0">Escrever um aviso (novos looks, ferramenta nova, promoção…)</div>
+        <div class="field"><label for="avTit">Título</label><input id="avTit" maxlength="60" placeholder="Ex.: Coleção nova no ar ✨"></div>
+        <div class="field"><label for="avTxt">Mensagem</label><textarea id="avTxt" maxlength="180" rows="3" placeholder="Ex.: Chegaram os conjuntos de inverno. Vem conferir!"></textarea></div>
+        <div class="field"><label for="avUrl">Ao tocar, abre</label><select id="avUrl"><option value="/">A loja (página inicial)</option><option value="/#loja">Todos os produtos</option>${opts}</select></div>
+        ${hojeEnviado() ? '<p class="note" style="color:var(--warn,#9a6b1f)">Já saiu um aviso nas últimas 20 horas. Se enviar este, o resumo automático de amanhã continua normal.</p>' : ''}
+        ${AV.aviso ? `<p class="note">${esc(AV.aviso)}</p>` : ''}
+        <button class="btn full" type="submit" ${AV.enviando || !AV.inscritas ? 'disabled' : ''}>${AV.enviando ? 'Enviando…' : AV.inscritas ? `Enviar agora para ${AV.inscritas} cliente${AV.inscritas === 1 ? '' : 's'}` : 'Nenhuma cliente ativou ainda'}</button></form>
+      <div class="sec"><h2>Na fila para hoje</h2><span>${pend.length}</span></div>
+      <div class="panel">${pend.length ? pend.map(a => `<div class="ship"><div class="d"><b>${NOMET[a.tipo] || a.tipo}</b><span>${esc(a.tipo === 'cupom' ? a.ref : (prod(a.ref)?.n || a.ref || ''))} · ${dt(a.criado_em)}</span></div></div>`).join('') : '<p class="note">Nada na fila. Quando você publicar uma peça, reativar estoque, criar um cupom ou ligar a oferta relâmpago, aparece aqui.</p>'}</div>
+      <div class="sec"><h2>Enviados</h2><span>${env.length}</span></div>
+      <div class="panel">${env.length ? [...new Map(env.map(a => [a.enviado_em + '|' + (a.titulo||''), a])).values()].map(a => `<div class="ship"><div class="d"><b>${esc(a.titulo || NOMET[a.tipo] || '')}</b><span>${esc(a.texto || '')}</span><span>${dt(a.enviado_em)} · ${a.recebidos ?? 0} cliente${a.recebidos === 1 ? '' : 's'}</span></div></div>`).join('') : '<p class="note">Nenhum aviso enviado ainda.</p>'}</div>`; }
+  const _rgV = renderGestao; renderGestao = function(){ const r = _rgV.apply(this, arguments); if (gesAtual === 'avisos'){ document.querySelectorAll('[data-g]').forEach(d => d.hidden = d.dataset.g !== 'avisos'); pinta(); } return r; };
+  document.addEventListener('change', e => { const t = e.target; if (!t.dataset || !t.dataset.avcli) return; AVCLI[t.dataset.avcli] = t.checked; salvarAgora?.(); toast(t.checked ? 'Aviso automático ligado.' : 'Aviso automático desligado.'); });
+  document.addEventListener('submit', async e => { if (e.target.id !== 'avForm') return; e.preventDefault(); if (AV.enviando) return;
+    const titulo = $('#avTit').value.trim(), texto = $('#avTxt').value.trim(), url = $('#avUrl').value || '/';
+    if (!texto){ toast('Escreva a mensagem do aviso.'); $('#avTxt').focus(); return; }
+    AV.enviando = true; AV.aviso = ''; pinta();
+    try { const ins = await sb.from('avisos_clientes').insert({tipo:'manual', ref:'manual', titulo: titulo || 'EME Moda & Fit', texto, url}).select('id').single(); if (ins.error) throw ins.error;
+      const r = await sb.functions.invoke('notificar', {body:{acao:'clientes_manual', id: ins.data.id}}); if (r.error || !r.data || !r.data.ok) throw new Error((r.data && r.data.erro) || 'falhou');
+      AV.aviso = `Aviso enviado para ${r.data.ok} de ${r.data.total} aparelho${r.data.total === 1 ? '' : 's'}.`; toast('Aviso enviado!');
+    } catch(err){ AV.aviso = 'Não deu para enviar: ' + (err.message || err); }
+    AV.enviando = false; AV.carregado = false; await carrega(); });
+  try { sb.channel('avisos-adm-' + Math.random().toString(36).slice(2, 6)).on('postgres_changes', {event:'*', schema:'public', table:'avisos_clientes'}, () => { if (AV.carregado) carrega(); }).subscribe(); } catch(_){}
+}
 </script>
 
 </body>
