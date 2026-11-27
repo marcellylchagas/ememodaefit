@@ -29,18 +29,40 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="supabase.js"></script>
 <script>
-/* abrir o painel direto: sem mostrar a loja antes */
-if (/painel/.test(location.hash) || /^\/painel(\/|$)/.test(location.pathname)) document.documentElement.classList.add('modo-painel');
+/* v141 · bateria: rotinas repetidas param com a tela fechada/app em segundo plano e as muito rápidas ficam a cada 1 s depois do carregamento */
+(function(){ var nat = window.setInterval.bind(window), clr = window.clearInterval.bind(window), T0 = Date.now(), seq = 9e6, M = new Map();
+  window.setInterval = function(fn, ms){ var a = [].slice.call(arguments, 2); if (typeof fn !== 'function') return nat.apply(window, arguments);
+    ms = +ms || 0; var id = ++seq, src = ''; try { src = String(fn); } catch(e){}
+    var livre = /data-salvartudo/.test(src); /* botão Salvar do topo precisa aparecer na hora */
+    var run = function(){ if (document.hidden && !fn.__semPausa) return; try { fn.apply(window, a); } catch(e){ setTimeout(function(){ throw e; }); } };
+    var r = {nid: nat(run, ms)}; M.set(id, r);
+    if (!livre && ms >= 200 && ms < 1000) setTimeout(function(){ if (!M.has(id)) return; clr(r.nid); r.nid = nat(run, 1000); }, Math.max(0, 15000 - (Date.now() - T0)));
+    return id; };
+  window.clearInterval = function(id){ var r = M.get(id); if (r){ clr(r.nid); M.delete(id); return; } clr(id); };
+  /* economia: bateria fraca (20% ou menos, fora da tomada), modo economia de dados ou "reduzir movimento" */
+  var H = document.documentElement, rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
+  function marca(b){ var c = navigator.connection, e = !!(c && c.saveData) || !!(rm && rm.matches) || !!(b && !b.charging && b.level <= 0.2);
+    H.classList.toggle('economia', e); window.__economia = e; try { window.dispatchEvent(new Event('economia')); } catch(_){} }
+  marca(null); if (rm && rm.addEventListener) rm.addEventListener('change', function(){ marca(window.__bat); });
+  if (navigator.getBattery) navigator.getBattery().then(function(b){ window.__bat = b; marca(b); ['levelchange','chargingchange'].forEach(function(ev){ b.addEventListener(ev, function(){ marca(b); }); }); }).catch(function(){});
+})();
 </script>
 <style>
-html.modo-painel .app:not(.painel),html.modo-painel #mel,html.modo-painel .wa-fab,html.modo-painel #appConv,html.modo-painel #cookieBar,html.modo-painel .cookiebar{visibility:hidden!important}
-html.modo-painel body{background:#FCF8F1}
+html.economia *, html.economia *::before, html.economia *::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important;scroll-behavior:auto!important}
 
 /* ===== versão pública: só a loja ===== */
 .app:not(.painel) [data-go="gestao"],.sdrawer [data-go="gestao"],.proto,.app:not(.painel) .example{display:none!important}
 </style>
 </head>
 <body>
+<script>
+/* abrir o painel direto: sem mostrar a loja antes */
+if (/painel/.test(location.hash) || /^\/painel(\/|$)/.test(location.pathname)) document.documentElement.classList.add('modo-painel');
+</script>
+<style>
+html.modo-painel .app:not(.painel),html.modo-painel #mel,html.modo-painel .wa-fab,html.modo-painel #appConv,html.modo-painel #cookieBar,html.modo-painel .cookiebar{visibility:hidden!important}
+html.modo-painel body{background:#FCF8F1}
+</style>
 <script>
 /* app do painel: em /painel/ a página usa o manifesto, o ícone e o nome do painel e abre direto no painel */
 (function(){ if (!/^\/painel(\/|$)/.test(location.pathname)) return;
@@ -3843,7 +3865,7 @@ $('#copyCup').addEventListener('click', () => copiar('EME05','Cupom EME05 copiad
 
 let tick = 0;
 setInterval(() => {
-  tick++; if (tick%6===0 && !$('#s-inicio').hidden && !matchMedia('(prefers-reduced-motion: reduce)').matches && !$('#bannerBox').contains(document.activeElement)){ bIdx++; renderBanner(); }
+  tick++; if (tick%6===0 && !$('#s-inicio').hidden && !window.__economia && !matchMedia('(prefers-reduced-motion: reduce)').matches && !$('#bannerBox').contains(document.activeElement)){ bIdx++; renderBanner(); }
   if (!$('#s-inicio').hidden){ renderFlash(); if (new Date().getSeconds()===0) renderHorario(); }
   if (!$('#s-sacola').hidden) renderTimer();
   if (relAtiva()===false && ofertas.relampago.on && ofertas.relampago.fim < Date.now() && !renderFlash.fim){ renderFlash.fim = true; renderProdutos(); }
@@ -7663,7 +7685,7 @@ async function atualizaPedidos(){
     const ocupado = !$('#veil').hidden || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && document.activeElement.closest('#s-gestao'));
     if (!$('#s-gestao').hidden && !ocupado){ kpis?.(); renderGestao(); }
   } catch(e){ console.error('pedidos', e); } finally { buscandoPeds = false; } }
-setInterval(atualizaPedidos, 45000);
+setInterval(() => { if (window.__rtPainel !== 'SUBSCRIBED') atualizaPedidos(); }, 45000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(atualizaPedidos, 500); });
 
 /* 6) painel sem internet: avisa e salva quando a conexão voltar */
@@ -7753,7 +7775,7 @@ async function atualizaAvaliacoes(){ if (!sbOn() || !sbAdmin || !fotoAnt || !sbC
     const ocupado = !$('#veil').hidden || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && document.activeElement.closest('#s-gestao'));
     if (!$('#s-gestao').hidden && !ocupado && gesAtual==='avaliacoes') renderGestao();
   } catch(e){ console.error('avaliacoes', e); } finally { buscandoRevs = false; } }
-setInterval(atualizaAvaliacoes, 45000);
+setInterval(() => { if (window.__rtPainel !== 'SUBSCRIBED') atualizaAvaliacoes(); }, 45000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(atualizaAvaliacoes, 800); });
 
 { const st = document.createElement('style'); st.textContent = `
@@ -8135,14 +8157,15 @@ function ligaTempoReal(){ if (rtLigado || !sbOn() || !sbAdmin || !sb.channel) re
   try { sb.channel('painel-eme')
       .on('postgres_changes', {event:'*', schema:'public', table:'pedidos'}, () => rtAgenda('pedidos'))
       .on('postgres_changes', {event:'INSERT', schema:'public', table:'avaliacoes'}, () => rtAgenda('avaliacoes'))
-      .subscribe(); } catch(e){ console.error('tempo real', e); } }
+      .subscribe(st => { window.__rtPainel = st; if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') rtLigado = false; }); } catch(e){ console.error('tempo real', e); } }
 setInterval(() => { if (sbAdmin) ligaTempoReal(); }, 1500);
 /* garantia: confere também a cada 3 segundos (consulta leve) mesmo se o tempo real cair */
 var assinaPeds = '';
-setInterval(async () => { if (!sbOn() || !sbAdmin || !sbCarregado || document.hidden || buscandoPeds) return;
+var confPeds = 0; setInterval(async () => { if (!sbOn() || !sbAdmin || !sbCarregado || document.hidden || buscandoPeds) return;
+  if (window.__rtPainel === 'SUBSCRIBED' && Date.now() - confPeds < 120000) return; confPeds = Date.now(); /* v141: tempo real ligado = só confere a cada 2 min */
   try { const r = await sb.from('pedidos').select('num,status,pagamento_status,cancel_status,rastreio').order('criado_em', {ascending:false}).limit(40); if (r.error) return;
     const a = JSON.stringify(r.data); if (a !== assinaPeds){ const primeira = !assinaPeds; assinaPeds = a; if (!primeira) atualizaPedidos(); } } catch(_){} }, 3000);
-setInterval(() => { if (sbAdmin && !document.hidden) atualizaAvaliacoes(); }, 15000);
+setInterval(() => { if (sbAdmin && !document.hidden && window.__rtPainel !== 'SUBSCRIBED') atualizaAvaliacoes(); }, 30000);
 
 /* ---------- mais impressoras e papéis ---------- */
 Object.assign(PAPEL_IMP, {
@@ -8247,10 +8270,10 @@ var lojaVivaT = null, lojaVivaUlt = 0, lojaViva = false;
 function recarregaLoja(){ clearTimeout(lojaVivaT); const espera = Math.max(500, 2500 - (Date.now() - lojaVivaUlt));
   lojaVivaT = setTimeout(async () => { if (sbAdmin) return; lojaVivaUlt = Date.now(); try { lojaFresco = null; cacheUsado = true; await sbCarregar(false); } catch(_){} }, espera); }
 function ligaLojaViva(){ if (lojaViva || !sbOn() || !sb.channel || !sbCarregado) return; lojaViva = true;
-  try { const ch = sb.channel('loja-eme'); ['produtos','variacoes','categorias','config','avaliacoes'].forEach(t => ch.on('postgres_changes', {event:'*', schema:'public', table:t}, () => recarregaLoja())); ch.subscribe(); } catch(e){ console.error('loja ao vivo', e); } }
+  try { const ch = sb.channel('loja-eme'); ['produtos','variacoes','categorias','config','avaliacoes'].forEach(t => ch.on('postgres_changes', {event:'*', schema:'public', table:t}, () => recarregaLoja())); ch.subscribe(st => { window.__rtLoja = st; if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') lojaViva = false; }); } catch(e){ console.error('loja ao vivo', e); } }
 setInterval(() => { if (!sbAdmin) ligaLojaViva(); }, 2000);
 /* garantia: se a loja ficar aberta muito tempo sem o tempo real, confere de novo a cada 60 s */
-setInterval(() => { if (sbOn() && !sbAdmin && sbCarregado && !document.hidden) recarregaLoja(); }, 60000);
+var confLoja = Date.now(); setInterval(() => { if (!sbOn() || sbAdmin || !sbCarregado || document.hidden) return; if (window.__rtLoja === 'SUBSCRIBED' && Date.now() - confLoja < 300000) return; confLoja = Date.now(); recarregaLoja(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && sbOn() && !sbAdmin && sbCarregado) recarregaLoja(); });
 
 /* ---------- 2) banners: botão e link liga/desliga, link próprio e todos do mesmo tamanho ---------- */
@@ -8375,6 +8398,10 @@ function MelVideo(box, base){
   /* desbloqueio no iPhone: o primeiro toque na página garante que os vídeos possam tocar */
   const libera = () => { Object.values(V).forEach(c => { if (c === atual) c.el.play().catch(() => {}); }); document.removeEventListener('touchstart', libera); };
   document.addEventListener('touchstart', libera, {passive:true});
+  /* v141 · bateria: a Mel "dorme" (para o vídeo e o desenho, fica parada no último quadro) e acorda na hora */
+  api.dormir = () => { if (!rodando) return; rodando = false; cancelAnimationFrame(raf); Object.values(V).forEach(c => { try { c.el.pause(); } catch(_){} }); api.dormindo = true; };
+  api.acordar = () => { if (rodando) return; rodando = true; api.dormindo = false; if (atual){ atual.el.play().catch(() => {}); } raf = requestAnimationFrame(quadro); };
+  ['tocar','fala','pula','festa','reinicia'].forEach(k => { const f = api[k]; if (typeof f === 'function') api[k] = function(){ api.acordar(); try { window.__melMexeu?.(); } catch(_){} return f.apply(this, arguments); }; });
   return api;
 }
 
@@ -10096,7 +10123,7 @@ if (sbOn()){
     } catch(e){}
   };
   let sb1 = setInterval(() => { if (sbAdmin && sbCarregado){ clearInterval(sb1); sinoBanco(); } }, 1500);
-  setInterval(sinoBanco, 60000);
+  window.__sinoBanco = sinoBanco; setInterval(() => { if (!document.hidden) sinoBanco(); }, 300000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) sinoBanco(); });
 }
 
@@ -10132,6 +10159,48 @@ if (window.__APP_PAINEL && 'serviceWorker' in navigator){
       if (raiz && !raiz.scope.endsWith(ESC)){ const velha = await raiz.pushManager.getSubscription();
         if (velha && velha.endpoint !== nova.endpoint){ await sb.from('push_inscricoes').delete().eq('endpoint', velha.endpoint); await velha.unsubscribe().catch(() => {}); } }
     } catch(_){} }, 6000);
+}
+
+/* v141 · tempo real completo e economia de bateria */
+if (sbOn()){
+  /* 6.1 painel: produtos, estoque, categorias e cupons mudados em outro aparelho (ou estoque baixado por uma venda no site) aparecem na hora */
+  let ultSalvo = 0, recT = null, rtProd = false;
+  { const _sa = salvarAgora; salvarAgora = async function(){ try { return await _sa.apply(this, arguments); } finally { ultSalvo = Date.now(); } }; }
+  const ocupado = () => !$('#veil').hidden || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && document.activeElement.closest('#s-gestao'));
+  const recarregaPainel = () => { clearTimeout(recT); recT = setTimeout(async () => {
+      if (!sbAdmin || !fotoAnt || (typeof salvando !== 'undefined' && salvando)) return;
+      if (J(retrato()) !== J(fotoAnt) || ocupado()){ setTimeout(recarregaPainel, 3000); return; } /* tem edição em andamento: a sua vale; tenta depois */
+      try { const g = gesAtual, y = window.scrollY; await sbCarregar(true); gesAtual = g; if (!$('#s-gestao').hidden){ renderGestao(); window.scrollTo(0, y); } } catch(e){ console.warn('painel ao vivo', e); } }, 1500); };
+  setInterval(() => { if (rtProd || !sbAdmin || !sbCarregado || !sb.channel) return; rtProd = true;
+    try { const ch = sb.channel('painel-dados-' + Math.random().toString(36).slice(2, 7));
+      const chegou = pl => { const r = pl.new || {};
+        if (pl.table === 'variacoes' && r.produto_id){ const p = prod(r.produto_id); if (p && p.est && p.est[r.cor] && +p.est[r.cor][r.tamanho] === +r.estoque) return; } /* já está igual aqui */
+        if (Date.now() - ultSalvo < 6000) return; /* é o eco do que este aparelho acabou de salvar */
+        recarregaPainel(); };
+      ['produtos','variacoes','categorias','cupons'].forEach(t => ch.on('postgres_changes', {event:'*', schema:'public', table:t}, chegou));
+      ch.on('postgres_changes', {event:'INSERT', schema:'public', table:'historico'}, () => { try { setTimeout(() => window.__sinoBanco?.(), 800); } catch(_){} });
+      ch.subscribe(st => { if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') rtProd = false; }); } catch(e){ rtProd = false; } }, 2000);
+
+  /* 6.2 cliente: o status do pedido muda na "Minha conta" na hora */
+  let rtCli = '', cliT = null;
+  setInterval(() => { if (sbAdmin || typeof conta === 'undefined' || !conta.logada || !conta.email || !sb.channel) return; const em = String(conta.email).toLowerCase(); if (rtCli === em) return; rtCli = em;
+    try { sb.channel('cliente-' + Math.random().toString(36).slice(2, 7)).on('postgres_changes', {event:'*', schema:'public', table:'pedidos', filter:'cliente_email=eq.' + em}, () => {
+        clearTimeout(cliT); cliT = setTimeout(() => { try { carregarConta?.(); } catch(_){} }, 700); }).subscribe(st => { if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') rtCli = ''; }); } catch(_){ rtCli = ''; } }, 3000);
+
+  /* 6.3 ao sair do app/aba: salva na hora o que ainda não foi salvo; ao voltar: confere tudo uma vez */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden){ try { if (sbAdmin && fotoAnt && J(retrato()) !== J(fotoAnt)) salvarAgora(); } catch(_){} }
+    else { try { if (sbAdmin && sbCarregado){ atualizaPedidos?.(); recarregaPainel(); } } catch(_){} } });
+}
+/* 6.4 Mel leve: dorme com a tela fechada, depois de 40 s sem mexer no celular e no modo economia; acorda ao tocar, rolar ou falar com ela */
+{ let ultMexe = Date.now();
+  const mexeu = () => { ultMexe = Date.now(); if (MELGL && MELGL.dormindo && !document.hidden) MELGL.acordar?.(); };
+  window.__melMexeu = () => { ultMexe = Date.now(); };
+  ['pointerdown','touchstart','keydown','wheel','scroll'].forEach(ev => addEventListener(ev, mexeu, {passive:true, capture:true}));
+  const confere = () => { if (!MELGL || !MELGL.dormir) return; const parado = Date.now() - ultMexe > (window.__economia ? 8000 : 40000);
+    if (document.hidden || parado) MELGL.dormir(); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) MELGL?.dormir?.(); else mexeu(); });
+  setInterval(confere, 4000);
 }
 </script>
 
