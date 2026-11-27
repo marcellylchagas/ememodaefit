@@ -8401,7 +8401,7 @@ function MelVideo(box, base){
   /* v141 · bateria: a Mel "dorme" (para o vídeo e o desenho, fica parada no último quadro) e acorda na hora */
   api.dormir = () => { if (!rodando) return; rodando = false; cancelAnimationFrame(raf); Object.values(V).forEach(c => { try { c.el.pause(); } catch(_){} }); api.dormindo = true; };
   api.acordar = () => { if (rodando) return; rodando = true; api.dormindo = false; if (atual){ atual.el.play().catch(() => {}); } raf = requestAnimationFrame(quadro); };
-  ['tocar','fala','pula','festa','reinicia'].forEach(k => { const f = api[k]; if (typeof f === 'function') api[k] = function(){ api.acordar(); try { window.__melMexeu?.(); } catch(_){} return f.apply(this, arguments); }; });
+  ['tocar','fala','pula','festa','reinicia'].forEach(k => { const f = api[k]; if (typeof f === 'function') api[k] = function(){ if (window.__melPode && !window.__melPode()) return; api.acordar(); return f.apply(this, arguments); }; });
   return api;
 }
 
@@ -10195,10 +10195,11 @@ if (sbOn()){
 /* 6.4 Mel leve: dorme com a tela fechada, depois de 40 s sem mexer no celular e no modo economia; acorda ao tocar, rolar ou falar com ela */
 { let ultMexe = Date.now();
   const mexeu = () => { ultMexe = Date.now(); if (MELGL && MELGL.dormindo && !document.hidden) MELGL.acordar?.(); };
-  window.__melMexeu = () => { ultMexe = Date.now(); };
+  const limite = () => window.__economia ? 8000 : 40000;
+  window.__melPode = () => !document.hidden && Date.now() - ultMexe < limite(); /* gestos sozinhos só com alguém mexendo */
   ['pointerdown','touchstart','touchmove','keydown','wheel'].forEach(ev => addEventListener(ev, mexeu, {passive:true, capture:true}));
   window.__melInfo = () => ({parado: Math.round((Date.now() - ultMexe) / 1000), dorme: !!(MELGL && MELGL.dormindo)});
-  const confere = () => { if (!MELGL || !MELGL.dormir) return; const parado = Date.now() - ultMexe > (window.__economia ? 8000 : 40000);
+  const confere = () => { if (!MELGL || !MELGL.dormir) return; const parado = Date.now() - ultMexe > limite();
     if (document.hidden || parado) MELGL.dormir(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) MELGL?.dormir?.(); else mexeu(); });
   setInterval(confere, 4000);
