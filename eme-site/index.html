@@ -10333,6 +10333,54 @@ if (sbOn()){
     AV.enviando = false; AV.carregado = false; await carrega(); });
   try { sb.channel('avisos-adm-' + Math.random().toString(36).slice(2, 6)).on('postgres_changes', {event:'*', schema:'public', table:'avisos_clientes'}, () => { if (AV.carregado) carrega(); }).subscribe(); } catch(_){}
 }
+
+/* v147 · painel › Cupons: editar e excluir */
+{ const CE = {ed:null, exc:null, err:''};
+  const acads = () => (typeof ACADEMIAS !== 'undefined' && Array.isArray(ACADEMIAS.lista) ? ACADEMIAS.lista : []).map(a => a.nome).filter(Boolean);
+  const form = (c, i) => `<form class="cup-ed" data-cupedform="${i}" novalidate>
+      <div class="row2"><div class="field"><label>Nome do cupom</label><input name="nome" value="${esc(c.nome||'')}"></div>
+        <div class="field"><label>Código</label><input name="cod" value="${esc(c.cod)}" autocapitalize="characters"></div></div>
+      <div class="row2"><div class="field"><label>Tipo de desconto</label><select name="tipo"><option value="pct" ${c.tipo==='pct'?'selected':''}>Porcentagem</option><option value="fixo" ${c.tipo==='fixo'?'selected':''}>Preço fixo (R$)</option><option value="frete" ${c.tipo==='frete'?'selected':''}>Frete grátis</option></select></div>
+        <div class="field"><label>Valor</label><input name="valor" type="number" min="0" step="0.01" inputmode="decimal" value="${c.tipo==='frete' ? '' : (+c.valor||0)}"></div></div>
+      <div class="row2"><div class="field"><label>Quantidade disponível</label><input name="qtd" type="number" min="1" inputmode="numeric" placeholder="Ilimitado" value="${c.qtd||''}"></div>
+        <div class="field"><label>Valor mínimo da compra</label><input name="min" type="number" min="0" step="0.01" inputmode="decimal" value="${+c.min||''}"></div></div>
+      <div class="row2"><div class="field"><label>Vence em</label><input name="venc" type="date" value="${esc(c.venc||'')}"></div>
+        <div class="field"><label>Status</label><select name="status"><option ${c.status==='Ativo'?'selected':''}>Ativo</option><option ${c.status!=='Ativo'?'selected':''}>Pausado</option></select></div></div>
+      ${acads().length ? `<div class="field"><label>Academia parceira</label><select name="acad"><option value="">Vale para todas as clientes</option>${acads().map(a => `<option ${a===c.acad?'selected':''}>${esc(a)}</option>`).join('')}</select></div>` : ''}
+      <label class="switch"><span class="d"><b>Válido só no Pix</b></span><input type="checkbox" name="pix" ${c.pix?'checked':''}></label>
+      <label class="switch"><span class="d"><b>Só na primeira compra</b></span><input type="checkbox" name="primeira" ${c.primeira?'checked':''}></label>
+      ${CE.err ? `<div class="err">${esc(CE.err)}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" type="submit">Salvar alterações</button><button class="btn sm ghost" type="button" data-cupedx>Cancelar</button></div></form>`;
+  const _rcE = renderCupons; renderCupons = function(){ _rcE.apply(this, arguments);
+    const cards = document.querySelectorAll('#cupList .cup');
+    cards.forEach((card, i) => { const c = cupons[i]; if (!c) return; const row = card.querySelector(':scope > div[style*="display:flex"]') || card.lastElementChild;
+      if (!card.querySelector('[data-cuped]')) row.insertAdjacentHTML('beforeend', `<button class="btn sm ghost" type="button" data-cuped="${i}">Editar</button>${CE.exc===i ? `<button class="btn sm" type="button" data-cupexok="${i}" style="background:var(--bad);color:#fff">Confirmar exclusão</button><button class="btn sm ghost" type="button" data-cupexx>Cancelar</button>` : `<button class="btn sm ghost" type="button" data-cupex="${i}">Excluir</button>`}`);
+      if (CE.ed === i) card.insertAdjacentHTML('beforeend', form(c, i)); }); };
+  document.addEventListener('click', e => { const t = e.target; if (!t.closest) return;
+    const ed = t.closest('[data-cuped]'); if (ed){ CE.ed = CE.ed === +ed.dataset.cuped ? null : +ed.dataset.cuped; CE.exc = null; CE.err = ''; renderCupons(); return; }
+    if (t.closest('[data-cupedx]')){ CE.ed = null; CE.err = ''; renderCupons(); return; }
+    const ex = t.closest('[data-cupex]'); if (ex){ CE.exc = +ex.dataset.cupex; CE.ed = null; renderCupons(); return; }
+    if (t.closest('[data-cupexx]')){ CE.exc = null; renderCupons(); return; }
+    const ok = t.closest('[data-cupexok]'); if (ok){ const i = +ok.dataset.cupexok, c = cupons[i]; if (!c) return; cupons.splice(i, 1); CE.exc = null; renderCupons(); salvarAgora?.(); toast(`Cupom ${c.cod} excluído.`); return; } });
+  document.addEventListener('submit', e => { const f = e.target.closest && e.target.closest('[data-cupedform]'); if (!f) return; e.preventDefault();
+    const i = +f.dataset.cupedform, c = cupons[i]; if (!c) return; const v = n => f.elements[n] ? f.elements[n].value : '';
+    const cod = v('cod').trim().toUpperCase(), nome = v('nome').trim(), tipo = v('tipo'), val = parseFloat(v('valor')) || 0;
+    let m = '';
+    if (!nome) m = 'Dê um nome ao cupom.';
+    else if (!/^[A-Z0-9]+$/.test(cod)) m = 'O código aceita só letras e números, sem espaços.';
+    else if (cupons.some((x, k) => k !== i && x.cod === cod)) m = 'Já existe outro cupom com esse código.';
+    else if (tipo !== 'frete' && val <= 0) m = 'Informe o valor do desconto.';
+    else if (tipo === 'pct' && val > 100) m = 'A porcentagem vai até 100%.';
+    if (m){ CE.err = m; renderCupons(); return; }
+    const acadAntes = c.acad || '';
+    Object.assign(c, {nome, cod, tipo, modo: tipo === 'frete' ? 'frete' : 'desconto', valor: tipo === 'frete' ? 0 : val, qtd: parseInt(v('qtd')) > 0 ? parseInt(v('qtd')) : 0,
+      min: parseFloat(v('min')) || 0, venc: v('venc') || '', status: v('status') === 'Ativo' ? 'Ativo' : 'Pausado', pix: !!(f.elements.pix && f.elements.pix.checked), primeira: !!(f.elements.primeira && f.elements.primeira.checked),
+      acad: f.elements.acad ? f.elements.acad.value : (c.acad || ''), ocult: !!(f.elements.acad ? f.elements.acad.value : c.acad)});
+    CE.ed = null; CE.err = ''; renderCupons();
+    Promise.resolve(salvarAgora?.()).then(() => { if (acadAntes && !c.acad && sbOn()) return sb.from('cupons').update({academia:null}).eq('codigo', c.cod); }).catch(() => {});
+    toast(`Cupom ${cod} atualizado.`); });
+  const st = document.createElement('style'); st.textContent = `.cup-ed{margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#E3E8EE)}.cup-ed .field{margin-top:8px}`; document.head.appendChild(st);
+}
 </script>
 
 </body>
