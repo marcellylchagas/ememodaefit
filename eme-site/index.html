@@ -10240,13 +10240,28 @@ if (sbOn()){
     } catch(e){ toast('Não deu para ativar agora. Tente de novo.'); } finally { NV.ocupado = false; pinta(); } }
   async function desliga(){ if (NV.ocupado) return; NV.ocupado = true; pinta();
     try { await salva(false, false); lss('emeNovDesl', '1'); toast('Pronto, você não vai mais receber as novidades.'); } catch(e){ toast('Não deu para desligar agora. Tente de novo.'); } finally { NV.ocupado = false; pinta(); } }
+  /* v145: passo a passo para liberar, conforme o aparelho e se está no app ou no navegador */
+  function passos(){ const u = navigator.userAgent, app = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    const ios = /iPhone|iPad|iPod/.test(u), and = /Android/.test(u), xiaomi = /Xiaomi|Redmi|POCO|MIUI|HyperOS|M2\d{3}|2\d{3}[A-Z]/i.test(u), samsung = /SM-|Samsung/i.test(u);
+    if (ios) return app
+      ? ['Abra os <b>Ajustes</b> do iPhone.', 'Role até encontrar <b>EME</b> e toque.', 'Toque em <b>Notificações</b> e ligue <b>Permitir Notificações</b>.', 'Volte aqui e toque em <b>Já liberei</b>.']
+      : ['No iPhone, as notificações só funcionam com o app da EME instalado.', 'Toque em <b>Compartilhar</b> (o quadrado com a seta) no Safari.', 'Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.', 'Abra a EME pelo ícone novo e ative aqui em Minha conta.'];
+    if (and){ const l = app
+      ? ['Abra as <b>Configurações</b> do celular.', 'Toque em <b>Apps</b>' + (xiaomi ? ' › <b>Gerenciar apps</b>' : '') + ' e procure <b>EME</b>.', 'Toque em <b>Notificações</b> e ligue a opção de permitir.']
+      : ['Toque no <b>cadeado</b> (ou no ícone de ajustes) ao lado do endereço da loja, lá em cima.', 'Toque em <b>Permissões</b> › <b>Notificações</b>.', 'Escolha <b>Permitir</b>.', 'Se o app da EME estiver instalado, libere também em <b>Configurações › Apps › EME › Notificações</b>.'];
+      if (xiaomi) l.push('No Xiaomi, deixe também a <b>Economia de bateria</b> do app EME e do Chrome em <b>Sem restrições</b>, para os avisos chegarem com o app fechado.');
+      if (samsung) l.push('No Samsung, em <b>Configurações › Bateria</b>, tire o app EME e o Chrome dos <b>apps em suspensão</b>.');
+      l.push('Volte aqui e toque em <b>Já liberei</b>.'); return l; }
+    return ['Clique no <b>cadeado</b> ao lado do endereço da loja, no navegador.', 'Em <b>Notificações</b>, escolha <b>Permitir</b>.', 'Volte aqui e clique em <b>Já liberei</b>.']; }
   function cartao(){ const st = NV.estado;
     const txt = !suporta() ? (/iPhone|iPad/.test(navigator.userAgent) ? 'No iPhone: instale o app da EME (Compartilhar › Adicionar à Tela de Início), abra pelo ícone e ative aqui.' : 'Este navegador não recebe notificações.')
       : st === 'bloq' ? 'Bloqueadas nas configurações do celular. Para receber, libere as notificações deste site/app nas configurações.'
       : st === true ? 'Ativas neste aparelho. Você recebe novos looks, peças que voltaram, cupons e novidades da loja (no máximo 1 por dia).'
       : 'Desligadas neste aparelho.';
+    const precisa = st === 'bloq' || (!suporta() && /iPhone|iPad|iPod/.test(navigator.userAgent));
+    const ajuda = precisa ? `<div class="nov-aj"><button class="btn sm" type="button" data-nov="ajuda">${NV.ajuda ? 'Esconder o passo a passo' : 'Como liberar'}</button>${st === 'bloq' ? ' <button class="btn sm ghost" type="button" data-nov="conferir">Já liberei</button>' : ''}</div>${NV.ajuda ? `<ol class="nov-passos">${passos().map(x => `<li>${x}</li>`).join('')}</ol>` : ''}` : '';
     const bt = !suporta() || st === 'bloq' ? '' : st === true ? `<button class="btn sm ghost" type="button" data-nov="off" ${NV.ocupado?'disabled':''}>Desligar</button>` : `<button class="btn sm" type="button" data-nov="on" ${NV.ocupado?'disabled':''}>Ativar novidades</button>`;
-    return `<div class="panel nov-card" id="novCard"><div class="nov-h"><span aria-hidden="true">🔔</span><div><b>Novidades no celular</b><p class="note" style="margin:2px 0 0">${esc(txt)}</p></div></div>${bt ? `<div style="margin-top:10px">${bt}</div>` : ''}</div>`; }
+    return `<div class="panel nov-card" id="novCard"><div class="nov-h"><span aria-hidden="true">🔔</span><div><b>Novidades no celular</b><p class="note" style="margin:2px 0 0">${esc(txt)}</p></div></div>${bt ? `<div style="margin-top:10px">${bt}</div>` : ''}${ajuda}</div>`; }
   function pinta(){ const box = document.getElementById('contaBody'); if (!box || !conta.logada || sbAdmin) return; const c = document.getElementById('novCard'); const h = cartao();
     if (c){ if (c.outerHTML !== h) c.outerHTML = h; } else box.insertAdjacentHTML('afterbegin', h); }
   { const _rc = renderConta; renderConta = function(){ const r = _rc.apply(this, arguments); try { pinta(); } catch(_){} return r; }; }
@@ -10257,12 +10272,18 @@ if (sbOn()){
     requestAnimationFrame(() => document.getElementById('novConvite')?.classList.add('on')); }
   const fechaConv = () => { const c = document.getElementById('novConvite'); if (c){ c.classList.remove('on'); setTimeout(() => c.remove(), 250); } };
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-nov]'); if (!b) return; const a = b.dataset.nov;
-    if (a === 'on' || a === 'sim'){ fechaConv(); liga(); } else if (a === 'off') desliga(); else if (a === 'nao'){ fechaConv(); } });
+    if (a === 'on' || a === 'sim'){ fechaConv(); liga(); } else if (a === 'off') desliga(); else if (a === 'nao'){ fechaConv(); }
+    else if (a === 'ajuda'){ NV.ajuda = !NV.ajuda; pinta(); if (NV.ajuda) setTimeout(() => document.querySelector('.nov-passos')?.scrollIntoView({block:'nearest', behavior:'smooth'}), 60); }
+    else if (a === 'conferir'){ const antes = NV.estado; confere().then(() => { if (NV.estado === 'bloq') toast('Ainda está bloqueado. Confira o passo a passo e tente de novo.'); else if (antes === 'bloq'){ NV.ajuda = false; if (NV.estado !== true) liga(); else toast('Pronto! Novidades ativas.'); } }); } });
+  /* quando a cliente libera nas configurações e volta para a loja, o cartão atualiza sozinho */
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && conta.logada && !sbAdmin) confere(); });
+  try { navigator.permissions?.query({name:'notifications'}).then(p => { p.onchange = () => { confere(); }; }).catch(() => {}); } catch(_){}
   let jaConferiu = '';
   setInterval(() => { if (typeof conta === 'undefined' || !conta.logada || sbAdmin) return; const k = String(conta.email || ''); if (jaConferiu !== k){ jaConferiu = k; confere(); setTimeout(convite, 2500); } }, 2000);
   const st = document.createElement('style'); st.textContent = `
     .nov-card .nov-h{display:flex;gap:10px;align-items:flex-start}.nov-card .nov-h span{font-size:20px;line-height:1.2}
     .nov-conv{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:70;max-width:420px;margin:0 auto;background:var(--surface,#fff);border:1px solid var(--line,#e4e0d8);border-radius:16px;padding:14px 16px;box-shadow:0 18px 40px -16px rgba(0,0,0,.35);transform:translateY(20px);opacity:0;transition:transform .3s,opacity .3s}
+    .nov-aj{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.nov-passos{margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.5;color:var(--ink,#141113)}.nov-passos li{margin:6px 0}
     .nov-conv.on{transform:none;opacity:1}.nov-conv p{margin:6px 0 10px;font-size:13.5px;color:var(--soft,#5c5660)}.nov-conv .nov-b{display:flex;gap:8px}`;
   document.head.appendChild(st);
 }
