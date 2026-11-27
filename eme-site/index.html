@@ -10118,6 +10118,21 @@ if (sbOn()){
   } catch(e){} };
   setTimeout(monta, 1500); setInterval(monta, 15000);
 }
+
+/* v140 · no app EME Painel (endereço /painel/) as notificações são do próprio app; antes iam para o app da loja e o Android descartava */
+if (window.__APP_PAINEL && 'serviceWorker' in navigator){
+  const ESC = '/painel/';
+  regSW = async function(){ try { await navigator.serviceWorker.register('/painel/sw.js', {scope: ESC}); const r = await navigator.serviceWorker.getRegistration(ESC);
+      if (r && !r.active){ await new Promise(ok => { const w = r.installing || r.waiting; if (!w) return ok(); w.addEventListener('statechange', () => { if (w.state === 'activated') ok(); }); setTimeout(ok, 8000); }); }
+      return r || null; } catch(_){ return null; } };
+  inscricaoAtual = async function(){ try { const r = await navigator.serviceWorker.getRegistration(ESC); return r && r.scope.endsWith(ESC) ? await r.pushManager.getSubscription() : null; } catch(_){ return null; } };
+  /* limpa o cadastro antigo deste aparelho (do endereço da loja), para não avisar em dobro nem no app errado */
+  const limpa = setInterval(async () => { if (typeof sbAdmin === 'undefined' || !sbAdmin) return; clearInterval(limpa);
+    try { const nova = await inscricaoAtual(); if (!nova) return; const raiz = await navigator.serviceWorker.getRegistration('/');
+      if (raiz && !raiz.scope.endsWith(ESC)){ const velha = await raiz.pushManager.getSubscription();
+        if (velha && velha.endpoint !== nova.endpoint){ await sb.from('push_inscricoes').delete().eq('endpoint', velha.endpoint); await velha.unsubscribe().catch(() => {}); } }
+    } catch(_){} }, 6000);
+}
 </script>
 
 </body>

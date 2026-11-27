@@ -1,11 +1,13 @@
 /* EME Moda & Fit · avisos do painel (notificações) */
+const NO_APP = /\/painel\/$/.test(self.registration.scope); /* v140: serviço do app EME Painel */
+const ajusta = u => NO_APP ? String(u || '/#painel').replace(/^\/(?!painel\/)(#painel)?/, '/painel/$1').replace(/^\/painel\/$/, '/painel/#painel') : (u || '/#painel');
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) { d = {texto: e.data ? e.data.text() : ''}; }
   e.waitUntil(self.registration.showNotification(d.titulo || 'EME Moda & Fit', {
-    body: d.texto || '', icon: '/icone-192.png', badge: '/icone-192.png', tag: d.tag || undefined, renotify: !!d.tag,
-    data: {url: d.url || '/#painel'}, vibrate: [120, 60, 120]}));
+    body: d.texto || '', icon: NO_APP ? '/painel-192.png' : '/icone-192.png', badge: NO_APP ? '/painel-192.png' : '/icone-192.png', tag: d.tag || undefined, renotify: !!d.tag,
+    data: {url: ajusta(d.url)}, vibrate: [120, 60, 120]}));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close(); const url = new URL((e.notification.data && e.notification.data.url) || '/#painel', self.location.origin).href;
