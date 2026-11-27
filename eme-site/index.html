@@ -7202,7 +7202,7 @@ if (typeof retrato==='function' && sbOn()){
 .adm-mais{justify-content:space-between}`; document.head.appendChild(st); }
 /* ===== v38 · convite para baixar o app no celular (depois do quadro de boas-vindas) ===== */
 { const fechadoEm = () => 0; /* o lembrete do app aparece toda vez que a loja abre ou é atualizada (fora do app instalado) */
-  const podeMostrar = () => matchMedia('(max-width:820px)').matches && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
+  const podeMostrar = () => !document.getElementById('cookieBar') /* v143: só depois que a cliente responder aos cookies */ && matchMedia('(max-width:820px)').matches && !jaInstalado() && Date.now() - fechadoEm() > 7*864e5 && telaAtual!=='gestao' && $('#veil').hidden && !$('#sheet').classList.contains('cupompop');
   document.body.insertAdjacentHTML('beforeend', `<div class="app-conv" id="appConv" role="dialog" aria-label="Baixar o app da EME" hidden><img src="icone-192.png" alt="" width="44" height="44"><div><b>Baixe o app da EME</b><span>Compre mais rápido, direto da tela inicial do celular.</span></div><button class="btn sm" data-instalar data-appconv>Baixar</button><button class="app-x" data-appx aria-label="Fechar">×</button></div>`);
   const el = $('#appConv'); let mostrado = false;
   const tenta = () => { if (mostrado || !podeMostrar()) return; mostrado = true; el.hidden = false; requestAnimationFrame(() => el.classList.add('on')); };
