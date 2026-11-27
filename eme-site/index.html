@@ -10196,7 +10196,8 @@ if (sbOn()){
 { let ultMexe = Date.now();
   const mexeu = () => { ultMexe = Date.now(); if (MELGL && MELGL.dormindo && !document.hidden) MELGL.acordar?.(); };
   window.__melMexeu = () => { ultMexe = Date.now(); };
-  ['pointerdown','touchstart','keydown','wheel','scroll'].forEach(ev => addEventListener(ev, mexeu, {passive:true, capture:true}));
+  ['pointerdown','touchstart','touchmove','keydown','wheel'].forEach(ev => addEventListener(ev, mexeu, {passive:true, capture:true}));
+  window.__melInfo = () => ({parado: Math.round((Date.now() - ultMexe) / 1000), dorme: !!(MELGL && MELGL.dormindo)});
   const confere = () => { if (!MELGL || !MELGL.dormir) return; const parado = Date.now() - ultMexe > (window.__economia ? 8000 : 40000);
     if (document.hidden || parado) MELGL.dormir(); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) MELGL?.dormir?.(); else mexeu(); });
