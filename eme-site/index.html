@@ -10099,6 +10099,25 @@ if (sbOn()){
   setInterval(sinoBanco, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) sinoBanco(); });
 }
+
+/* v139 · catálogo legível por máquina (Google e ferramentas): todas as peças com nome, código, preço e links das fotos */
+{ let assin = '';
+  const monta = () => { try {
+    if (typeof PRODUTOS === 'undefined' || (typeof sbOn === 'function' && sbOn() && typeof sbCarregado !== 'undefined' && !sbCarregado)) return;
+    const pub = PRODUTOS.filter(p => p.status === 'Publicado' && (p.imgs || []).length);
+    const itens = pub.map((p, i) => { const fotos = (p.imgs || []).map(x => x.url || x.src).filter(u => /^https?:/.test(u || ''));
+      const est = Object.values(p.est || {}).reduce((a, o) => a + Object.values(o || {}).reduce((x, n) => x + (n > 0 ? n : 0), 0), 0);
+      const preco = typeof precoAtual === 'function' ? precoAtual(p) : p.preco;
+      return {'@type':'ListItem', position:i + 1, item:{'@type':'Product', name:p.n, sku:p.sku || p.id, productID:p.id, url:location.origin + '/' + (typeof slug === 'function' ? slug(p.n) : p.id),
+        image:fotos, description:String(p.desc || '').slice(0, 300), category:p.c || '', brand:{'@type':'Brand', name:'EME Moda & Fit'},
+        offers:{'@type':'Offer', priceCurrency:'BRL', price:Number(preco || 0).toFixed(2), availability: est > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'}}}; });
+    const json = JSON.stringify({'@context':'https://schema.org', '@type':'ItemList', name:'Catálogo EME Moda & Fit', numberOfItems:itens.length, itemListElement:itens});
+    if (json === assin) return; assin = json;
+    let el = document.getElementById('ldCatalogo'); if (!el){ el = document.createElement('script'); el.type = 'application/ld+json'; el.id = 'ldCatalogo'; document.head.appendChild(el); }
+    el.textContent = json;
+  } catch(e){} };
+  setTimeout(monta, 1500); setInterval(monta, 15000);
+}
 </script>
 
 </body>
